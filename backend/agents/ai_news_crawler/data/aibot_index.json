@@ -1,0 +1,101 @@
+{
+  "last_updated": "2026-01-06T22:16:59.827966",
+  "source": "ai-bot.cn",
+  "news_by_date": {
+    "1月6·周二": [
+      {
+        "title": "英伟达发布重磅AI计算平台Vera Rubin",
+        "url": "https://mp.weixin.qq.com/s/n21pnpd4HEjaFWLaPxv_YQ",
+        "summary": "英伟达CEO黄仁勋发布了重磅AI计算平台Vera Rubin，打破五年未发消费级显卡的惯例。平台包含6款全新芯片，其中Rubin GPU推理算力达50 PFLOPS，是Blackwell的5倍。Vera Rubin NVL72系统性能全面提升，训练10万亿参数模型所需系统数量仅为前代1/4，成本降至1/10。",
+        "source": "APPSO",
+        "category": "前沿技术",
+        "tag": "工具"
+      },
+      {
+        "title": "亚马逊上线 Alexa网页版，加速补齐网页端能力",
+        "url": "https://ai-bot.cn/alexa-plus/",
+        "summary": "亚马逊正式推出Alexa+网页版，重新启用Alexa.com域名，允许用户通过浏览器直接与AI助手对话。标志着Alexa从智能音箱设备扩展到网页端，与ChatGPT、Google Gemini等AI聊天机器人展开正面竞争。",
+        "source": "AI工具集",
+        "category": "前沿技术",
+        "tag": ""
+      },
+      {
+        "title": "开源异构算力调度平台「密瓜智能」获数千万元投资",
+        "url": "https://36kr.com/p/3626190603568384",
+        "summary": "异构算力调度平台「密瓜智能」近日完成数千万元天使轮融资，由复星创富领投。核心产品为CNCF开源项目HAMi，专注于解决GPU等异构算力资源利用率低下的行业痛点。HAMi支持NVIDIA、华为昇腾等9种以上芯片的细粒度切分与统一调度，可实现显存超卖和动态资源分配。",
+        "source": "36氪",
+        "category": "产业重磅",
+        "tag": "重磅"
+      },
+      {
+        "title": "智能眼镜企业雷鸟创新宣布完成超10亿元新一轮融资",
+        "url": "https://mp.weixin.qq.com/s/nlgoKpfmVipNkZ1A8z7u7A",
+        "summary": "国内AR智能眼镜企业雷鸟创新宣布完成超10亿元新一轮融资，由中国移动链长基金与中信金石共同领投，中国联通旗下基金参与。是国内运营商首次以战略投资者身份进入智能眼镜赛道，交割后中国移动持股7.92%。",
+        "source": "智东西",
+        "category": "产业重磅",
+        "tag": "重磅"
+      }
+    ],
+    "1月5·周一": [
+      {
+        "title": "智元机器人与MiniMax达成合作，全模态AI加速落地机器人应用",
+        "url": "https://www.36kr.com/newsflashes/3626096462595073",
+        "summary": "智元机器人与MiniMax（上海稀宇科技）正式达成合作，MiniMax将为智元机器人提供文本到语音全流程AI技术支持。此次合作将基于智元机器人的产品特性，量身打造专属人设体系以优化语音交互体验，并通过定制化提示词策略实现千人千面的个性化音色合成。",
+        "source": "36氪",
+        "category": "产业重磅",
+        "tag": ""
+      },
+      {
+        "title": "腾讯「AI应用及线上工具小程序成长计划」发布：混元大模型token免费用",
+        "url": "https://mp.weixin.qq.com/s/ZEhYVjN8B0cgAzDxXSqJLQ",
+        "summary": "微信小程序正式推出「AI应用及线上工具小程序成长计划」，为开发者提供为期一年的免费资源支持。计划核心福利包括免费使用腾讯混元大模型的Token，涵盖旗舰文生文及文生图等多模态模型能力，并配套云开发、数据分析、广告变现及流量激励。申请条件要求小程序类目为文娱、工具、社交等虚拟行业类目，个人或企业主体均可参与。",
+        "source": "腾讯混元",
+        "category": "前沿技术",
+        "tag": "工具"
+      },
+      {
+        "title": "Looki完成超2000万美元A轮融资",
+        "url": "https://ai-bot.cn/looki-l1/",
+        "summary": "AI硬件公司Looki完成超2000万美元A轮融资，由蚂蚁集团领投，美团龙珠、华登国际等跟投。Looki的核心产品是一款名为Looki L1的多模态AI穿戴设备，重30克，可通过视觉和音频信号实现智能生活记录和个性化交互。",
+        "source": "AI工具集",
+        "category": "产业重磅",
+        "tag": "重磅"
+      },
+      {
+        "title": "AI助手ima支持PPT生成",
+        "url": "https://mp.weixin.qq.com/s/jDQeBr4dg-71bpAq23sYvA",
+        "summary": "AI助手ima正式推出PPT生成功能，用户现可通过任务模式一键制作演示文稿。功能支持上传附件或调用知识库资料，自动将文字内容转化为包含数据图表、图标配图和重点突出的专业PPT。用户可自定义风格主题，如简洁商务风、深色科技风等。",
+        "source": "ima.copilot",
+        "category": "前沿技术",
+        "tag": ""
+      }
+    ],
+    "1月4·周日": [
+      {
+        "title": "DeepSeek 发布新论文：提出全新 mHC 架构",
+        "url": "https://ai-bot.cn/mhc/",
+        "summary": "DeepSeek发布新论文提出全新mHC（流形约束超连接）架构，解决传统超连接在大规模模型训练中的不稳定性问题，同时保持其性能增益。框架通过将残差连接空间投影到特定流形来恢复恒等映射属性，并结合基础设施优化提升效率。",
+        "source": "AI工具集",
+        "category": "前沿技术",
+        "tag": "学术"
+      },
+      {
+        "title": "ListenHub完成200万美元融资，ARR 300万美元进军北美",
+        "url": "https://36kr.com/newsflashes/3620283612300549",
+        "summary": "AI内容生成平台ListenHub的母公司MarsWave已完成200万美元天使+轮融资，由天际资本领投，小米联合创始人王川跟投。公司年经常性收入（ARR）已突破300万美元并实现月度盈亏平衡。此次融资将主要用于进军北美市场，并已任命具有百度、MiniMax等背景的新COO负责全球增长。",
+        "source": "36氪",
+        "category": "产业重磅",
+        "tag": "重磅"
+      },
+      {
+        "title": "TRAE 中国版 SOLO 已全量免费开放！",
+        "url": "https://mp.weixin.qq.com/s/YC0z99VN0G4dv6s2X122Zg",
+        "summary": "中国版TRAE SOLO模式现已向全部用户免费开放。AI编程助手支持项目迭代、问题修复与架构重构等复杂开发任务，具备智能任务规划和自主编排智能体能力。用户可免费使用内置的豆包、GLM、MiniMax、Kimi等多款模型，产品将自动基于模型效果和速度配置最佳上下文窗口。",
+        "source": "TRAE.ai",
+        "category": "前沿技术",
+        "tag": ""
+      }
+    ],
+    "12月31·周三": []
+  }
+}

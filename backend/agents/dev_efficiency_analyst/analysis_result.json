@@ -1,0 +1,78 @@
+{
+  "analysis": {
+    "summary": {
+      "total_changes": 3,
+      "avg_review_time_hours": 50.33,
+      "median_review_time_hours": 49.0,
+      "p95_review_time_hours": 74.0,
+      "rework_rate_percent": 66.67,
+      "merged_count": 3
+    },
+    "project_breakdown": {
+      "backend-api": {
+        "change_count": 2,
+        "avg_review_time_hours": 51.0,
+        "median_review_time_hours": 51.0,
+        "rework_rate_percent": 50.0
+      },
+      "frontend-app": {
+        "change_count": 1,
+        "avg_review_time_hours": 49.0,
+        "median_review_time_hours": 49.0,
+        "rework_rate_percent": 100.0
+      }
+    },
+    "details": [
+      {
+        "id": "change-001",
+        "project": "backend-api",
+        "subject": "Add user authentication",
+        "review_time_hours": 28.0,
+        "revision_count": 2,
+        "status": "MERGED"
+      },
+      {
+        "id": "change-002",
+        "project": "frontend-app",
+        "subject": "Fix login button styling",
+        "review_time_hours": 49.0,
+        "revision_count": 3,
+        "status": "MERGED"
+      },
+      {
+        "id": "change-003",
+        "project": "backend-api",
+        "subject": "Implement payment gateway",
+        "review_time_hours": 74.0,
+        "revision_count": 1,
+        "status": "MERGED"
+      }
+    ]
+  },
+  "anomalies": [
+    {
+      "type": "REVIEW_TIME_HIGH",
+      "severity": "WARNING",
+      "metric": "Review中位耗时",
+      "current_value": "49.0小时",
+      "threshold": "< 24小时",
+      "message": "Review中位耗时(49.0小时)超过阈值(24小时)"
+    },
+    {
+      "type": "P95_TIME_HIGH",
+      "severity": "WARNING",
+      "metric": "Review P95耗时",
+      "current_value": "74.0小时",
+      "threshold": "< 72小时",
+      "message": "Review P95耗时(74.0小时)超过阈值(72小时)"
+    },
+    {
+      "type": "REWORK_RATE_HIGH",
+      "severity": "WARNING",
+      "metric": "返工率",
+      "current_value": "66.67%",
+      "threshold": "< 15%",
+      "message": "返工率(66.67%)超过阈值(15%)"
+    }
+  ]
+}

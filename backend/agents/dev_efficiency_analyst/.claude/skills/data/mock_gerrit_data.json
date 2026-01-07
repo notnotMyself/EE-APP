@@ -1,0 +1,206 @@
+{
+  "changes": [
+    {
+      "id": "platform~master~I1234567890abcdef",
+      "project": "platform/frameworks",
+      "branch": "master",
+      "subject": "[OPPO-12345] Fix memory leak in animation controller",
+      "status": "MERGED",
+      "created": "2026-01-05T02:30:00Z",
+      "updated": "2026-01-05T18:45:00Z",
+      "owner": {
+        "name": "Zhang San",
+        "email": "zhang.san@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T02:30:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-05T14:20:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I2234567890abcdef",
+      "project": "platform/system",
+      "branch": "master",
+      "subject": "[OPPO-12346] Add network speed optimization",
+      "status": "MERGED",
+      "created": "2026-01-05T03:15:00Z",
+      "updated": "2026-01-05T09:30:00Z",
+      "owner": {
+        "name": "Li Si",
+        "email": "li.si@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T03:15:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I3234567890abcdef",
+      "project": "platform/frameworks",
+      "branch": "master",
+      "subject": "[OPPO-12347] Refactor database access layer",
+      "status": "NEW",
+      "created": "2026-01-05T08:00:00Z",
+      "updated": "2026-01-06T10:00:00Z",
+      "owner": {
+        "name": "Wang Wu",
+        "email": "wang.wu@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T08:00:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-05T15:30:00Z"},
+        "rev3": {"_number": 3, "created": "2026-01-06T08:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I4234567890abcdef",
+      "project": "platform/ui",
+      "branch": "master",
+      "subject": "[OPPO-12348] Update theme color palette",
+      "status": "MERGED",
+      "created": "2026-01-05T10:20:00Z",
+      "updated": "2026-01-05T12:45:00Z",
+      "owner": {
+        "name": "Zhao Liu",
+        "email": "zhao.liu@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T10:20:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I5234567890abcdef",
+      "project": "platform/system",
+      "branch": "master",
+      "subject": "[OPPO-12349] Fix critical crash in boot process",
+      "status": "MERGED",
+      "created": "2026-01-05T01:00:00Z",
+      "updated": "2026-01-05T03:30:00Z",
+      "owner": {
+        "name": "Sun Qi",
+        "email": "sun.qi@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T01:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I6234567890abcdef",
+      "project": "platform/frameworks",
+      "branch": "master",
+      "subject": "[OPPO-12350] Implement new permission check mechanism",
+      "status": "NEW",
+      "created": "2026-01-04T14:00:00Z",
+      "updated": "2026-01-06T10:00:00Z",
+      "owner": {
+        "name": "Zhou Ba",
+        "email": "zhou.ba@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-04T14:00:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-05T09:00:00Z"},
+        "rev3": {"_number": 3, "created": "2026-01-05T16:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I7234567890abcdef",
+      "project": "platform/ui",
+      "branch": "master",
+      "subject": "[OPPO-12351] Add dark mode support for settings page",
+      "status": "MERGED",
+      "created": "2026-01-05T09:00:00Z",
+      "updated": "2026-01-05T15:30:00Z",
+      "owner": {
+        "name": "Wu Jiu",
+        "email": "wu.jiu@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T09:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I8234567890abcdef",
+      "project": "platform/frameworks",
+      "branch": "master",
+      "subject": "[OPPO-12352] Optimize image loading performance",
+      "status": "MERGED",
+      "created": "2026-01-05T11:00:00Z",
+      "updated": "2026-01-06T02:00:00Z",
+      "owner": {
+        "name": "Zheng Shi",
+        "email": "zheng.shi@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T11:00:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-05T20:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~I9234567890abcdef",
+      "project": "platform/system",
+      "branch": "master",
+      "subject": "[OPPO-12353] Update system API version compatibility",
+      "status": "NEW",
+      "created": "2026-01-05T13:00:00Z",
+      "updated": "2026-01-06T10:00:00Z",
+      "owner": {
+        "name": "Chen Shiyi",
+        "email": "chen.shiyi@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T13:00:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-06T08:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~IA234567890abcdef",
+      "project": "platform/ui",
+      "branch": "master",
+      "subject": "[OPPO-12354] Fix button alignment issue",
+      "status": "MERGED",
+      "created": "2026-01-05T16:00:00Z",
+      "updated": "2026-01-05T17:30:00Z",
+      "owner": {
+        "name": "Qian Shier",
+        "email": "qian.shier@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T16:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~IB234567890abcdef",
+      "project": "platform/frameworks",
+      "branch": "master",
+      "subject": "[OPPO-12355] Implement cache invalidation strategy",
+      "status": "NEW",
+      "created": "2026-01-04T10:00:00Z",
+      "updated": "2026-01-06T10:00:00Z",
+      "owner": {
+        "name": "Yang Shisan",
+        "email": "yang.shisan@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-04T10:00:00Z"},
+        "rev2": {"_number": 2, "created": "2026-01-05T10:00:00Z"},
+        "rev3": {"_number": 3, "created": "2026-01-05T18:00:00Z"},
+        "rev4": {"_number": 4, "created": "2026-01-06T09:00:00Z"}
+      }
+    },
+    {
+      "id": "platform~master~IC234567890abcdef",
+      "project": "platform/system",
+      "branch": "master",
+      "subject": "[OPPO-12356] Add logging for debug mode",
+      "status": "MERGED",
+      "created": "2026-01-05T07:00:00Z",
+      "updated": "2026-01-05T10:00:00Z",
+      "owner": {
+        "name": "Feng Shisi",
+        "email": "feng.shisi@oppo.com"
+      },
+      "revisions": {
+        "rev1": {"_number": 1, "created": "2026-01-05T07:00:00Z"}
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic>=2.7.2
+websockets>=12.0
+python-multipart>=0.0.9
+
+# 环境变量
+python-dotenv>=1.0.0
+
+# 定时任务调度
+apscheduler>=3.10.4
+
+# Supabase 数据库
+supabase>=2.0.0
+
+# 时区支持
+pytz>=2023.3

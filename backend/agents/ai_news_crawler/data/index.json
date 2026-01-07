@@ -1,0 +1,71 @@
+{
+  "last_updated": "2025-01-06T10:00:00",
+  "source": "bestblogs.dev",
+  "articles": {
+    "a1b2c3d4e5f6": {
+      "title": "2025: LLM Year Review",
+      "url": "https://www.bestblogs.dev/article/abc123",
+      "source": "Simon Willison's Weblog",
+      "date": "2025-12-31",
+      "word_count": 7469,
+      "read_time": "30 min",
+      "score": 93,
+      "category": "AI",
+      "summary": "A comprehensive review of LLM trends in 2025, including reasoning capabilities, coding agents like Claude Code, and the rise of Chinese open-source models.",
+      "crawled_at": "2025-01-06T10:00:00",
+      "file_path": "articles/2025-12-31-llm-year-review-a1b2c3d4e5f6.md"
+    },
+    "b2c3d4e5f6g7": {
+      "title": "AI Coding Product Methodology",
+      "url": "https://www.bestblogs.dev/article/def456",
+      "source": "CSDN",
+      "date": "2025-01-04",
+      "word_count": 6967,
+      "read_time": "28 min",
+      "score": 93,
+      "category": "AI",
+      "summary": "Deep analysis of AI Coding product methodology from Tencent CodeBuddy PM, introducing GENIUS AI framework and Spec Coding concept.",
+      "crawled_at": "2025-01-06T10:01:00",
+      "file_path": "articles/2025-01-04-ai-coding-methodology-b2c3d4e5f6g7.md"
+    },
+    "c3d4e5f6g7h8": {
+      "title": "Claude Code Tips and Tricks",
+      "url": "https://www.bestblogs.dev/article/ghi789",
+      "source": "Tech Blog",
+      "date": "2025-01-03",
+      "word_count": 4521,
+      "read_time": "18 min",
+      "score": 92,
+      "category": "AI",
+      "summary": "Tips for using Claude Code efficiently: parallel instances, Opus model for quality, sharing knowledge via CLAUDE.md.",
+      "crawled_at": "2025-01-06T10:02:00",
+      "file_path": "articles/2025-01-03-claude-code-tips-c3d4e5f6g7h8.md"
+    },
+    "d4e5f6g7h8i9": {
+      "title": "Code Review in AI Era: Write Twice, Ship Faster",
+      "url": "https://www.bestblogs.dev/article/jkl012",
+      "source": "Baoyu's Blog",
+      "date": "2025-01-03",
+      "word_count": 1440,
+      "read_time": "6 min",
+      "score": 92,
+      "category": "Tech",
+      "summary": "A new approach to code development in AI era - prototype first with AI, then production version with proper engineering.",
+      "crawled_at": "2025-01-06T10:03:00",
+      "file_path": "articles/2025-01-03-code-review-ai-era-d4e5f6g7h8i9.md"
+    },
+    "e5f6g7h8i9j0": {
+      "title": "MQ Backlog Solutions Beyond Adding Machines",
+      "url": "https://www.bestblogs.dev/article/mno345",
+      "source": "dbaplus",
+      "date": "2025-12-30",
+      "word_count": 7418,
+      "read_time": "30 min",
+      "score": 92,
+      "category": "Programming",
+      "summary": "Solutions for message queue backlog: partition expansion, consumer optimization, async consumption with batch commits.",
+      "crawled_at": "2025-01-06T10:04:00",
+      "file_path": "articles/2025-12-30-mq-backlog-solutions-e5f6g7h8i9j0.md"
+    }
+  }
+}

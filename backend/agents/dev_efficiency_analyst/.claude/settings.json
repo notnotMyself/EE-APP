@@ -1,0 +1,14 @@
+{
+  "mcpServers": {},
+  "allowedTools": [
+    "Bash",
+    "Read",
+    "Write",
+    "Glob",
+    "Grep",
+    "WebFetch"
+  ],
+  "anthropicApiKey": "${ANTHROPIC_AUTH_TOKEN}",
+  "anthropicBaseUrl": "${ANTHROPIC_BASE_URL}",
+  "model": "saas/claude-sonnet-4.5"
+}

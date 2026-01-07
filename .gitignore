@@ -1,0 +1,193 @@
+# ============================================
+# Python Backend
+# ============================================
+
+# Environment variables (IMPORTANT: Contains API keys!)
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Flutter Frontend
+# ============================================
+
+# Flutter/Dart/Pub related
+ai_agent_app/.dart_tool/
+ai_agent_app/.packages
+ai_agent_app/.pub-cache/
+ai_agent_app/.pub/
+ai_agent_app/build/
+ai_agent_app/.flutter-plugins
+ai_agent_app/.flutter-plugins-dependencies
+
+# Flutter iOS
+ai_agent_app/ios/Flutter/flutter_export_environment.sh
+ai_agent_app/ios/Flutter/Flutter.framework
+ai_agent_app/ios/Flutter/Flutter.podspec
+ai_agent_app/ios/.symlinks/
+ai_agent_app/ios/Pods/
+ai_agent_app/ios/Podfile.lock
+ai_agent_app/ios/Runner.xcworkspace
+
+# Flutter Android
+ai_agent_app/android/.gradle/
+ai_agent_app/android/gradle/
+ai_agent_app/android/gradlew
+ai_agent_app/android/gradlew.bat
+ai_agent_app/android/local.properties
+ai_agent_app/android/app/build/
+ai_agent_app/android/.idea/
+ai_agent_app/android/captures/
+ai_agent_app/android/key.properties
+
+# Flutter Web
+ai_agent_app/web/
+
+# ============================================
+# Supabase
+# ============================================
+
+# Supabase local development
+supabase/.branches
+supabase/.temp
+
+# ============================================
+# macOS
+# ============================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ============================================
+# IDE / Editor
+# ============================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# IntelliJ / PyCharm / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# Temporary / Test Files
+# ============================================
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test outputs
+test_output/
+coverage/
+
+# ============================================
+# Credentials & Secrets (CRITICAL)
+# ============================================
+
+# API Keys and credentials
+*_credentials.json
+*_secret.json
+*.pem
+*.key
+
+# Service account keys
+service-account*.json
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Migration test scripts (keep only the production ones)
+run_migration_simple.py
+run_migration_fixed.py
+test_connections.py
+
+# Development notes
+withpeter*.md
+newconversation_with_GPT.md
+product_mind.md
+
+# Claude plans (optional - remove if you want to keep them)
+.claude/plans/

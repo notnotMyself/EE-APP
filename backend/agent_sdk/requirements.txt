@@ -1,0 +1,15 @@
+# Agent SDK 依赖
+# 注意：claude-agent-sdk 会安装 httpx>=0.28，可能与其他包（如 supabase）冲突
+# 建议使用独立虚拟环境
+
+# Claude Agent SDK
+claude-agent-sdk>=0.1.6
+
+# HTTP 客户端（用于 MCP 工具）
+httpx>=0.28.0
+
+# 异步运行时
+anyio>=4.0.0
+
+# 可选：Supabase 客户端
+# supabase>=2.0.0  # 注意 httpx 版本冲突

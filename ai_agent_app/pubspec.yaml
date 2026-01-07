@@ -1,0 +1,66 @@
+name: ai_agent_app
+description: AI数字员工平台 - 企业内部AI角色工作台
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Supabase
+  supabase_flutter: ^2.5.0
+
+  # 状态管理
+  flutter_riverpod: ^2.5.1
+
+  # 路由
+  go_router: ^14.0.0
+
+  # HTTP客户端
+  dio: ^5.4.0
+  http: ^1.1.0
+
+  # SSE (Server-Sent Events) - 使用http包来处理
+
+  # UI组件
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.1
+  flutter_markdown: ^0.6.18+3
+
+  # 工具类
+  intl: ^0.19.0
+  uuid: ^4.3.3
+  logger: ^2.0.2+1
+  shared_preferences: ^2.2.2
+
+  # JSON序列化
+  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+  # 代码生成
+  build_runner: ^2.4.8
+  json_serializable: ^6.7.1
+  freezed: ^2.4.7
+  riverpod_generator: ^2.4.0
+
+flutter:
+  uses-material-design: true
+
+  # assets:
+  #   - images/
+  #   - icons/
+
+  # fonts:
+  #   - family: CustomFont
+  #     fonts:
+  #       - asset: fonts/CustomFont-Regular.ttf

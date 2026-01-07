@@ -1,0 +1,42 @@
+{
+  "date": "2026-01-06",
+  "data_source": "Gerrit MySQL (10.52.61.119:33067)",
+  "metrics": {
+    "total_changes": 22,
+    "review_time": {
+      "median_hours": 0.0,
+      "p95_hours": 1.45,
+      "avg_hours": 0.27,
+      "max_hours": 4.2,
+      "min_hours": 0.0
+    },
+    "rework": {
+      "count": 0,
+      "rate_percent": 0.0
+    },
+    "code_changes": {
+      "total_insertions": 9754,
+      "total_deletions": 4768,
+      "net_change": 4986
+    },
+    "status_distribution": {
+      "NEW": 21,
+      "ABANDONED": 1
+    },
+    "top_contributors": {
+      "陈松": 15,
+      "张元胜": 3,
+      "李英杰": 2,
+      "黄怡婷": 2
+    },
+    "top_repos": {
+      "oppo/app/test20200113": 15,
+      "oplus/frameworks/cameraservice": 3,
+      "oplus/virtual_device_vnd": 2,
+      "oplus/camera/hal": 1,
+      "oplus/camera/aps_algorithms": 1
+    }
+  },
+  "anomalies": [],
+  "timestamp": "2026-01-06T22:10:55.604278"
+}
