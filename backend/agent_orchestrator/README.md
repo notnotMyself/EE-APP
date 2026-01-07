@@ -42,7 +42,7 @@ backend/
 
 ```bash
 # 使用你的Claude Code Auth Token
-export ANTHROPIC_AUTH_TOKEN="sk-QTakUxAFn8sR4t29yGlkWmJr5ne9JfsQKHtKKnmy8LEskgbX"
+export ANTHROPIC_AUTH_TOKEN="YOUR_ANTHROPIC_AUTH_TOKEN"
 export ANTHROPIC_BASE_URL="https://llm-gateway.oppoer.me"
 
 # 模型配置

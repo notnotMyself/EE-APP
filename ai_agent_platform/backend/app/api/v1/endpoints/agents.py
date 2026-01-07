@@ -14,7 +14,7 @@ from app.schemas.agent import (
     AgentUpdate,
     AgentListItem,
 )
-from app.models.user import User
+from app.schemas.user import CurrentUser
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ async def list_agents(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = True,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get list of all agents.
@@ -41,7 +41,7 @@ async def list_agents(
 
 @router.get("/builtin", response_model=List[Agent])
 async def list_builtin_agents(
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get all built-in system agents.
@@ -52,7 +52,7 @@ async def list_builtin_agents(
 
 @router.get("/my-agents", response_model=List[Agent])
 async def list_my_agents(
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get agents created by current user.
@@ -64,7 +64,7 @@ async def list_my_agents(
 @router.get("/{agent_id}", response_model=Agent)
 async def get_agent(
     agent_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get agent details by ID.
@@ -81,7 +81,7 @@ async def get_agent(
 @router.post("/", response_model=Agent, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     agent_in: AgentCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Create a new agent.
@@ -109,7 +109,7 @@ async def create_agent(
 async def update_agent(
     agent_id: UUID,
     agent_in: AgentUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Update an agent.
@@ -148,7 +148,7 @@ async def update_agent(
 @router.delete("/{agent_id}", response_model=Agent)
 async def delete_agent(
     agent_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Delete (deactivate) an agent.

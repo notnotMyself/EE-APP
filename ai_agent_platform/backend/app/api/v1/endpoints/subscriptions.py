@@ -14,7 +14,7 @@ from app.schemas.subscription import (
     SubscriptionCreate,
     SubscriptionUpdate,
 )
-from app.models.user import User
+from app.schemas.user import CurrentUser
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Subscription])
 async def list_my_subscriptions(
     active_only: bool = True,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get current user's subscriptions.
@@ -38,7 +38,7 @@ async def list_my_subscriptions(
 @router.get("/{subscription_id}", response_model=Subscription)
 async def get_subscription(
     subscription_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get subscription details by ID.
@@ -63,7 +63,7 @@ async def get_subscription(
 @router.post("/", response_model=Subscription, status_code=status.HTTP_201_CREATED)
 async def subscribe_to_agent(
     subscription_in: SubscriptionCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Subscribe to an AI agent.
@@ -107,7 +107,7 @@ async def subscribe_to_agent(
 async def update_subscription(
     subscription_id: UUID,
     subscription_in: SubscriptionUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Update subscription settings.
@@ -136,7 +136,7 @@ async def update_subscription(
 @router.delete("/{agent_id}", response_model=Subscription)
 async def unsubscribe_from_agent(
     agent_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Unsubscribe from an AI agent.
@@ -158,7 +158,7 @@ async def unsubscribe_from_agent(
 @router.get("/agent/{agent_id}/subscribers-count")
 async def get_agent_subscribers_count(
     agent_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get number of subscribers for an agent.

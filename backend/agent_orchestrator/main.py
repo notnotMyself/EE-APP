@@ -45,10 +45,11 @@ from agent_sdk.exceptions import AgentNotFoundError, AgentSDKError
 
 # 调度器和服务模块
 from scheduler import SchedulerService, JobExecutor
-from services import BriefingService, ImportanceEvaluator
-from api import briefings_router, scheduled_jobs_router
+from services import BriefingService, ImportanceEvaluator, ConversationService
+from api import briefings_router, scheduled_jobs_router, conversations_router
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
+from api.conversations import set_conversation_service
 
 # Supabase 客户端
 try:
@@ -83,10 +84,26 @@ else:
 
 # 初始化服务
 importance_evaluator = ImportanceEvaluator()
+
+# 注意：ConversationService和BriefingService有循环依赖，需要分两步初始化
+# Step 1: 创建BriefingService（不传conversation_service）
 briefing_service = BriefingService(
     supabase_client=supabase_client,
-    importance_evaluator=importance_evaluator
+    importance_evaluator=importance_evaluator,
+    conversation_service=None,  # 暂时为None
 )
+
+# Step 2: 创建ConversationService（传入briefing_service）
+conversation_service = ConversationService(
+    supabase_client=supabase_client,
+    agent_manager=agent_service,  # 使用Agent SDK service
+    briefing_service=briefing_service,
+)
+
+# Step 3: 设置BriefingService的conversation_service引用
+briefing_service.conversation_service = conversation_service
+
+# 初始化JobExecutor
 job_executor = JobExecutor(
     agent_service=agent_service,
     briefing_service=briefing_service,
@@ -96,6 +113,7 @@ scheduler_service = SchedulerService(supabase_client=supabase_client)
 
 # 注入服务到API模块
 set_briefing_service(briefing_service)
+set_conversation_service(conversation_service)
 set_scheduler_service(scheduler_service)
 set_supabase_client(supabase_client)
 
@@ -210,6 +228,7 @@ app.add_middleware(
 # 注册新的API路由
 app.include_router(briefings_router)
 app.include_router(scheduled_jobs_router)
+app.include_router(conversations_router)
 
 
 # ============================================

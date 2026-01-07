@@ -1,10 +1,11 @@
 """
 CRUD operations for Conversation and Message using Supabase Client.
 """
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from uuid import UUID
 from datetime import datetime
 from supabase import Client
+from postgrest.exceptions import APIError
 
 from app.core.config import settings
 from supabase import create_client
@@ -35,6 +36,24 @@ class CRUDConversationSupabase:
         result = self.client.table("conversations").select("*").eq(
             "id", str(conversation_id)
         ).execute()
+        return result.data[0] if result.data else None
+
+    async def get_by_user_agent(
+        self,
+        *,
+        user_id: Union[UUID, str],
+        agent_id: Union[UUID, str],
+    ) -> Optional[Dict[str, Any]]:
+        """Get conversation by (user_id, agent_id) unique key."""
+        result = (
+            self.client.table("conversations")
+            .select("*")
+            .eq("user_id", str(user_id))
+            .eq("agent_id", str(agent_id))
+            .order("last_message_at", desc=True)
+            .limit(1)
+            .execute()
+        )
         return result.data[0] if result.data else None
 
     async def get_user_conversations(
@@ -70,11 +89,16 @@ class CRUDConversationSupabase:
 
     async def create(
         self,
-        user_id: UUID,
+        user_id: Union[UUID, str],
         *,
         obj_in: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Create a new conversation."""
+        """
+        Create a new conversation.
+
+        NOTE: conversations table may enforce a unique constraint on (user_id, agent_id).
+        In that case, this method becomes idempotent and returns the existing conversation.
+        """
         data = {
             "user_id": str(user_id),
             "agent_id": str(obj_in.get("agent_id")),
@@ -83,8 +107,19 @@ class CRUDConversationSupabase:
             "status": "active",
             "last_message_at": datetime.utcnow().isoformat()
         }
-        result = self.client.table("conversations").insert(data).execute()
-        return result.data[0] if result.data else None
+        try:
+            result = self.client.table("conversations").insert(data).execute()
+            return result.data[0] if result.data else None
+        except APIError as e:
+            payload = e.args[0] if e.args else {}
+            if isinstance(payload, dict) and payload.get("code") == "23505":
+                existing = await self.get_by_user_agent(
+                    user_id=data["user_id"],
+                    agent_id=data["agent_id"],
+                )
+                if existing:
+                    return existing
+            raise
 
     async def update(
         self,

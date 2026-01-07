@@ -23,10 +23,21 @@ from app.schemas.conversation import (
     ChatResponse,
     MessageCreate,
 )
-from app.models.user import User
+from app.schemas.user import CurrentUser
 from app.services.claude_service import claude_service
 
 router = APIRouter()
+
+def _to_sse_event(data: str) -> str:
+    """
+    Format text as a single SSE event.
+    SSE requires each line to be prefixed with 'data: ' and events separated by a blank line.
+    """
+    if data is None:
+        data = ""
+    data = str(data).replace("\r\n", "\n").replace("\r", "\n")
+    lines = data.split("\n")
+    return "".join(f"data: {line}\n" for line in lines) + "\n"
 
 
 @router.get("/", response_model=List[Conversation])
@@ -34,7 +45,7 @@ async def list_my_conversations(
     skip: int = 0,
     limit: int = 50,
     status: str = None,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get current user's conversations.
@@ -52,7 +63,7 @@ async def list_my_conversations(
 @router.get("/{conversation_id}", response_model=ConversationWithMessages)
 async def get_conversation(
     conversation_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get conversation with messages.
@@ -83,7 +94,7 @@ async def get_conversation(
 @router.post("/", response_model=Conversation, status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     conversation_in: ConversationCreate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Create a new conversation with an AI agent.
@@ -107,7 +118,7 @@ async def create_conversation(
 async def update_conversation(
     conversation_id: UUID,
     conversation_in: ConversationUpdate,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Update conversation metadata.
@@ -137,7 +148,7 @@ async def update_conversation(
 async def send_message(
     conversation_id: UUID,
     chat_request: ChatRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Send a message in a conversation and get AI response (non-streaming).
@@ -219,7 +230,7 @@ async def send_message(
 async def send_message_stream(
     conversation_id: UUID,
     chat_request: ChatRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Send a message and stream AI response using Server-Sent Events (SSE).
@@ -281,11 +292,13 @@ async def send_message_stream(
         try:
             async for chunk in claude_service.chat_completion_stream(
                 messages=messages,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
+                max_tokens=1024,
+                temperature=0.3,
             ):
                 full_response += chunk
                 # Format as SSE
-                yield f"data: {chunk}\n\n"
+                yield _to_sse_event(chunk)
 
             # After streaming completes, save the full response
             await crud_message.create(
@@ -297,10 +310,14 @@ async def send_message_stream(
             await crud_conversation.update_last_message_time(conversation_id)
 
             # Send completion signal
-            yield "data: [DONE]\n\n"
+            yield _to_sse_event("[DONE]")
 
         except Exception as e:
-            yield f"data: [ERROR] {str(e)}\n\n"
+            # Make gateway errors actionable for frontend
+            msg = str(e)
+            if "500" in msg and "llm-gateway" in msg:
+                msg = "LLM gateway returned 500. Please retry. If it persists, check ANTHROPIC_AUTH_TOKEN / gateway status."
+            yield _to_sse_event(f"[ERROR] {msg}")
 
     return StreamingResponse(
         generate(),
@@ -316,7 +333,7 @@ async def send_message_stream(
 @router.get("/{conversation_id}/messages", response_model=List[Message])
 async def get_conversation_messages(
     conversation_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Get all messages in a conversation.
@@ -342,7 +359,7 @@ async def get_conversation_messages(
 @router.post("/{conversation_id}/close", response_model=Conversation)
 async def close_conversation(
     conversation_id: UUID,
-    current_user: User = Depends(get_current_active_user),
+    current_user: CurrentUser = Depends(get_current_active_user),
 ):
     """
     Close a conversation.

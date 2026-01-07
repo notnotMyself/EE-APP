@@ -25,6 +25,25 @@ def _load_claude_settings() -> Dict[str, str]:
 # 预加载 Claude settings
 _CLAUDE_SETTINGS = _load_claude_settings()
 
+def _normalize_model_alias(model: str) -> str:
+    """
+    Normalize various model strings to Claude Code / SDK-friendly aliases.
+    Examples:
+      - "saas/claude-sonnet-4.5" -> "sonnet"
+      - "claude-sonnet-4-20250514" -> "sonnet"
+      - "saas/claude-haiku-4.5" -> "haiku"
+    """
+    if not model:
+        return "sonnet"
+    m = model.lower()
+    if "haiku" in m:
+        return "haiku"
+    if "opus" in m:
+        return "opus"
+    if "sonnet" in m:
+        return "sonnet"
+    return model
+
 
 @dataclass
 class AgentRoleConfig:
@@ -61,11 +80,10 @@ class AgentSDKConfig:
         default_factory=lambda: Path(__file__).parent.parent / "agents"
     )
 
-    # 默认模型（使用完整模型名称，兼容企业 Gateway）
+    # 默认模型别名（兼容 Claude Code / Agent SDK 的常用写法：sonnet/haiku/opus）
     default_model: str = field(
-        default_factory=lambda: _CLAUDE_SETTINGS.get(
-            "ANTHROPIC_MODEL",
-            "saas/claude-sonnet-4.5"
+        default_factory=lambda: _normalize_model_alias(
+            _CLAUDE_SETTINGS.get("ANTHROPIC_MODEL", "saas/claude-sonnet-4.5")
         )
     )
 

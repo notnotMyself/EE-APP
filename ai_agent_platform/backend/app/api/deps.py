@@ -2,12 +2,11 @@
 from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
-from app.core.config import settings
-from app.models.user import User
+from app.db.supabase import get_supabase_client
+from app.schemas.user import CurrentUser
 
 
 # Security scheme
@@ -32,10 +31,8 @@ async def get_db() -> Generator[AsyncSession, None, None]:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> User:
-    """Get current user from JWT token (Supabase JWT)."""
-    import logging
-    logger = logging.getLogger(__name__)
+) -> CurrentUser:
+    """Get current user by verifying Supabase JWT with Supabase Auth."""
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,57 +42,41 @@ async def get_current_user(
 
     try:
         token = credentials.credentials
-        logger.info(f"Received token: {token[:20]}...")
+        supabase = get_supabase_client()
 
-        # 首先尝试验证 Supabase JWT (不验证签名，只解析)
-        # Supabase JWT 使用自己的密钥签名，我们信任 Supabase 的 token
-        payload = jwt.decode(
-            token,
-            key="",  # 空密钥，因为我们不验证签名
-            options={
-                "verify_signature": False,  # 不验证签名
-                "verify_aud": False,  # 不验证 audience
-                "verify_iss": False,  # 不验证 issuer
-                "verify_exp": False,  # 不验证过期时间
-            }
-        )
-        logger.info(f"JWT payload: {payload}")
+        # supabase-py v2 API compatibility: get_user(token) vs get_user(jwt=token)
+        try:
+            user_response = supabase.auth.get_user(token)
+        except TypeError:
+            user_response = supabase.auth.get_user(jwt=token)
 
-        # Supabase JWT 中 'sub' 字段就是 user_id
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            logger.error("No 'sub' field in JWT payload")
+        sb_user = getattr(user_response, "user", None) or getattr(user_response, "data", None)
+        if sb_user is None:
+            # Some versions return dict-like
+            try:
+                sb_user = user_response.get("user")  # type: ignore[attr-defined]
+            except Exception:
+                sb_user = None
+
+        if sb_user is None:
             raise credentials_exception
 
-        # 获取 email 从 JWT
-        email: str = payload.get("email", "")
+        user_id = getattr(sb_user, "id", None) or (sb_user.get("id") if isinstance(sb_user, dict) else None)
+        email = getattr(sb_user, "email", None) or (sb_user.get("email") if isinstance(sb_user, dict) else None)
+        if not user_id:
+            raise credentials_exception
 
-        logger.info(f"Extracted user_id: {user_id}, email: {email}")
+        return CurrentUser(id=str(user_id), email=email, is_active=True, is_superuser=False)
 
-        # 暂时跳过数据库查询，直接从 JWT 构造用户对象
-        # TODO: 配置正确的 DATABASE_URL 后，改为从数据库查询
-        # 创建临时用户对象
-        user = User(
-            id=user_id,
-            email=email,
-            is_active=True,
-            is_superuser=False
-        )
-
-        logger.info(f"User authenticated (from JWT): {user.email}")
-        return user
-
-    except JWTError as e:
-        logger.error(f"JWT decode error: {e}")
-        raise credentials_exception
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+    except HTTPException:
+        raise
+    except Exception:
         raise credentials_exception
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user),
-) -> User:
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
     """Get current active user."""
     if not current_user.is_active:
         raise HTTPException(
@@ -106,8 +87,8 @@ async def get_current_active_user(
 
 
 async def get_current_superuser(
-    current_user: User = Depends(get_current_user),
-) -> User:
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
     """Get current superuser."""
     if not current_user.is_superuser:
         raise HTTPException(

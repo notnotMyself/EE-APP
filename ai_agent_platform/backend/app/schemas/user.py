@@ -53,3 +53,14 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     """Token payload schema."""
     sub: Optional[str] = None
+
+
+class CurrentUser(BaseModel):
+    """
+    Minimal user info extracted from a verified Supabase JWT.
+    Used by API dependencies (auth) without requiring our own DB user table.
+    """
+    id: str
+    email: Optional[EmailStr] = None
+    is_active: bool = True
+    is_superuser: bool = False

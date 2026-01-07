@@ -16,10 +16,14 @@ class BriefingService:
     """简报生成和管理服务"""
 
     def __init__(
-        self, supabase_client: Any, importance_evaluator: ImportanceEvaluator = None
+        self,
+        supabase_client: Any,
+        importance_evaluator: ImportanceEvaluator = None,
+        conversation_service: Any = None,
     ):
         self.supabase = supabase_client
         self.evaluator = importance_evaluator or ImportanceEvaluator()
+        self.conversation_service = conversation_service
 
     async def evaluate_importance(self, analysis_result: Dict[str, Any]) -> float:
         """评估分析结果的重要性分数"""
@@ -281,8 +285,30 @@ class BriefingService:
             )
 
         elif action == "start_conversation":
-            # 创建对话并返回对话ID（需要conversation_service支持）
-            result["conversation_id"] = None  # TODO: 集成conversation服务
+            # 将简报添加到对话中（而不是创建新对话）
+            if self.conversation_service:
+                try:
+                    conversation_id = await self.conversation_service.add_briefing_to_conversation(
+                        briefing_id=briefing_id,
+                        user_id=briefing["user_id"],
+                        agent_id=briefing["agent_id"],
+                    )
+                    result["conversation_id"] = conversation_id
+                    logger.info(
+                        f"Briefing {briefing_id} added to conversation {conversation_id}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to add briefing to conversation: {e}"
+                    )
+                    result["conversation_id"] = None
+                    result["success"] = False
+                    result["error"] = str(e)
+            else:
+                logger.warning(
+                    "ConversationService not available, returning None for conversation_id"
+                )
+                result["conversation_id"] = None
 
         elif action == "dismiss":
             # 标记为已忽略
