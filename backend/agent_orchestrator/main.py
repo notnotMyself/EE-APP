@@ -46,6 +46,7 @@ from agent_sdk.exceptions import AgentNotFoundError, AgentSDKError
 # 调度器和服务模块
 from scheduler import SchedulerService, JobExecutor
 from services import BriefingService, ImportanceEvaluator, ConversationService
+from services.task_execution_service import TaskExecutionService
 from api import briefings_router, scheduled_jobs_router, conversations_router
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
@@ -85,7 +86,9 @@ else:
 # 初始化服务
 importance_evaluator = ImportanceEvaluator()
 
-# 注意：ConversationService和BriefingService有循环依赖，需要分两步初始化
+# 注意：ConversationService、BriefingService、TaskExecutionService有复杂的循环依赖
+# 需要多步初始化来解决
+
 # Step 1: 创建BriefingService（不传conversation_service）
 briefing_service = BriefingService(
     supabase_client=supabase_client,
@@ -93,15 +96,27 @@ briefing_service = BriefingService(
     conversation_service=None,  # 暂时为None
 )
 
-# Step 2: 创建ConversationService（传入briefing_service）
+# Step 2: 创建TaskExecutionService（不传conversation_service）
+task_execution_service = TaskExecutionService(
+    agent_service=agent_service,
+    briefing_service=briefing_service,
+    importance_evaluator=importance_evaluator,
+    supabase_client=supabase_client,
+)
+
+# Step 3: 创建ConversationService（传入briefing_service）
 conversation_service = ConversationService(
     supabase_client=supabase_client,
     agent_manager=agent_service,  # 使用Agent SDK service
     briefing_service=briefing_service,
 )
 
-# Step 3: 设置BriefingService的conversation_service引用
+# Step 4: 设置循环依赖引用
 briefing_service.conversation_service = conversation_service
+task_execution_service.set_conversation_service(conversation_service)
+conversation_service.set_task_executor(task_execution_service)
+
+logger.info("Service dependencies configured successfully")
 
 # 初始化JobExecutor
 job_executor = JobExecutor(

@@ -14,6 +14,8 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from datetime import datetime
 
 from models import ConversationModel, MessageModel
+from services.task_intent_recognizer import TaskIntentRecognizer
+from agent_mapping import get_agent_role
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,10 @@ class ConversationService:
         self.briefing_service = briefing_service
         self.supabase = supabase_client
 
+        # 任务相关组件（Phase 1新增）
+        self.task_recognizer = TaskIntentRecognizer()
+        self.task_executor = None  # 从main.py延迟注入，避免循环依赖
+
     def set_briefing_service(self, briefing_service: Any) -> None:
         """设置BriefingService（解决循环依赖）
 
@@ -47,6 +53,36 @@ class ConversationService:
             briefing_service: BriefingService实例
         """
         self.briefing_service = briefing_service
+
+    def set_task_executor(self, task_executor: Any) -> None:
+        """设置TaskExecutionService（解决循环依赖）
+
+        Args:
+            task_executor: TaskExecutionService实例
+        """
+        self.task_executor = task_executor
+
+    def _get_agent_role(self, agent_id: str) -> str:
+        """获取 Agent 的 role string
+
+        Args:
+            agent_id: Agent 的 UUID 或 role string
+
+        Returns:
+            Agent 的 role string
+
+        Note:
+            如果 agent_id 已经是 role string（兼容旧数据），直接返回
+        """
+        role = get_agent_role(agent_id)
+        if role:
+            return role
+
+        # Fallback: 如果映射不存在，假设 agent_id 已经是 role
+        logger.warning(
+            f"Agent ID '{agent_id}' not found in mapping, assuming it's already a role string"
+        )
+        return agent_id
 
     async def get_or_create_conversation(
         self, user_id: str, agent_id: str
@@ -152,15 +188,15 @@ class ConversationService:
     async def send_message(
         self, conversation_id: str, user_message: str, user_id: str
     ) -> AsyncGenerator[str, None]:
-        """发送消息并流式返回AI回复
+        """发送消息并流式返回AI回复（增强支持任务执行）
 
         工作流程：
         1. 保存用户消息
-        2. 获取对话上下文（包括简报卡片）
-        3. 构建AI prompt
-        4. 流式调用Agent SDK
-        5. 保存AI回复
-        6. 更新对话时间戳
+        2. 任务意图识别
+        3a. 如果是任务：执行任务→生成简报→AI总结
+        3b. 如果不是任务：获取上下文→AI回复
+        4. 保存AI回复
+        5. 更新对话时间戳
 
         Args:
             conversation_id: 对话UUID
@@ -168,7 +204,7 @@ class ConversationService:
             user_id: 用户UUID（用于权限检查）
 
         Yields:
-            AI响应的文本块（流式）
+            AI响应的文本块（流式）或任务事件（JSON）
 
         Raises:
             ValueError: 对话不存在或用户无权访问时
@@ -192,58 +228,192 @@ class ConversationService:
                 content=user_message,
             )
 
-            # 2. 获取对话上下文（最近20条消息）
-            messages = await self.message_model.get_recent_messages(
-                conversation_id, count=20
+            # 2. 任务意图识别（Phase 1 新增）
+            task_intent = None
+            if self.task_recognizer:
+                task_intent = await self.task_recognizer.recognize(
+                    user_message, conversation_context={"agent_id": conversation["agent_id"]}
+                )
+
+            # 3. 根据是否为任务选择执行流程
+            if task_intent and self.task_executor:
+                # 3a. 执行任务并流式输出
+                logger.info(f"Task recognized: {task_intent.task_type}")
+                async for event in self._execute_task_and_generate_briefing(
+                    conversation=conversation,
+                    task_intent=task_intent,
+                    user_id=user_id,
+                ):
+                    yield event
+            else:
+                # 3b. 原有对话流程
+                async for chunk in self._normal_chat_flow(
+                    conversation=conversation, user_message=user_message
+                ):
+                    yield chunk
+
+        except Exception as e:
+            logger.error(f"Error in send_message: {e}", exc_info=True)
+            # 返回错误给用户
+            yield json.dumps({
+                "type": "error",
+                "error": "消息处理失败，请稍后重试"
+            })
+
+    async def _execute_task_and_generate_briefing(
+        self, conversation: Dict, task_intent: Any, user_id: str
+    ) -> AsyncGenerator[str, None]:
+        """执行任务并生成简报（Phase 1 新增方法）
+
+        Args:
+            conversation: 对话记录
+            task_intent: 任务意图对象
+            user_id: 用户ID
+
+        Yields:
+            任务执行事件（JSON格式）和AI总结
+        """
+        # 🔧 获取 Agent Role (从 UUID 转换)
+        agent_role = self._get_agent_role(conversation["agent_id"])
+
+        # 1. 任务开始事件
+        yield json.dumps({
+            "type": "task_start",
+            "task_type": task_intent.task_type,
+            "status": "executing"
+        })
+
+        # 2. 执行任务
+        try:
+            result = await self.task_executor.execute_ad_hoc_task(
+                agent_role=agent_role,  # 使用 role string
+                task_prompt=task_intent.task_prompt,
+                user_id=user_id,
+                conversation_id=conversation["id"],
             )
 
-            # 3. 构建包含简报的上下文提示词
-            context_prompt = self._build_context_with_briefings(
-                conversation, messages
-            )
+            # 3. 简报创建事件
+            if result.get("briefing"):
+                yield json.dumps({
+                    "type": "briefing_created",
+                    "briefing_id": result["briefing"]["id"],
+                    "title": result["briefing"]["title"],
+                    "priority": result["briefing"].get("priority", "P2")
+                })
+                briefing_title = result["briefing"]["title"]
+            else:
+                # 没有生成简报（重要性不足）
+                yield json.dumps({
+                    "type": "task_complete",
+                    "briefing_created": False,
+                    "reason": "importance_too_low"
+                })
+                briefing_title = None
 
-            # 组合用户消息
-            full_prompt = (
-                f"{context_prompt}\n\n"
-                f"用户最新消息: {user_message}\n\n"
-                f"请根据对话历史和简报信息回答用户的问题。"
-            )
+            # 4. AI总结回复
+            if briefing_title:
+                summary_prompt = f"""
+任务已完成。简报标题：{briefing_title}
 
-            # 4. 流式生成回复（使用Agent SDK Service）
+请给用户一个友好的总结（1-2句话），告诉他们分析结果已经生成。
+"""
+            else:
+                summary_prompt = """
+任务已完成，分析结果显示一切正常，暂无需要特别关注的问题。
+
+请给用户一个友好的回复（1-2句话）。
+"""
+
             assistant_content = ""
-            agent_role = conversation["agent_id"]
-
-            # Agent SDK Service 使用 execute_query 方法
             async for event in self.agent_manager.execute_query(
-                prompt=full_prompt,
-                agent_role=agent_role,
+                prompt=summary_prompt,
+                agent_role=agent_role,  # 使用 role string
             ):
-                # 只处理 text_chunk 类型的事件
                 if event.get("type") == "text_chunk":
                     chunk = event.get("content", "")
                     assistant_content += chunk
-                    yield chunk
+                    yield json.dumps({
+                        "type": "text_chunk",
+                        "content": chunk
+                    })
 
             # 5. 保存AI回复
             await self.message_model.create_text_message(
-                conversation_id=conversation_id,
+                conversation_id=conversation["id"],
                 role="assistant",
                 content=assistant_content,
             )
 
             # 6. 更新对话时间戳
-            await self.conversation_model.update_last_message_time(conversation_id)
-
-            logger.info(
-                f"Completed message exchange in conversation {conversation_id}, "
-                f"assistant response length: {len(assistant_content)}"
-            )
+            await self.conversation_model.update_last_message_time(conversation["id"])
 
         except Exception as e:
-            logger.error(
-                f"Error in send_message for conversation {conversation_id}: {e}"
-            )
-            raise
+            logger.error(f"Task execution failed: {e}", exc_info=True)
+            yield json.dumps({
+                "type": "task_error",
+                "error": "任务执行失败，请稍后重试"
+            })
+
+    async def _normal_chat_flow(
+        self, conversation: Dict, user_message: str
+    ) -> AsyncGenerator[str, None]:
+        """原有对话流程（Phase 1 提取为独立方法）
+
+        Args:
+            conversation: 对话记录
+            user_message: 用户消息
+
+        Yields:
+            AI响应的文本块
+        """
+        # 🔧 获取 Agent Role (从 UUID 转换)
+        agent_role = self._get_agent_role(conversation["agent_id"])
+
+        # 2. 获取对话上下文（最近20条消息）
+        messages = await self.message_model.get_recent_messages(
+            conversation["id"], count=20
+        )
+
+        # 3. 构建包含简报的上下文提示词
+        context_prompt = self._build_context_with_briefings(
+            conversation, messages
+        )
+
+        # 组合用户消息
+        full_prompt = (
+            f"{context_prompt}\n\n"
+            f"用户最新消息: {user_message}\n\n"
+            f"请根据对话历史和简报信息回答用户的问题。"
+        )
+
+        # 4. 流式生成回复（使用Agent SDK Service）
+        assistant_content = ""
+
+        # Agent SDK Service 使用 execute_query 方法
+        async for event in self.agent_manager.execute_query(
+            prompt=full_prompt,
+            agent_role=agent_role,  # 使用 role string
+        ):
+            # 只处理 text_chunk 类型的事件
+            if event.get("type") == "text_chunk":
+                chunk = event.get("content", "")
+                assistant_content += chunk
+                yield chunk
+
+        # 5. 保存AI回复
+        await self.message_model.create_text_message(
+            conversation_id=conversation["id"],
+            role="assistant",
+            content=assistant_content,
+        )
+
+        # 6. 更新对话时间戳
+        await self.conversation_model.update_last_message_time(conversation["id"])
+
+        logger.info(
+            f"Completed message exchange in conversation {conversation['id']}, "
+            f"assistant response length: {len(assistant_content)}"
+        )
 
     def _build_context_with_briefings(
         self, conversation: Dict[str, Any], messages: List[Dict[str, Any]]

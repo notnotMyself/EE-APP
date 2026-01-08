@@ -15,6 +15,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
+from agent_mapping import get_agent_uuid, is_valid_uuid
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
@@ -96,6 +98,8 @@ async def get_conversation_with_agent(
     - 首次访问时自动创建对话
     - 后续访问复用同一对话
 
+    **兼容性**: agent_id 可以是 role string (如 "dev_efficiency_analyst") 或 UUID
+
     Returns:
         对话信息（包含conversation_id）
     """
@@ -105,9 +109,16 @@ async def get_conversation_with_agent(
         )
 
     try:
-        # 获取或创建对话
+        # 🔧 新增：支持 role string，自动转换为 UUID
+        try:
+            agent_uuid = get_agent_uuid(agent_id)
+            logger.info(f"Mapped agent '{agent_id}' to UUID: {agent_uuid}")
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        # 获取或创建对话（使用 UUID）
         conversation_id = await conversation_service.get_or_create_conversation(
-            user_id=user_id, agent_id=agent_id
+            user_id=user_id, agent_id=agent_uuid
         )
 
         # 获取对话详情
@@ -122,6 +133,8 @@ async def get_conversation_with_agent(
 
         return ConversationResponse(**conversation)
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting conversation with agent {agent_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
