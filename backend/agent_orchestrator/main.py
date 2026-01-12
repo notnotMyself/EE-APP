@@ -43,14 +43,18 @@ from agent_sdk import AgentSDKService, AgentSDKConfig
 from agent_sdk.mcp_tools import create_dev_efficiency_server
 from agent_sdk.exceptions import AgentNotFoundError, AgentSDKError
 
+# Agent Registry（新增）
+from agent_registry import AgentRegistry, init_global_registry
+
 # 调度器和服务模块
 from scheduler import SchedulerService, JobExecutor
 from services import BriefingService, ImportanceEvaluator, ConversationService
 from services.task_execution_service import TaskExecutionService
-from api import briefings_router, scheduled_jobs_router, conversations_router
+from api import briefings_router, scheduled_jobs_router, conversations_router, profile_router
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
 from api.conversations import set_conversation_service
+from api.profile import set_services as set_profile_services
 
 # Supabase 客户端
 try:
@@ -63,6 +67,11 @@ except ImportError:
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# 初始化 Agent Registry（新增）
+agents_base_dir = Path(__file__).parent.parent / "agents"
+agent_registry = init_global_registry(agents_base_dir)
+logger.info(f"Agent Registry initialized with {len(agent_registry.get_all_ids())} agents: {agent_registry.get_all_ids()}")
 
 # 初始化 Agent SDK 服务
 agent_config = AgentSDKConfig()
@@ -124,13 +133,18 @@ job_executor = JobExecutor(
     briefing_service=briefing_service,
     supabase_client=supabase_client
 )
-scheduler_service = SchedulerService(supabase_client=supabase_client)
+# 初始化 SchedulerService，传递 AgentRegistry
+scheduler_service = SchedulerService(
+    supabase_client=supabase_client,
+    agent_registry=agent_registry  # 传递 AgentRegistry
+)
 
 # 注入服务到API模块
 set_briefing_service(briefing_service)
 set_conversation_service(conversation_service)
 set_scheduler_service(scheduler_service)
 set_supabase_client(supabase_client)
+set_profile_services(conversation_service, briefing_service)
 
 # 调试：输出配置信息
 logger.info(f"Agent SDK Config loaded:")
@@ -244,6 +258,7 @@ app.add_middleware(
 app.include_router(briefings_router)
 app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
+app.include_router(profile_router)
 
 
 # ============================================

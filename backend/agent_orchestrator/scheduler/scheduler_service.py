@@ -12,6 +12,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 if TYPE_CHECKING:
     from .job_executor import JobExecutor
+    from agent_registry import AgentRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +20,12 @@ logger = logging.getLogger(__name__)
 class SchedulerService:
     """定时任务调度服务"""
 
-    def __init__(self, supabase_client: Any = None):
+    def __init__(self, supabase_client: Any = None, agent_registry: Optional["AgentRegistry"] = None):
         self.supabase = supabase_client
+        self.agent_registry = agent_registry
         self.scheduler: Optional[AsyncIOScheduler] = None
         self._job_executor: Optional["JobExecutor"] = None
+        self._yaml_bridge = None  # SchedulerRegistryBridge 实例
 
     def initialize(self, job_executor: "JobExecutor"):
         """初始化调度器"""
@@ -45,12 +48,35 @@ class SchedulerService:
         if not self.scheduler:
             raise RuntimeError("Scheduler not initialized")
 
-        # 从数据库加载定时任务配置
+        # 1. 从数据库加载定时任务配置
         await self._load_jobs_from_db()
 
-        # 启动调度器
+        # 2. 从 agent.yaml 加载定时任务配置（新增）
+        await self._load_jobs_from_yaml()
+
+        # 3. 启动调度器
         self.scheduler.start()
         logger.info("Scheduler started")
+
+    async def _load_jobs_from_yaml(self):
+        """从 agent.yaml 加载定时任务配置"""
+        if not self.agent_registry:
+            logger.info("AgentRegistry not configured, skipping YAML job loading")
+            return
+
+        try:
+            # 动态导入以避免循环依赖
+            from .scheduler_registry_bridge import SchedulerRegistryBridge
+
+            # 创建桥接器并加载任务
+            self._yaml_bridge = SchedulerRegistryBridge(
+                self.agent_registry,
+                self
+            )
+            await self._yaml_bridge.load_jobs_from_yaml()
+
+        except Exception as e:
+            logger.error(f"Failed to load scheduled jobs from YAML: {e}")
 
     async def shutdown(self):
         """关闭调度器"""

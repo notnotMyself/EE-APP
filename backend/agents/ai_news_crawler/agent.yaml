@@ -1,0 +1,31 @@
+metadata:
+  id: ai_news_crawler
+  uuid: 00000000-0000-0000-0000-000000000001  # TODO: 从数据库获取真实 UUID
+  name: AI资讯追踪官
+  description: 每日追踪AI行业重要资讯，包括产业动态、技术发布、融资消息
+  model: saas/claude-sonnet-4.5
+  visibility: public
+  owner_team: null
+
+skills:
+  - name: news_crawler
+    entry: .claude/skills/news_crawler.py
+    description: 爬取和分析AI行业资讯
+    timeout: 600
+
+schedule:
+  - cron: "0 9 * * *"
+    task: 爬取每日AI资讯并生成简报
+    enabled: true
+
+secrets: []
+
+allowed_tools:
+  - Read
+  - Write
+  - Bash
+  - Grep
+  - Glob
+  - WebFetch
+
+max_turns: 20
