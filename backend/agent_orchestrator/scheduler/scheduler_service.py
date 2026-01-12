@@ -35,6 +35,9 @@ class SchedulerService:
             jobstores=jobstores, timezone="Asia/Shanghai"
         )
 
+        # 将 scheduler 实例传给 job_executor，用于安排重试任务
+        self._job_executor.scheduler = self.scheduler
+
         logger.info("Scheduler initialized")
 
     async def start(self):

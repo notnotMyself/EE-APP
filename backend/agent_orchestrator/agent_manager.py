@@ -97,6 +97,12 @@ class AgentManager:
                 workdir=self.agents_base_dir / "knowledge_management_assistant",
                 description="组织和管理企业知识，帮助团队高效获取信息"
             ),
+            "ai_news_crawler": AgentConfig(
+                name="AI资讯追踪官",
+                role="ai_news_crawler",
+                workdir=self.agents_base_dir / "ai_news_crawler",
+                description="每日追踪AI行业重要资讯，包括产业动态、技术发布、融资消息"
+            ),
         }
 
     def get_agent_config(self, role: str) -> Optional[AgentConfig]:

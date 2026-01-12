@@ -95,6 +95,12 @@ python3 crawl_aibot.py --report daily
 
 # 生成 Markdown + JSON 格式
 python3 crawl_aibot.py --report both
+
+# 生成简报（用于信息流推送）
+python3 crawl_aibot.py --days 1 --report briefing
+
+# 生成所有格式（日报 + JSON + 简报）
+python3 crawl_aibot.py --days 1 --report all
 ```
 
 **BestBlogs（需翻墙）**
@@ -102,8 +108,20 @@ python3 crawl_aibot.py --report both
 # 获取最近 7 天的中文文章
 python3 crawl_articles.py --days 7
 
-# 生成周报
+# 生成周报（Markdown）
 python3 crawl_articles.py --report weekly
+
+# 生成简报（兼容 Flutter 信息流）⭐ 推荐
+python3 crawl_articles.py --report briefing
+
+# 生成简报并推送到 App 信息流
+python3 crawl_articles.py --report briefing --push
+
+# 生成 HTML 卡片报告（独立网页）
+python3 crawl_articles.py --report html
+
+# 生成全部格式（简报 + HTML）
+python3 crawl_articles.py --report all
 
 # 强制全量更新（忽略缓存）
 python3 crawl_articles.py --days 7 --force
@@ -166,9 +184,48 @@ data/
     └── 2025-01-05-yyy.md
 
 reports/
-├── weekly_2025-01.md    # 周报
-└── daily_2025-01-06.md  # 日报
+├── weekly_2025-01.md         # 周报（Markdown）
+├── daily_2025-01-06.md       # 日报（Markdown）
+└── articles_2025-01-06.html  # 卡片报告（HTML，推荐）
 ```
+
+### 简报格式（推送到信息流）
+
+生成命令：`python3 crawl_articles.py --report briefing`
+推送命令：`python3 crawl_articles.py --report briefing --push`
+
+**简报兼容 Flutter 应用的 Briefing 模型**，可以：
+- 📱 以卡片形式在 App 信息流中展示
+- 🔍 点击卡片查看完整文章列表
+- 💬 直接与 AI 对话深入分析
+- 🎯 支持优先级判断（P1/P2）和推送决策
+
+**简报字段说明：**
+- `briefing_type`: `summary` - 摘要类型
+- `priority`: 根据高分文章数量自动判断（≥3篇高分文章为P1）
+- `title`: 动态生成的标题
+- `summary`: Markdown 格式的文章列表
+- `impact`: 影响说明
+- `actions`: 操作按钮配置
+- `context_data`: 完整文章数据（供详情页渲染）
+- `should_push`: 是否值得推送
+
+**推送到信息流需要配置环境变量：**
+```bash
+export SUPABASE_URL="your-supabase-url"
+export SUPABASE_SERVICE_KEY="your-service-key"
+```
+
+### HTML 卡片报告（独立网页）
+
+生成命令：`python3 crawl_articles.py --report html`
+
+- 📦 **卡片式布局** - 文章以美观的卡片形式呈现
+- 🖱️ **点击全屏阅读** - 点击卡片弹出全屏模态框显示完整内容
+- 🎨 **现代暗色主题** - 精心设计的 UI，渐变背景，动画效果
+- 📱 **响应式适配** - 支持移动端和桌面端
+- ✨ **Markdown 渲染** - 自动渲染代码块、链接、列表等格式
+- 🔗 **原文链接** - 一键跳转阅读原文
 
 ### index.json 格式
 
@@ -206,6 +263,89 @@ reports/
 
 - 当用户询问"最新的 AI Coding 趋势"时，可以结合研发效能分析官的视角
 - 当发现与产品相关的前沿技术时，可以推荐给产品需求提炼官
+
+## 自动化配置
+
+### 架构说明
+
+```
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│ Scheduler       │ ──▶  │ JobExecutor     │ ──▶  │ news_crawler.py │
+│ (APScheduler)   │      │                 │      │ (Skill 入口)    │
+└─────────────────┘      └─────────────────┘      └────────┬────────┘
+                                                           │
+                          ┌────────────────────────────────┼────────────────────────────────┐
+                          ▼                                ▼                                ▼
+                   ┌─────────────┐                  ┌─────────────┐                  ┌─────────────┐
+                   │ ai-bot.cn   │                  │ bestblogs   │                  │ Supabase    │
+                   │ 爬虫        │                  │ 爬虫        │                  │ 推送        │
+                   └─────────────┘                  └─────────────┘                  └─────────────┘
+```
+
+### 数据库配置
+
+1. **Agent 注册** - 在 `agents` 表中已配置（seed.sql）
+2. **定时任务** - 在 `scheduled_jobs` 表中配置
+
+```sql
+-- 查看定时任务配置
+SELECT job_name, cron_expression, is_active 
+FROM scheduled_jobs 
+WHERE agent_id = (SELECT id FROM agents WHERE role = 'ai_news_crawler');
+```
+
+### Skill 标准入口
+
+Skill 脚本位置：`.claude/skills/news_crawler.py`
+
+**输入格式 (stdin JSON):**
+```json
+{
+    "action": "full",      // crawl|briefing|push|full
+    "source": "all",       // aibot|bestblogs|all
+    "days": 3,
+    "push": true
+}
+```
+
+**输出格式 (stdout JSON):**
+```json
+{
+    "success": true,
+    "action": "full",
+    "briefing": {...},
+    "pushed": true,
+    "message": "生成简报成功，已推送到信息流"
+}
+```
+
+**命令行测试：**
+```bash
+# 爬取并生成简报
+echo '{"action": "briefing", "source": "aibot", "days": 1}' | python3 .claude/skills/news_crawler.py
+
+# 完整流程（爬取 + 简报 + 推送）
+echo '{"action": "full", "source": "all", "days": 1}' | python3 .claude/skills/news_crawler.py
+```
+
+### 环境变量
+
+推送到信息流需要配置：
+```bash
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_SERVICE_KEY="your-service-key"
+```
+
+### 手动触发任务
+
+```bash
+# 通过 API 手动触发
+curl -X POST http://localhost:8000/api/scheduler/jobs/{job_id}/run
+
+# 或直接运行 skill
+cd /backend/agents/ai_news_crawler
+echo '{"action": "full", "source": "aibot", "days": 1, "push": true}' | python3 .claude/skills/news_crawler.py
+```
 
 ## 注意事项
 

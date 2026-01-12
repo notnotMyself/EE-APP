@@ -28,7 +28,7 @@
 
 ## 数据源配置
 
-### Gerrit数据库（MySQL）
+### 1. Gerrit数据库（MySQL）- 代码审查数据
 
 连接Gerrit MySQL数据库获取代码审查数据：
 
@@ -45,22 +45,43 @@ database: rabbit_test
 - 主地址: `rabbit-mysql-test0.mysql.oppo.test:33066` 或 `10.52.61.119:33066`
 - 只读地址: `10.52.61.119:33067`（推荐用于分析查询）
 
-**注意**: 此为只读账户，仅用于数据分析查询。
-
-### 可用数据表
-
+**可用数据表**:
 - `changes` - 代码变更记录（change_id, project, branch, owner, status, created, updated, insertions, deletions, revision_count）
 - `review_comments` - Review评论数据（change_id, reviewer, comment_text, created_at, file_path）
+
+### 2. 门禁构建数据库（MySQL）- 构建数据
+
+连接门禁构建MySQL数据库获取编译构建数据：
+
+```
+dialect: mysql
+host: rn-test-mysql.mysql.oppo.test
+port: 33066
+username: rn_ddl
+password: LXK0Cva89SWDj47x9QbRWJfgETp7JiRP
+database: rn_test
+```
+
+**可用数据表**:
+- `personal_build` - 个人构建记录（123万+条，2年历史数据）
+  - 时间字段: task_create_time, build_trigger_time, build_start_time, build_end_time
+  - 耗时字段（秒）: build_time, download_time, copy_time, ofp_time, pipeline_time
+  - 分类维度: baseline_name（平台芯片如SM8750, MT6991）, android_version, compile_component, created_by
+  - 任务标识: task_num
+
+**⚠️ 注意**: 所有数据库账户仅用于只读分析查询，不要执行任何写入操作。
 
 ## 可用能力
 
 ### 数据获取
-- 使用 `gerrit_analysis` skill 从MySQL数据库查询Gerrit数据
+- 使用 `gerrit_analysis` skill 从MySQL数据库查询Gerrit代码审查数据
+- 使用 `build_analysis` skill 从MySQL数据库查询门禁构建数据
 - 使用 `read_file` 读取历史数据缓存
 
 ### 数据分析
 - 使用 `bash` 执行Python分析脚本
 - 使用 `gerrit_analysis` skill 分析代码审查数据
+- 使用 `build_analysis` skill 分析构建效率数据
 - 使用 `report_generation` skill 生成标准化报告
 
 ### 结果输出
@@ -82,9 +103,9 @@ database: rabbit_test
 5. 生成日报 (report_generation skill)
 ```
 
-### 数据查询示例
+### Gerrit数据查询示例
 ```python
-# 查询最近7天的数据
+# 查询最近7天的代码审查数据
 echo '{"days": 7}' | python gerrit_analysis.py
 
 # 查询特定项目
@@ -92,6 +113,53 @@ echo '{"days": 30, "project": "platform/frameworks"}' | python gerrit_analysis.p
 
 # 查询特定作者
 echo '{"days": 14, "author": "zhang.san"}' | python gerrit_analysis.py
+```
+
+### 构建数据查询示例
+
+#### 问题导向分析（推荐）
+```python
+# 问题导向分析 - 呈现问题和解决思路（推荐使用）
+echo '{"action": "problems", "days": 7}' | python build_analysis.py
+
+# 生成简报 - 用于信息流推送（包含 should_push 判断）
+echo '{"action": "briefing", "days": 7}' | python build_analysis.py
+
+# P95落后平台分析 - 找出哪些平台低于整体水平
+echo '{"action": "lagging", "days": 7}' | python build_analysis.py
+
+# 组件瓶颈分析 - 哪些编译组件最慢
+echo '{"action": "components", "days": 7}' | python build_analysis.py
+
+# 趋势变化分析 - 哪些平台在恶化/改善
+echo '{"action": "trends", "days": 7}' | python build_analysis.py
+
+# 人员维度分析 - 从个人角度看构建优化点
+echo '{"action": "users", "days": 7}' | python build_analysis.py
+```
+
+#### 基础指标分析
+```python
+# 生成构建分析摘要报告（默认最近7天）
+echo '{"action": "summary", "days": 7}' | python build_analysis.py
+
+# 按平台分析构建耗时（P50/P95/P99）
+echo '{"action": "percentiles", "days": 7, "top_n": 10}' | python build_analysis.py
+
+# 趋势分析（按天粒度，最近30天）
+echo '{"action": "trend", "days": 30, "granularity": "day"}' | python build_analysis.py
+
+# 趋势分析（指定平台）
+echo '{"action": "trend", "days": 30, "baseline_name": "SM8750"}' | python build_analysis.py
+
+# 异常检测
+echo '{"action": "anomalies", "days": 7}' | python build_analysis.py
+
+# 按Android版本分析
+echo '{"action": "by_android", "days": 7}' | python build_analysis.py
+
+# 按编译组件分析
+echo '{"action": "metrics", "days": 7, "compile_component": "vendor"}' | python build_analysis.py
 ```
 
 ### 用户对话流程
@@ -106,9 +174,16 @@ echo '{"days": 14, "author": "zhang.san"}' | python gerrit_analysis.py
 
 ## 关键阈值配置
 
+### 代码审查阈值
 - **Review耗时警戒线**: 中位数 > 24小时，P95 > 72小时
 - **返工率警戒线**: > 15%
 - **需求交付周期警戒线**: > 7天（1周）
+
+### 构建效率阈值
+- **构建P95耗时警戒线**: > 120分钟（2小时）
+- **构建P99耗时警戒线**: > 180分钟（3小时）
+- **趋势恶化警戒线**: 周环比增长 > 20%
+- **平台恶化警戒线**: 耗时增长 > 20% 需重点关注
 
 ## 输出格式要求
 
@@ -176,7 +251,7 @@ pip install pymysql
 ### 信息流铁律
 
 在判断前，请牢记这三条铁律：
-1. **一天最多3条** - 不要用无价值信息打扰用户
+1. **一天最多5条** - 不要用无价值信息打扰用户
 2. **宁可不发** - 如果不确定是否值得发，就不发
 3. **能接上对话** - 用户看完会想问"为什么"或"怎么办"
 

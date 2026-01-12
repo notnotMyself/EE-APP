@@ -1,10 +1,12 @@
 """
 任务执行器 - 执行Agent分析任务并生成简报
+支持任务级别的重试机制
 """
 
+import asyncio
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from uuid import uuid4
@@ -15,6 +17,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# 默认重试配置
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_RETRY_DELAY_MINUTES = 30
+
 
 class JobExecutor:
     """定时任务执行器"""
@@ -24,10 +30,12 @@ class JobExecutor:
         agent_service: "AgentSDKService",
         briefing_service: "BriefingService",
         supabase_client: Any = None,
+        scheduler: Any = None,  # 用于安排重试任务
     ):
         self.agent_service = agent_service
         self.briefing_service = briefing_service
         self.supabase = supabase_client
+        self.scheduler = scheduler  # APScheduler 实例
 
     async def execute(
         self,
@@ -36,6 +44,7 @@ class JobExecutor:
         task_prompt: str,
         briefing_config: Dict[str, Any],
         target_user_ids: Optional[List[str]] = None,
+        retry_count: int = 0,  # 当前重试次数
     ) -> Dict[str, Any]:
         """执行定时任务"""
         start_time = datetime.utcnow()
@@ -83,10 +92,55 @@ class JobExecutor:
             )
 
         except Exception as e:
-            logger.error(f"Job {job_id} failed: {e}", exc_info=True)
+            logger.error(f"Job {job_id} failed (attempt {retry_count + 1}): {e}", exc_info=True)
             result["status"] = "failed"
             result["error"] = str(e)
-            await self._update_job_status(job_id=job_id, status="failed", error=str(e))
+            result["retry_count"] = retry_count
+
+            # 获取重试配置
+            max_retries = briefing_config.get("max_retries", DEFAULT_MAX_RETRIES)
+            retry_delay = briefing_config.get("retry_delay_minutes", DEFAULT_RETRY_DELAY_MINUTES)
+
+            # 检查是否需要重试
+            if retry_count < max_retries:
+                next_retry = retry_count + 1
+                retry_time = datetime.now() + timedelta(minutes=retry_delay)
+
+                logger.info(
+                    f"Scheduling retry {next_retry}/{max_retries} for job {job_id} "
+                    f"at {retry_time.strftime('%H:%M')}"
+                )
+
+                # 安排重试任务
+                if self.scheduler:
+                    retry_job_id = f"{job_id}_retry_{next_retry}"
+                    self.scheduler.add_job(
+                        func=self.execute,
+                        trigger="date",
+                        run_date=retry_time,
+                        id=retry_job_id,
+                        name=f"Retry {next_retry} for {job_id}",
+                        kwargs={
+                            "job_id": job_id,
+                            "agent_id": agent_id,
+                            "task_prompt": task_prompt,
+                            "briefing_config": briefing_config,
+                            "target_user_ids": target_user_ids,
+                            "retry_count": next_retry,
+                        },
+                        replace_existing=True,
+                    )
+                    result["next_retry_at"] = retry_time.isoformat()
+                    result["status"] = "retrying"
+                else:
+                    logger.warning("Scheduler not available, cannot schedule retry")
+
+            await self._update_job_status(
+                job_id=job_id,
+                status=result["status"],
+                error=str(e),
+                result=result
+            )
 
         result["end_time"] = datetime.utcnow().isoformat()
         return result

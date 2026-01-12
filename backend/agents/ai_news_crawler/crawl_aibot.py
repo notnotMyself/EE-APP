@@ -316,6 +316,169 @@ def generate_json_report(news_by_date: dict, date_key: str = None) -> str:
     return str(filepath)
 
 
+def generate_briefing(news_by_date: dict, date_key: str = None) -> dict:
+    """
+    生成简报格式 - 用于信息流推送
+    
+    简报设计原则：
+    1. 标题动词开头，说清核心发现
+    2. 摘要简洁有力
+    3. 只在有价值时推送
+    
+    Returns:
+        简报数据，包含 should_push 判断
+    """
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if date_key is None:
+        date_key = list(news_by_date.keys())[0] if news_by_date else None
+    
+    if not date_key or date_key not in news_by_date:
+        return {
+            "error": "No news found",
+            "should_push": False
+        }
+    
+    news_items = news_by_date[date_key]
+    
+    # 解析日期
+    now = datetime.now()
+    date_match = re.match(r'(\d+)月(\d+)', date_key)
+    if date_match:
+        month, day = int(date_match.group(1)), int(date_match.group(2))
+        report_date = f"{now.year}-{month:02d}-{day:02d}"
+    else:
+        report_date = now.strftime("%Y-%m-%d")
+    
+    # 按分类分组
+    by_category = {}
+    for item in news_items:
+        cat = item.get("category", "前沿技术")
+        if cat not in by_category:
+            by_category[cat] = []
+        by_category[cat].append(item)
+    
+    # 判断是否值得推送
+    should_push = False
+    priority = "P2"
+    
+    # 产业重磅新闻数量
+    major_news_count = len(by_category.get("产业重磅", []))
+    # 重磅标签数量
+    hot_news_count = sum(1 for item in news_items if item.get("tag") == "重磅")
+    
+    # 推送判断逻辑
+    if major_news_count >= 2 or hot_news_count >= 2:
+        should_push = True
+        priority = "P1"  # 重要
+    elif len(news_items) >= 3:
+        should_push = True
+        priority = "P2"  # 普通
+    elif major_news_count >= 1:
+        should_push = True
+        priority = "P2"
+    
+    # 生成标题（动词开头，说清核心发现）
+    if news_items:
+        top_news = news_items[0]
+        # 提取关键信息
+        title_text = top_news["title"]
+        
+        # 判断是否是重大新闻
+        if "上市" in title_text:
+            title = f"今日AI头条：{title_text[:20]}..."
+        elif "融资" in title_text or "投资" in title_text:
+            title = f"AI产业动态：{title_text[:20]}..."
+        elif "发布" in title_text or "推出" in title_text:
+            title = f"新品速递：{title_text[:20]}..."
+        elif "开源" in title_text:
+            title = f"开源动态：{title_text[:20]}..."
+        else:
+            title = f"今日AI资讯：{len(news_items)}条重要动态"
+    else:
+        title = "今日暂无重要AI资讯"
+        should_push = False
+    
+    # 生成摘要（简洁有力）
+    summary_parts = []
+    for item in news_items[:3]:
+        # 提取核心内容
+        item_summary = item.get("summary", "")[:50]
+        source = item.get("source", "")
+        if source:
+            summary_parts.append(f"{item['title'][:15]}...({source})")
+        else:
+            summary_parts.append(f"{item['title'][:20]}...")
+    
+    summary = "；".join(summary_parts) + "。"
+    
+    # 按重要性排序的关键新闻
+    key_news = []
+    # 先添加产业重磅
+    for item in by_category.get("产业重磅", [])[:2]:
+        key_news.append({
+            "title": item["title"],
+            "source": item.get("source", ""),
+            "category": "产业重磅",
+            "url": item.get("url", "")
+        })
+    # 再添加其他分类
+    for cat in ["前沿技术", "工具发布", "安全合规"]:
+        for item in by_category.get(cat, [])[:1]:
+            if len(key_news) < 5:
+                key_news.append({
+                    "title": item["title"],
+                    "source": item.get("source", ""),
+                    "category": cat,
+                    "url": item.get("url", "")
+                })
+    
+    # 生成结构化新闻列表（用于前端卡片展示）
+    summary_structured = []
+    for idx, item in enumerate(news_items[:5], 1):
+        summary_structured.append({
+            "index": idx,
+            "title": item["title"][:40] + ("..." if len(item["title"]) > 40 else ""),
+            "full_title": item["title"],
+            "source": item.get("source", ""),
+            "category": item.get("category", "前沿技术"),
+            "tag": item.get("tag", ""),
+            "url": item.get("url", "")
+        })
+
+    briefing = {
+        "briefing_type": "ai_news",
+        "generated_at": datetime.now().isoformat(),
+        "date": report_date,
+        "date_display": date_key,
+        "should_push": should_push,
+        "priority": priority,
+        "title": title,
+        "summary": summary,
+        "summary_structured": summary_structured,  # 结构化新闻列表
+        "cover_style": "news_list",  # 提示UI使用紧凑样式
+        "metrics": {
+            "total_news": len(news_items),
+            "major_news": major_news_count,
+            "hot_news": hot_news_count,
+            "categories": list(by_category.keys())
+        },
+        "key_news": key_news,
+        "source": "ai-bot.cn"
+    }
+    
+    # 保存简报
+    filename = f"briefing_{report_date}.json"
+    filepath = REPORTS_DIR / filename
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(briefing, f, ensure_ascii=False, indent=2)
+    
+    print(f"✅ 简报已生成: {filepath}")
+    
+    return briefing
+
+
 def print_news_summary(news_by_date: dict):
     """在终端打印新闻摘要"""
     for date_key, items in news_by_date.items():
@@ -331,9 +494,11 @@ def print_news_summary(news_by_date: dict):
 def main():
     parser = argparse.ArgumentParser(description='AI资讯追踪官 - AI工具集爬虫')
     parser.add_argument('--days', type=int, default=3, help='获取最近N天的资讯（默认3天）')
-    parser.add_argument('--report', choices=['daily', 'json', 'both'], help='生成报告类型')
+    parser.add_argument('--report', choices=['daily', 'json', 'briefing', 'both', 'all'], 
+                        help='生成报告类型: daily(日报), json(结构化数据), briefing(简报), both(日报+JSON), all(全部)')
     parser.add_argument('--date', type=str, help='指定日期生成报告（如 "1月6·周二"）')
     parser.add_argument('--list', action='store_true', help='只列出资讯，不生成报告')
+    parser.add_argument('--output-json', action='store_true', help='输出JSON到stdout（用于管道）')
     
     args = parser.parse_args()
     
@@ -358,15 +523,21 @@ def main():
     if args.report:
         date_key = args.date or list(news_by_date.keys())[0]
         
-        if args.report in ['daily', 'both']:
+        if args.report in ['daily', 'both', 'all']:
             generate_daily_report(news_by_date, date_key)
         
-        if args.report in ['json', 'both']:
+        if args.report in ['json', 'both', 'all']:
             generate_json_report(news_by_date, date_key)
+        
+        if args.report in ['briefing', 'all']:
+            briefing = generate_briefing(news_by_date, date_key)
+            if args.output_json:
+                # 输出到stdout（用于管道）
+                print(json.dumps(briefing, ensure_ascii=False, indent=2))
     else:
         # 默认打印摘要
         print_news_summary(news_by_date)
-        print(f"\n💡 提示: 使用 --report daily 生成日报")
+        print(f"\n💡 提示: 使用 --report daily 生成日报, --report briefing 生成简报")
 
 
 if __name__ == "__main__":
