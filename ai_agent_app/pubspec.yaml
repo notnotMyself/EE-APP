@@ -56,9 +56,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # assets:
-  #   - images/
-  #   - icons/
+  assets:
+    - assets/images/
 
   # fonts:
   #   - family: CustomFont

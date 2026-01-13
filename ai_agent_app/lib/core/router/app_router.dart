@@ -1,0 +1,83 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../layout/main_scaffold.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/agents/presentation/pages/agents_list_page.dart';
+import '../../features/briefings/presentation/pages/briefings_feed_page.dart';
+import '../../features/conversations/presentation/pages/conversations_list_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  final supabase = Supabase.instance.client;
+
+  return GoRouter(
+    initialLocation: '/login',
+    redirect: (context, state) {
+      final isAuthenticated = supabase.auth.currentUser != null;
+      final location = state.matchedLocation;
+      final isAuthPage = location == '/login' || location == '/register';
+      final isWelcomePage = location == '/welcome';
+
+      // 未登录且不在登录/注册页，跳转到登录页
+      if (!isAuthenticated && !isAuthPage) {
+        return '/login';
+      }
+
+      // 已登录但在登录/注册页，跳转到信息流页面
+      // TODO: 实现首次登录显示欢迎页的逻辑（使用 SharedPreferences）
+      if (isAuthenticated && isAuthPage) {
+        return '/feed';
+      }
+
+      return null;
+    },
+    routes: [
+      // Auth routes (without bottom navigation)
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const HomePage(),
+      ),
+
+      // Main app routes (with bottom navigation)
+      ShellRoute(
+        builder: (context, state, child) {
+          return MainScaffold(
+            location: state.matchedLocation,
+            child: child,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/feed',
+            builder: (context, state) => const BriefingsFeedPage(),
+          ),
+          GoRoute(
+            path: '/agents',
+            builder: (context, state) => const AgentsListPage(),
+          ),
+          GoRoute(
+            path: '/conversations',
+            builder: (context, state) => const ConversationsListPage(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfilePage(),
+          ),
+        ],
+      ),
+    ],
+  );
+});
