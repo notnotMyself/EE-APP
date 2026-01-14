@@ -114,3 +114,4 @@ class CRUDAgentSupabase:
 # Singleton instance
 agent_supabase = CRUDAgentSupabase()
 
+

@@ -151,3 +151,4 @@ Additionally, when calling the underlying LLM gateway, the system MUST ensure me
 - **THEN** the system does not send `role='system'` inside `messages[]` and instead sanitizes/rewrites content to a supported role
 
 
+

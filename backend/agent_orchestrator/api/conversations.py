@@ -8,12 +8,13 @@
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import UUID
+from .deps import get_current_user_id
 
 from agent_mapping import get_agent_uuid, is_valid_uuid
 
@@ -88,10 +89,13 @@ class MessageListResponse(BaseModel):
 @router.get("/{agent_id}", response_model=ConversationResponse)
 async def get_conversation_with_agent(
     agent_id: str,
-    user_id: str = Query(..., description="用户ID"),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     获取与特定AI员工的对话（如果不存在则创建）
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    user_id将从JWT token中自动提取
 
     **核心变化**: 通过agent_id而非conversation_id获取对话
     - 每个用户+Agent对只有一个持久化对话
@@ -143,12 +147,15 @@ async def get_conversation_with_agent(
 @router.get("/{conversation_id}/messages", response_model=MessageListResponse)
 async def list_messages(
     conversation_id: str,
-    user_id: str = Query(..., description="用户ID（用于权限验证）"),
+    user_id: str = Depends(get_current_user_id),
     limit: int = Query(50, ge=1, le=100, description="消息数量限制"),
     offset: int = Query(0, ge=0, description="偏移量（用于分页）"),
 ):
     """
     获取对话的所有消息（包括简报卡片）
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    会验证该对话是否属于当前用户
 
     **消息类型**:
     - `content_type='text'`: 普通文本消息
@@ -203,10 +210,13 @@ async def list_messages(
 async def send_message_stream(
     conversation_id: str,
     message_data: MessageCreate,
-    user_id: str = Query(..., description="用户ID（用于权限验证）"),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     发送消息并流式返回AI响应（Server-Sent Events）
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    会验证该对话是否属于当前用户
 
     **工作流程**:
     1. 保存用户消息到数据库
@@ -267,13 +277,16 @@ async def send_message_stream(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/user/{user_id}", response_model=List[ConversationResponse])
+@router.get("", response_model=List[ConversationResponse])
 async def list_user_conversations(
-    user_id: str,
+    user_id: str = Depends(get_current_user_id),
     limit: int = Query(20, ge=1, le=100, description="对话数量限制"),
 ):
     """
-    获取用户的所有对话列表
+    获取当前用户的所有对话列表
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    user_id将从JWT token中自动提取
 
     **排序**: 按last_message_at降序（最近活跃的在前）
 

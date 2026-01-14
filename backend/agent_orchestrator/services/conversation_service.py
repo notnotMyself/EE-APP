@@ -26,19 +26,19 @@ class ConversationService:
     def __init__(
         self,
         supabase_client: Any,
-        agent_manager: Any,
+        agent_service: Any,
         briefing_service: Optional[Any] = None,
     ):
         """初始化对话服务
 
         Args:
             supabase_client: Supabase客户端实例
-            agent_manager: AgentManager实例（用于调用Claude Agent SDK）
+            agent_service: AgentSDKService实例（用于调用Claude Agent SDK）
             briefing_service: BriefingService实例（可选，用于获取简报详情）
         """
         self.conversation_model = ConversationModel(supabase_client)
         self.message_model = MessageModel(supabase_client)
-        self.agent_manager = agent_manager
+        self.agent_service = agent_service
         self.briefing_service = briefing_service
         self.supabase = supabase_client
 
@@ -325,7 +325,7 @@ class ConversationService:
 """
 
             assistant_content = ""
-            async for event in self.agent_manager.execute_query(
+            async for event in self.agent_service.execute_query(
                 prompt=summary_prompt,
                 agent_role=agent_role,  # 使用 role string
             ):
@@ -390,7 +390,7 @@ class ConversationService:
         assistant_content = ""
 
         # Agent SDK Service 使用 execute_query 方法
-        async for event in self.agent_manager.execute_query(
+        async for event in self.agent_service.execute_query(
             prompt=full_prompt,
             agent_role=agent_role,  # 使用 role string
         ):

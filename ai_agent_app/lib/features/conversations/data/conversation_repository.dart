@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/network/authenticated_http_client.dart';
 import '../domain/models/conversation.dart';
 import '../domain/models/conversation_summary.dart';
 
@@ -94,33 +98,36 @@ class ConversationRepository {
     }
   }
 
-  /// 调用 ai_agent_platform/backend 的 Conversation SSE 接口获取流式响应
+  /// 调用 agent_orchestrator 的流式对话接口（带超时控制）
   Stream<String> sendMessageStream({
     required String conversationId,
     required String newMessage,
+    Duration timeout = const Duration(seconds: 60),
   }) async* {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('未登录或 token 为空');
-      }
+      // 获取认证Token
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeadersOnly();
 
-      // 构建请求体（ai_agent_platform ChatRequest）
+      // 构建请求体
       final requestBody = {
-        'message': newMessage,
-        'stream': true,
+        'content': newMessage,  // 修改为后端期望的字段名
       };
 
-      // 发送POST请求
+      // 发送POST请求到正确的端点，添加超时
       final request = http.Request(
         'POST',
-        Uri.parse('${AppConfig.apiUrl}/conversations/$conversationId/messages/stream'),
+        Uri.parse('${AppConfig.apiUrl}/conversations/$conversationId/messages'),  // 修正endpoint
       );
+      request.headers.addAll(authHeaders);
       request.headers['Content-Type'] = 'application/json';
-      request.headers['Authorization'] = 'Bearer $token';
       request.body = jsonEncode(requestBody);
 
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(
+        timeout,
+        onTimeout: () {
+          throw TimeoutException('消息发送超时，请检查网络连接');
+        },
+      );
 
       if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
@@ -129,8 +136,17 @@ class ConversationRepository {
       }
 
       // 解析 SSE（ai_agent_platform 格式：只有 data: ... 行，且事件以空行分隔）
+      // 添加流超时控制
       String buffer = '';
-      await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+      await for (final chunk in streamedResponse.stream
+          .timeout(
+            timeout,
+            onTimeout: (sink) {
+              sink.addError(TimeoutException('消息接收超时，请检查网络连接'));
+              sink.close();
+            },
+          )
+          .transform(utf8.decoder)) {
         buffer += chunk;
 
         while (true) {
@@ -160,22 +176,71 @@ class ConversationRepository {
           yield data;
         }
       }
+    } on TimeoutException catch (e) {
+      throw Exception('请求超时: ${e.message}');
+    } on SocketException catch (e) {
+      throw Exception('网络连接失败: ${e.message}');
     } catch (e) {
       throw Exception('发送消息失败: $e');
     }
   }
 
+  /// 带重试机制的流式对话接口
+  Stream<String> sendMessageStreamWithRetry({
+    required String conversationId,
+    required String newMessage,
+    int maxRetries = 3,
+    Duration timeout = const Duration(seconds: 60),
+  }) async* {
+    int retryCount = 0;
+
+    while (retryCount <= maxRetries) {
+      try {
+        yield* sendMessageStream(
+          conversationId: conversationId,
+          newMessage: newMessage,
+          timeout: timeout,
+        );
+        return; // 成功则退出
+      } on TimeoutException catch (e) {
+        retryCount++;
+        if (retryCount > maxRetries) {
+          throw Exception('请求超时（已重试${maxRetries}次）: ${e.message}');
+        }
+
+        // 指数退避等待后重试
+        final waitSeconds = pow(2, retryCount).toInt();
+        yield '[网络超时，正在重试...第 $retryCount 次，等待 $waitSeconds 秒]';
+        await Future.delayed(Duration(seconds: waitSeconds));
+      } on SocketException catch (e) {
+        retryCount++;
+        if (retryCount > maxRetries) {
+          throw Exception('网络连接失败（已重试${maxRetries}次）: ${e.message}');
+        }
+
+        // 指数退避等待后重试
+        final waitSeconds = pow(2, retryCount).toInt();
+        yield '[网络连接失败，正在重试...第 $retryCount 次，等待 $waitSeconds 秒]';
+        await Future.delayed(Duration(seconds: waitSeconds));
+      } catch (e) {
+        // 其他错误不重试，直接抛出
+        rethrow;
+      }
+    }
+  }
+
   /// 获取用户的对话摘要列表（用于消息列表页）
-  Future<List<ConversationSummary>> getConversationSummaries(String userId) async {
+  Future<List<ConversationSummary>> getConversationSummaries() async {
     try {
-      // 使用 agent_orchestrator API (已有的 /conversations/user/{user_id} endpoint)
+      // 使用 agent_orchestrator API (新的 GET /conversations endpoint)
+      // user_id 现在从JWT token中获取，无需作为参数传递
       final dio = Dio();
-      final token = _supabase.auth.currentSession?.accessToken;
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await dio.get(
-        '${AppConfig.apiUrl}/conversations/user/$userId',
+        '${AppConfig.apiUrl}/conversations',  // 修改为新的端点
         queryParameters: {'limit': 50},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+        options: Options(headers: authHeaders),
       );
 
       // TODO: 这里需要 backend 返回更丰富的信息（包括 agent name、role、avatar等）

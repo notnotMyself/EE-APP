@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/conversation_controller.dart';
@@ -76,6 +78,21 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
       return;
     }
 
+    // 检查网络连接
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('无网络连接，请检查您的网络设置'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     final userMessage = text.trim();
 
     setState(() {
@@ -96,9 +113,12 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
       final repository = ref.read(conversationRepositoryProvider);
       String fullResponse = '';
 
-      await for (final chunk in repository.sendMessageStream(
+      // 使用带重试机制的流式接口
+      await for (final chunk in repository.sendMessageStreamWithRetry(
         conversationId: _currentConversationId!,
         newMessage: userMessage,
+        maxRetries: 3,
+        timeout: const Duration(seconds: 60),
       )) {
         fullResponse += chunk;
         setState(() {
@@ -120,6 +140,28 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
       });
 
       _scrollToBottom();
+    } on SocketException catch (e) {
+      print('Network error: $e');
+
+      setState(() {
+        _isStreaming = false;
+        _streamingContent = '';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('网络连接失败，请检查网络后重试'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: '重试',
+              textColor: Colors.white,
+              onPressed: () => _sendMessageText(userMessage),
+            ),
+          ),
+        );
+      }
     } catch (e, stackTrace) {
       print('Error sending message: $e');
       print('StackTrace: $stackTrace');
@@ -130,11 +172,28 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
       });
 
       if (mounted) {
+        // 根据错误类型提供不同的提示
+        String errorMessage = '发送消息失败';
+        if (e.toString().contains('超时')) {
+          errorMessage = '请求超时，请检查网络连接';
+        } else if (e.toString().contains('网络')) {
+          errorMessage = '网络连接失败，请检查网络设置';
+        } else if (e.toString().contains('401') || e.toString().contains('认证')) {
+          errorMessage = '登录已过期，请重新登录';
+        } else {
+          errorMessage = '发送消息失败: ${e.toString()}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('发送消息失败: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: '重试',
+              textColor: Colors.white,
+              onPressed: () => _sendMessageText(userMessage),
+            ),
           ),
         );
       }

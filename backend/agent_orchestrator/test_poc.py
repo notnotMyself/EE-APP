@@ -102,29 +102,33 @@ def test_skill_execution():
 
 
 def test_agent_manager():
-    """测试3: 验证Agent Manager"""
+    """测试3: 验证Agent SDK Service（已迁移）"""
     print("\n" + "=" * 60)
-    print("测试3: 验证Agent Manager")
+    print("测试3: 验证Agent SDK Service")
     print("=" * 60)
 
     try:
         import sys
-        sys.path.insert(0, str(Path(__file__).parent))
+        sys.path.insert(0, str(Path(__file__).parent.parent))
 
-        from agent_manager import agent_manager
+        from agent_sdk import AgentSDKService, AgentSDKConfig
+
+        # 初始化Agent SDK Service
+        config = AgentSDKConfig()
+        agent_service = AgentSDKService(config=config)
 
         # 测试列出所有AI员工
-        agents = agent_manager.list_agents()
+        agents = agent_service.list_agents()
         print(f"✅ 成功加载 {len(agents)} 个AI员工:")
         for agent in agents:
             print(f"  - {agent['name']} ({agent['role']})")
 
         # 测试获取特定员工配置
-        dev_config = agent_manager.get_agent_config("dev_efficiency_analyst")
+        dev_config = config.get_agent_role("dev_efficiency_analyst")
         if dev_config:
             print(f"\n✅ 成功获取研发效能分析官配置:")
             print(f"  - 名称: {dev_config.name}")
-            print(f"  - 工作目录: {dev_config.workdir}")
+            print(f"  - 模型: {dev_config.model}")
         else:
             print("❌ 获取配置失败")
             return False
@@ -146,9 +150,9 @@ async def test_agent_chat():
 
     try:
         import sys
-        sys.path.insert(0, str(Path(__file__).parent))
+        sys.path.insert(0, str(Path(__file__).parent.parent))
 
-        from agent_manager import agent_manager
+        from agent_sdk import AgentSDKService, AgentSDKConfig
 
         # 注意：这个测试会实际调用Claude API（如果配置了的话）
         # 为了安全起见，我们只测试配置是否正确，不实际调用
@@ -166,20 +170,16 @@ async def test_agent_chat():
         print(f"  - ANTHROPIC_AUTH_TOKEN: {auth_token[:20]}...")
         print(f"  - ANTHROPIC_BASE_URL: {os.getenv('ANTHROPIC_BASE_URL', '(默认)')}")
 
-        # 测试构建上下文
-        context = agent_manager._build_context(
-            message="测试消息",
-            history=[
-                {"role": "user", "content": "你好"},
-                {"role": "assistant", "content": "你好，有什么可以帮你的？"}
-            ]
-        )
+        # 初始化Agent SDK Service
+        config = AgentSDKConfig()
+        agent_service = AgentSDKService(config=config)
 
-        if "测试消息" in context and "你好" in context:
-            print("✅ 对话上下文构建正确")
-        else:
-            print("❌ 对话上下文构建失败")
-            return False
+        # 测试Agent SDK配置
+        print("✅ Agent SDK Service初始化成功")
+        print(f"  - 默认模型: {config.default_model}")
+
+        agents = agent_service.list_agents()
+        print(f"  - 可用员工数: {len(agents)}")
 
         return True
 
