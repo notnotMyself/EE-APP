@@ -164,6 +164,10 @@ temp/
 test_output/
 coverage/
 
+# Temporary test reports (should not be committed)
+*_REPORT.md
+*_TEST_REPORT.md
+
 # ============================================
 # Credentials & Secrets (CRITICAL)
 # ============================================
@@ -193,3 +197,11 @@ product_mind.md
 
 # Claude plans (optional - remove if you want to keep them)
 .claude/plans/
+
+# Agent runtime generated files (should not be committed)
+backend/agents/*/reports/
+backend/agents/*/data/cache/
+
+# Database migration backups (should not be committed)
+supabase/migrations/*.backup
+supabase/migrations/*.sql.backup
