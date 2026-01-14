@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from .importance_evaluator import ImportanceEvaluator
+from .cover_image_service import CoverImageService
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,12 @@ class BriefingService:
         supabase_client: Any,
         importance_evaluator: ImportanceEvaluator = None,
         conversation_service: Any = None,
+        cover_image_service: CoverImageService = None,
     ):
         self.supabase = supabase_client
         self.evaluator = importance_evaluator or ImportanceEvaluator()
         self.conversation_service = conversation_service
+        self.cover_image_service = cover_image_service or CoverImageService()
 
     async def evaluate_importance(self, analysis_result: Dict[str, Any]) -> float:
         """评估分析结果的重要性分数"""
@@ -58,14 +61,18 @@ class BriefingService:
         importance_score: float,
         job_id: Optional[str] = None,
         report_artifact_id: Optional[str] = None,
+        generate_cover: bool = True,
     ) -> Dict[str, Any]:
         """创建简报记录"""
         # 从分析结果中提取简报信息
         briefing_data = self._extract_briefing_data(analysis_result)
 
+        # 生成简报ID
+        briefing_id = str(uuid4())
+
         # 构建简报记录
         briefing = {
-            "id": str(uuid4()),
+            "id": briefing_id,
             "agent_id": agent_id,
             "user_id": user_id,
             "briefing_type": briefing_data["type"],
@@ -79,7 +86,41 @@ class BriefingService:
             "importance_score": importance_score,
             "status": "new",
             "created_at": datetime.utcnow().isoformat(),
+            "cover_image_url": None,
+            "cover_image_metadata": {},
         }
+
+        # 生成封面图片（异步，不阻塞）
+        if generate_cover and self._should_generate_cover(briefing_data["priority"]):
+            try:
+                logger.info(f"Generating cover image for briefing {briefing_id}")
+                cover_result = await self.cover_image_service.generate_cover_image(
+                    briefing_type=briefing_data["type"],
+                    title=briefing_data["title"],
+                    summary=briefing_data["summary"],
+                    priority=briefing_data["priority"],
+                )
+
+                if cover_result and self.supabase:
+                    # 上传到Supabase Storage
+                    image_url = await self.cover_image_service.upload_to_storage(
+                        image_data=cover_result["image_data"],
+                        briefing_id=briefing_id,
+                        supabase_client=self.supabase,
+                    )
+
+                    if image_url:
+                        briefing["cover_image_url"] = image_url
+                        briefing["cover_image_metadata"] = cover_result["metadata"]
+                        logger.info(f"Cover image generated successfully for briefing {briefing_id}")
+                    else:
+                        logger.warning(f"Failed to upload cover image for briefing {briefing_id}")
+                else:
+                    logger.warning(f"Failed to generate cover image for briefing {briefing_id}")
+
+            except Exception as e:
+                logger.error(f"Error generating cover image for briefing {briefing_id}: {e}", exc_info=True)
+                # 继续创建简报，即使封面生成失败
 
         if not self.supabase:
             logger.warning("Supabase not configured, briefing not saved")
@@ -92,6 +133,11 @@ class BriefingService:
         except Exception as e:
             logger.error(f"Failed to create briefing: {e}")
             raise
+
+    def _should_generate_cover(self, priority: str) -> bool:
+        """判断是否应该生成封面（成本控制）"""
+        # 仅为P0和P1简报生成封面
+        return priority in ["P0", "P1"]
 
     def _extract_briefing_data(self, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
         """从分析结果中提取简报数据"""
