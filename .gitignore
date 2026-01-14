@@ -27,7 +27,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib directories (但不包括 Flutter 的 ai_agent_app/lib/)
+/lib/
+backend/**/lib/
 lib64/
 parts/
 sdist/
