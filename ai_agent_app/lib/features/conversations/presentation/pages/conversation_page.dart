@@ -80,7 +80,7 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
 
     // 检查网络连接
     final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.none)) {
+    if (connectivityResult == ConnectivityResult.none) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
