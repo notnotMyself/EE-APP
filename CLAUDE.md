@@ -122,6 +122,28 @@ ee_app_claude/
 
 ---
 
+## 当前 AI 员工
+
+### 已实现
+1. **研发效能分析官** (dev_efficiency_analyst) - ✅ 已实现
+   - 职责：监控CI/CD构建数据，分析研发效率瓶颈
+   - 数据源：Gerrit + Jenkins构建系统
+
+2. **AI资讯追踪官** (ai_news_crawler) - ✅ 已实现
+   - 职责：跟踪AI前沿资讯和技术博客
+   - 数据源：bestblogs.dev, ai-bot.cn
+
+### 规划中
+3. **EE研发员工** (ee_developer) - 🔄 规划中
+   - 职责：代码修改、测试、提交（使用git分支隔离）
+   - 核心能力：Edit工具 + Claude Agent SDK
+
+4. **Chris设计评审员** (design_validator) - 🔄 规划中
+   - 职责：产品设计稿验证和设计历史经验沉淀
+   - 核心能力：Claude Opus vision + 文件系统知识库
+
+---
+
 <!-- OPENSPEC:START -->
 # OpenSpec Instructions
 
