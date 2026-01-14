@@ -9,6 +9,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/agents/presentation/pages/agents_list_page.dart';
 import '../../features/briefings/presentation/pages/briefings_feed_page.dart';
+import '../../features/briefings/presentation/pages/feed_home_page.dart';
 import '../../features/conversations/presentation/pages/conversations_list_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 
@@ -62,7 +63,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/feed',
-            builder: (context, state) => const BriefingsFeedPage(),
+            builder: (context, state) => const FeedHomePage(),
           ),
           GoRoute(
             path: '/agents',

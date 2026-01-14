@@ -7,10 +7,11 @@
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from .deps import get_current_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,13 @@ class SubscribedAgent(BaseModel):
 
 @router.get("/usage-stats", response_model=UsageStats)
 async def get_usage_stats(
-    user_id: str = Query(..., description="用户ID"),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     获取用户使用统计
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    user_id将从JWT token中自动提取
 
     Returns:
         使用统计数据
@@ -100,10 +104,13 @@ async def get_usage_stats(
 
 @router.get("/subscribed-agents", response_model=List[SubscribedAgent])
 async def get_subscribed_agents(
-    user_id: str = Query(..., description="用户ID"),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     获取用户订阅的AI员工列表
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    user_id将从JWT token中自动提取
 
     Returns:
         订阅的AI员工列表

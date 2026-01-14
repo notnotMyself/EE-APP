@@ -58,56 +58,48 @@ class ProfilePage extends ConsumerWidget {
           ),
           const Divider(),
 
-          // Usage stats section
-          _buildSectionHeader(context, '使用统计'),
-          ListTile(
-            leading: const Icon(Icons.article),
-            title: const Text('收到简报'),
-            trailing: const Text('0'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.chat),
-            title: const Text('对话次数'),
-            trailing: const Text('0'),
-          ),
-          const Divider(),
-
-          // Settings section
-          _buildSectionHeader(context, '设置'),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('通知设置'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to notification settings
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('偏好设置'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to preference settings
-            },
-          ),
-          const Divider(),
-
           // Logout button
           Padding(
             padding: const EdgeInsets.all(16),
             child: OutlinedButton(
-              onPressed: () async {
-                await Supabase.instance.client.auth.signOut();
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              },
+              onPressed: () => _handleLogout(context),
               child: const Text('退出登录'),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// 处理退出登录，显示确认对话框
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出登录'),
+        content: const Text('确定要退出登录吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('退出'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await Supabase.instance.client.auth.signOut();
+      if (context.mounted) {
+        context.go('/login');
+      }
+    }
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {

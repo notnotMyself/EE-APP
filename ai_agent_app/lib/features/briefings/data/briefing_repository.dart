@@ -3,22 +3,23 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/models/briefing.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/network/authenticated_http_client.dart';
 
 class BriefingRepository {
   final _supabase = Supabase.instance.client;
 
   /// 获取简报列表（信息流）
+  /// user_id现在从JWT token中自动获取，无需手动传递
   Future<BriefingListResponse> getBriefings({
     int skip = 0,
     int limit = 50,
     BriefingStatus? status,
   }) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      // 获取认证Headers
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
+      // 构建URL（移除user_id参数，由后端从token获取）
       var url = '${AppConfig.apiUrl}/briefings?skip=$skip&limit=$limit';
       if (status != null) {
         url += '&status=${_statusToString(status)}';
@@ -26,10 +27,7 @@ class BriefingRepository {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -44,19 +42,15 @@ class BriefingRepository {
   }
 
   /// 获取未读简报数量
+  /// user_id现在从JWT token中自动获取，无需手动传递
   Future<BriefingUnreadCount> getUnreadCount() async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      // 获取认证Headers
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await http.get(
-        Uri.parse('${AppConfig.apiUrl}/briefings/unread-count'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('${AppConfig.apiUrl}/briefings/unread-count'),  // 移除user_id参数
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -73,17 +67,11 @@ class BriefingRepository {
   /// 获取单个简报详情
   Future<Briefing> getBriefing(String briefingId) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await http.get(
         Uri.parse('${AppConfig.apiUrl}/briefings/$briefingId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -106,17 +94,11 @@ class BriefingRepository {
   /// - created_at: 创建时间（如果从artifact获取）
   Future<Map<String, dynamic>?> getBriefingReport(String briefingId) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await http.get(
         Uri.parse('${AppConfig.apiUrl}/briefings/$briefingId/report'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -134,17 +116,11 @@ class BriefingRepository {
   /// 标记简报为已读
   Future<Briefing> markAsRead(String briefingId) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await http.patch(
         Uri.parse('${AppConfig.apiUrl}/briefings/$briefingId/read'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -164,10 +140,7 @@ class BriefingRepository {
     String? prompt,
   }) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final body = <String, dynamic>{};
       if (prompt != null) {
@@ -176,10 +149,7 @@ class BriefingRepository {
 
       final response = await http.post(
         Uri.parse('${AppConfig.apiUrl}/briefings/$briefingId/start-conversation'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
         body: body.isNotEmpty ? jsonEncode(body) : null,
       );
 
@@ -197,17 +167,11 @@ class BriefingRepository {
   /// 忽略简报
   Future<void> dismissBriefing(String briefingId) async {
     try {
-      final token = _supabase.auth.currentSession?.accessToken;
-      if (token == null) {
-        throw Exception('用户未登录');
-      }
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
       final response = await http.delete(
         Uri.parse('${AppConfig.apiUrl}/briefings/$briefingId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: authHeaders,
       );
 
       if (response.statusCode != 200) {

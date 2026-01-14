@@ -107,7 +107,7 @@ task_execution_service = TaskExecutionService(
 # Step 3: 创建ConversationService（传入briefing_service）
 conversation_service = ConversationService(
     supabase_client=supabase_client,
-    agent_manager=agent_service,  # 使用Agent SDK service
+    agent_service=agent_service,  # 使用Agent SDK service
     briefing_service=briefing_service,
 )
 

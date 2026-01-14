@@ -43,27 +43,32 @@ ee_app_claude/
 │   ├── seed.sql                          # 测试数据
 │   └── DEPLOYMENT.md                     # 部署文档
 │
-├── ai_agent_platform/backend/            # FastAPI后端
-│   ├── app/
-│   │   ├── core/                         # 核心配置
-│   │   ├── services/                     # Claude服务
-│   │   ├── models/                       # 数据模型
-│   │   └── api/v1/endpoints/            # API端点
-│   ├── main.py                           # 应用入口
-│   ├── requirements.txt                  # Python依赖
-│   └── .env                              # 环境配置
+├── backend/
+│   ├── agent_orchestrator/               # ⭐ 推荐后端 (Claude Agent SDK)
+│   │   ├── main.py                       # 应用入口
+│   │   ├── agent_manager.py              # Agent生命周期管理
+│   │   ├── api/                          # API路由
+│   │   ├── services/                     # 服务层
+│   │   ├── scheduler/                    # 定时任务调度
+│   │   └── README.md                     # 详细文档
+│   │
+│   ├── agent_sdk/                        # Agent SDK封装
+│   │
+│   └── agents/                           # AI员工工作目录
+│       ├── dev_efficiency_analyst/       # 研发效能分析官
+│       ├── ai_news_crawler/              # AI新闻爬虫
+│       └── ...                           # 其他AI员工
 │
-├── flutter_config/                        # Flutter配置文件
-│   ├── pubspec.yaml                      # 依赖配置
-│   └── lib/                              # 源代码
+├── ai_agent_platform/backend/            # 旧版后端 (Anthropic SDK直接调用)
+│   └── ...                               # 仅供参考，不推荐使用
+│
+├── ai_agent_app/                         # Flutter前端
+│   └── lib/
 │       ├── main.dart                     # 应用入口
 │       ├── core/                         # 核心功能
 │       └── features/                     # 功能模块
 │
-├── ai_agent_app/                         # Flutter项目 (运行setup_flutter.sh创建)
-│
 ├── ARCHITECTURE.md                        # 架构文档
-├── BACKEND_SETUP_COMPLETE.md             # 后端设置完成
 ├── FLUTTER_SETUP.md                      # Flutter设置指南
 └── setup_flutter.sh                      # Flutter一键设置脚本
 ```
@@ -72,33 +77,35 @@ ee_app_claude/
 
 ## 🚀 快速开始
 
-### 1. 启动后端 (FastAPI)
+### 1. 启动后端 (Agent Orchestrator)
 
 ```bash
-cd /Users/80392083/develop/ee_app_claude/ai_agent_platform/backend
+cd /Users/80392083/develop/ee_app_claude/backend/agent_orchestrator
 
-# 安装依赖
-pip install -r requirements.txt
+# 方式1: 直接运行 (内置reload)
+python3 main.py
 
-# 启动服务
+# 方式2: uvicorn命令 (推荐，更灵活)
 uvicorn main:app --reload --port 8000
 
 # 访问API文档
 open http://localhost:8000/docs
 ```
 
-### 2. 设置Flutter项目
+> ⚠️ **注意**: 旧版后端 `ai_agent_platform/backend` 已不推荐使用，请使用 `agent_orchestrator`
+
+### 2. 启动前端 (Flutter)
 
 ```bash
-cd /Users/80392083/develop/ee_app_claude
+cd /Users/80392083/develop/ee_app_claude/ai_agent_app
 
-# 运行一键设置脚本
-./setup_flutter.sh
+# 获取依赖
+flutter pub get
 
-# 进入项目
-cd ai_agent_app
+# 运行应用 (Chrome)
+flutter run -d chrome
 
-# 运行应用
+# 或运行应用 (iOS模拟器)
 flutter run
 ```
 
@@ -195,8 +202,8 @@ Flutter App
 ## 📱 开发工作流
 
 ### 日常开发
-1. **启动后端**: `cd ai_agent_platform/backend && uvicorn main:app --reload`
-2. **启动Flutter**: `cd ai_agent_app && flutter run`
+1. **启动后端**: `cd backend/agent_orchestrator && python3 main.py`
+2. **启动Flutter**: `cd ai_agent_app && flutter run -d chrome`
 3. **查看数据**: Supabase Dashboard
 4. **API测试**: http://localhost:8000/docs
 
@@ -239,16 +246,15 @@ flutter pub run build_runner build --delete-conflicting-outputs
 flutter analyze
 ```
 
-### FastAPI
+### 后端 (Agent Orchestrator)
 ```bash
-# 开发模式
-uvicorn main:app --reload
+cd backend/agent_orchestrator
 
-# 生产模式
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+# 开发模式 (热重载)
+uvicorn main:app --reload --port 8000
 
-# 查看日志
-tail -f logs/app.log
+# 或直接运行
+python3 main.py
 ```
 
 ---
