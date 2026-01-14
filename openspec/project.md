@@ -15,18 +15,31 @@
 > "我把哪些事情交给 AI 员工后，可以放心不盯着了"
 
 ### 当前 AI 员工
-1. **研发效能分析官** (dev_efficiency_analyst) - 已实现 ✅
+
+**已实现**
+1. **研发效能分析官** (dev_efficiency_analyst) - ✅ 已实现
    - 监控代码审查效率
    - 分析 Review 耗时、返工率
    - 生成效率报告和改进建议
-2. **AI资讯追踪官** (ai_news_crawler) - 已实现 ✅
+2. **AI资讯追踪官** (ai_news_crawler) - ✅ 已实现
    - 爬取 AI 前沿资讯和技术博客
    - 保留文章原始格式和图片链接
    - 生成每周资讯摘要报告
-3. NPS 洞察官 (nps_insight_analyst) - 待实现
-4. 产品需求提炼官 (product_requirement_analyst) - 待实现
-5. 竞品追踪分析官 (competitor_tracking_analyst) - 待实现
-6. 企业知识管理官 (knowledge_management_assistant) - 待实现
+
+**规划中**
+3. **EE研发员工** (ee_developer) - 🔄 规划中
+   - 代码修改、测试、提交
+   - 使用git分支隔离确保安全
+   - 核心能力：Edit工具 + Claude Agent SDK
+4. **Chris设计评审员** (design_validator) - 🔄 规划中
+   - 产品设计稿验证和设计历史经验沉淀
+   - 核心能力：Claude Opus vision + 文件系统知识库
+
+**待实现**
+5. NPS 洞察官 (nps_insight_analyst)
+6. 产品需求提炼官 (product_requirement_analyst)
+7. 竞品追踪分析官 (competitor_tracking_analyst)
+8. 企业知识管理官 (knowledge_management_assistant)
 
 ---
 
@@ -280,7 +293,7 @@ Tool Execution (bash, read_file, write_file, web_fetch)
 - [x] 研发效能分析官实现
 - [x] Flutter 前端基础对话功能
 
-### Phase 2: Agent SDK 迁移 🔄 (当前)
+### Phase 2: Agent SDK 迁移 + 新功能开发 🔄 (当前)
 - [ ] **POC 验证** - 验证 Claude Agent SDK 可行性
   - [ ] 安装 `claude-agent-sdk`
   - [ ] 验证基础 query() 功能
@@ -289,9 +302,11 @@ Tool Execution (bash, read_file, write_file, web_fetch)
 - [ ] **研发效能分析官迁移**
   - [ ] 将现有 skills 迁移为 MCP 工具
   - [ ] 测试与旧实现对比
-- [ ] **新功能用 Agent SDK 实现**
-  - [ ] NPS 洞察官
-  - [ ] 竞品追踪分析官
+- [ ] **新功能开发**
+  - [ ] 简报封面图片功能（Gemini Imagen API）
+  - [ ] 在EE App中开发新增AI员工功能（6步向导）
+  - [ ] EE研发员工（使用git分支隔离）
+  - [ ] Chris设计评审员工（Claude Opus vision + 文件系统知识库）
 
 ### Phase 3: 完善功能
 - [ ] 其他 AI 员工
