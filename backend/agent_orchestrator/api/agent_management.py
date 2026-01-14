@@ -10,8 +10,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from pydantic import BaseModel, Field
+
+from ..skill_templates import get_all_templates, generate_skill_script
 
 logger = logging.getLogger(__name__)
 
@@ -389,4 +391,50 @@ async def delete_agent(agent_id: str):
         raise
     except Exception as e:
         logger.error(f"Failed to delete agent: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# Skill Templates (技能市场)
+# ============================================
+
+@router.get("/skill-templates")
+async def list_skill_templates():
+    """
+    获取所有技能模板（技能市场）
+    """
+    try:
+        templates = get_all_templates()
+        return {
+            "success": True,
+            "templates": templates,
+            "count": len(templates)
+        }
+    except Exception as e:
+        logger.error(f"Failed to list skill templates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class GenerateSkillRequest(BaseModel):
+    """生成技能脚本请求"""
+    template_name: str = Field(..., description="模板名称")
+    parameters: Dict[str, Any] = Field(default={}, description="模板参数")
+
+
+@router.post("/skill-templates/generate")
+async def generate_skill_from_template(request: GenerateSkillRequest):
+    """
+    根据模板生成技能脚本
+    """
+    try:
+        script = generate_skill_script(request.template_name, request.parameters)
+        return {
+            "success": True,
+            "script": script,
+            "template_name": request.template_name
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to generate skill: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
