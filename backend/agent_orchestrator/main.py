@@ -50,11 +50,12 @@ from agent_registry import AgentRegistry, init_global_registry
 from scheduler import SchedulerService, JobExecutor
 from services import BriefingService, ImportanceEvaluator, ConversationService
 from services.task_execution_service import TaskExecutionService
-from api import briefings_router, scheduled_jobs_router, conversations_router, profile_router
+from api import briefings_router, scheduled_jobs_router, conversations_router, profile_router, agent_management_router
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
 from api.conversations import set_conversation_service
 from api.profile import set_services as set_profile_services
+from api.agent_management import set_agent_management_services
 
 # Supabase 客户端
 try:
@@ -145,6 +146,7 @@ set_conversation_service(conversation_service)
 set_scheduler_service(scheduler_service)
 set_supabase_client(supabase_client)
 set_profile_services(conversation_service, briefing_service)
+set_agent_management_services(agent_registry, supabase_client)
 
 # 调试：输出配置信息
 logger.info(f"Agent SDK Config loaded:")
@@ -259,6 +261,7 @@ app.include_router(briefings_router)
 app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
 app.include_router(profile_router)
+app.include_router(agent_management_router)
 
 
 # ============================================
