@@ -385,29 +385,29 @@ class BriefingCard extends StatelessWidget {
   Widget _buildCoverImage(BuildContext context) {
     final theme = Theme.of(context);
 
-    // TODO: 当有真实封面图时，这里会显示网络图片
-    // 当前显示占位符（降级方案：渐变背景 + 图标）
     return Stack(
       children: [
         // 封面图或占位符
-        Container(
-          width: double.infinity,
-          height: 240,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: _getCoverGradientColors(briefing.briefingType),
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              _getTypeIcon(briefing.briefingType),
-              size: 96,
-              color: Colors.white.withOpacity(0.4),
-            ),
-          ),
-        ),
+        if (briefing.coverImageUrl != null && briefing.coverImageUrl!.isNotEmpty)
+          // 显示真实封面图
+          Image.network(
+            briefing.coverImageUrl!,
+            width: double.infinity,
+            height: 240,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // 如果图片加载失败，显示降级方案
+              return _buildPlaceholderCover(theme);
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              // 加载中显示占位符
+              return _buildPlaceholderCover(theme);
+            },
+          )
+        else
+          // 降级方案：渐变背景 + 图标
+          _buildPlaceholderCover(theme),
 
         // 状态指示器（左上角）
         Positioned(
@@ -450,6 +450,28 @@ class BriefingCard extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+
+  /// 构建占位符封面（降级方案）
+  Widget _buildPlaceholderCover(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: 240,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: _getCoverGradientColors(briefing.briefingType),
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          _getTypeIcon(briefing.briefingType),
+          size: 96,
+          color: Colors.white.withOpacity(0.4),
+        ),
+      ),
     );
   }
 
