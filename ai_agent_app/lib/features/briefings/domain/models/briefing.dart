@@ -98,6 +98,10 @@ class Briefing with _$Briefing {
     @JsonKey(name: 'summary_structured') @Default([]) List<BriefingNewsItem> summaryStructured,
     // 封面样式提示
     @JsonKey(name: 'cover_style') String? coverStyle,
+    // 封面图片URL
+    @JsonKey(name: 'cover_image_url') String? coverImageUrl,
+    // 封面图片元数据
+    @JsonKey(name: 'cover_image_metadata') Map<String, dynamic>? coverImageMetadata,
   }) = _Briefing;
 
   factory Briefing.fromJson(Map<String, dynamic> json) =>
