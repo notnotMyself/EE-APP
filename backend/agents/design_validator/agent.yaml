@@ -1,0 +1,56 @@
+metadata:
+  id: design_validator
+  uuid: 7e2f3c4d-5a6b-4e8f-9a0b-8c7d6e5f4a3b
+  name: Chris设计评审员
+  description: 产品设计稿验证和设计历史经验沉淀
+  model: saas/claude-opus-4.5
+  visibility: public
+
+skills:
+  - name: vision_analysis
+    entry: .claude/skills/vision_analysis.py
+    description: 视觉分析（使用Claude Opus分析设计稿图片）
+    timeout: 300
+
+  - name: interaction_check
+    entry: .claude/skills/interaction_check.py
+    description: 交互可用性验证
+    timeout: 300
+
+  - name: visual_consistency
+    entry: .claude/skills/visual_consistency.py
+    description: 视觉一致性检查
+    timeout: 300
+
+  - name: compare_designs
+    entry: .claude/skills/compare_designs.py
+    description: 多方案对比分析
+    timeout: 300
+
+  - name: search_cases
+    entry: .claude/skills/search_cases.py
+    description: 检索历史案例（Grep搜索Markdown文件）
+    timeout: 60
+
+allowed_tools:
+  - Read
+  - Write
+  - Grep
+  - Glob
+
+max_turns: 30
+
+multimodal:
+  enabled: true
+  supported_types:
+    - image/png
+    - image/jpeg
+    - image/webp
+
+knowledge_base:
+  base_dir: /Users/80392083/develop/ee_app_multi_task_impl/backend/agents/design_validator/knowledge_base
+  structure:
+    - design_decisions     # 设计决策（ADR风格）
+    - design_guidelines    # 设计规范
+    - case_studies         # 成功案例
+    - user_feedback        # 用户反馈
