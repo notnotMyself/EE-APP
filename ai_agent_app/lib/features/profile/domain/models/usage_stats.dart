@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'usage_stats.freezed.dart';
-part 'usage_stats.g.dart';
 
 /// User usage statistics model
 @freezed
