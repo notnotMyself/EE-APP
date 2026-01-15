@@ -1,0 +1,47 @@
+metadata:
+  id: ee_developer
+  uuid: 8f3c4d2e-9a1b-4c5d-8e7f-6a9b8c7d6e5f
+  name: EE研发员工
+  description: 代码修改、测试、提交（使用git分支隔离）
+  model: saas/claude-opus-4.5
+  visibility: public
+
+skills:
+  - name: git_operations
+    entry: .claude/skills/git_operations.py
+    description: Git操作（分支创建、提交、推送、创建PR）
+    timeout: 600
+
+  - name: code_review
+    entry: .claude/skills/code_review.py
+    description: 代码审查（静态分析、风格检查）
+    timeout: 300
+
+  - name: test_runner
+    entry: .claude/skills/test_runner.py
+    description: 运行测试（pytest, flutter test）
+    timeout: 600
+
+allowed_tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
+
+max_turns: 50
+
+workspace:
+  base_dir: /Users/80392083/develop/ee_app_claude/backend/agents/ee_developer/workspace
+  allowed_paths:
+    - ee_app_claude/**
+  denied_paths:
+    - ee_app_claude/.env
+    - ee_app_claude/**/*.key
+    - ee_app_claude/**/*secret*
+
+security:
+  file_access_control: true
+  git_audit_logging: true
+  important_file_confirmation: true

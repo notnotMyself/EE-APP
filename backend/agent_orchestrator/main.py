@@ -260,6 +260,10 @@ app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
 app.include_router(profile_router)
 
+# Agent Management API
+from api.agent_management import router as agent_management_router
+app.include_router(agent_management_router)
+
 
 # ============================================
 # 数据模型
@@ -352,7 +356,19 @@ async def health_check():
 )
 async def list_agents():
     """列出所有可用的AI员工"""
-    agents = agent_service.list_agents()
+    # 使用 AgentRegistry 获取最新的agent列表
+    agents = []
+    for agent_id in agent_registry.get_all_ids():
+        agent_info = agent_registry.get_agent(agent_id)
+        if agent_info:
+            agents.append({
+                "role": agent_info.id,
+                "name": agent_info.name,
+                "description": agent_info.config.metadata.description,
+                "model": agent_info.config.metadata.model,
+                "workdir": str(agent_info.agent_dir),
+                "available": agent_info.agent_dir.exists()
+            })
     return {
         "agents": agents,
         "total": len(agents)
@@ -373,19 +389,21 @@ async def get_agent_info(role: str):
     Args:
         role: 员工角色标识，例如 'dev_efficiency_analyst'
     """
-    role_config = agent_config.get_agent_role(role)
-    if not role_config:
+    agent_info = agent_registry.get_agent(role)
+    if not agent_info:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    workdir = agent_config.get_agent_workdir(role)
+    # 获取allowed_tools
+    allowed_tools = agent_info.config.allowed_tools if hasattr(agent_info.config, 'allowed_tools') else []
+
     return {
         "role": role,
-        "name": role_config.name,
-        "description": role_config.description,
-        "model": role_config.model,
-        "allowed_tools": role_config.allowed_tools,
-        "workdir": str(workdir),
-        "available": workdir.exists()
+        "name": agent_info.name,
+        "description": agent_info.config.metadata.description,
+        "model": agent_info.config.metadata.model,
+        "workdir": str(agent_info.agent_dir),
+        "allowed_tools": allowed_tools,
+        "available": agent_info.agent_dir.exists()
     }
 
 

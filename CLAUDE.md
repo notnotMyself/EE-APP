@@ -140,3 +140,215 @@ Use `@/openspec/AGENTS.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+---
+
+## 测试与验收规范
+
+### 验收原则
+
+**核心要求**: 任何功能实现都必须经过严格的测试验收，确保代码真正可用，而不仅仅是"文件存在"。
+
+### 强制要求
+
+1. **数据库迁移必须执行**
+   - 创建迁移文件后，必须执行 `supabase db push`
+   - 验证表结构和字段是否正确创建
+   - 检查 RLS 策略是否生效
+
+2. **后端服务必须启动并测试**
+   - 启动后端：`cd backend/agent_orchestrator && python3 main.py`
+   - 验证健康检查：`curl http://localhost:8000/health`
+   - 测试所有新增的 API 端点
+
+3. **功能端到端验证**
+   - 运行 acceptance 测试脚本（如有）
+   - 手动验证关键功能流程
+   - 使用 webapp-testing skill 测试 Flutter 应用（当可用时）
+
+4. **集成测试**
+   - 新 Agent 必须能在 `/api/v1/agents` 列表中显示
+   - 新 Agent 的 `/api/v1/agents/{id}` 端点必须返回正确信息
+   - Skills 和工具必须能正常调用
+
+### 验收检查清单
+
+#### 后端功能验收
+
+```bash
+# 1. 启动后端
+cd backend/agent_orchestrator
+python3 main.py
+
+# 2. 健康检查
+curl http://localhost:8000/health | jq .
+
+# 3. 列出所有 Agents
+curl http://localhost:8000/api/v1/agents | jq '.total'
+
+# 4. 测试新增 Agent 详情
+curl http://localhost:8000/api/v1/agents/{agent_id} | jq .
+
+# 5. 测试新增 API（如 Skill Templates）
+curl http://localhost:8000/api/v1/agents/skill-templates | jq '.success'
+```
+
+#### 数据库验收
+
+```bash
+# 1. 检查迁移文件
+ls -la supabase/migrations/*.sql
+
+# 2. 执行迁移
+supabase db push --db-url <connection_string>
+
+# 3. 验证表结构（在 Supabase Dashboard）
+# - 表是否创建
+# - 字段类型是否正确
+# - 索引是否存在
+# - RLS 策略是否配置
+```
+
+#### Agent 验收
+
+```bash
+# 1. 检查文件结构
+ls -la backend/agents/{agent_id}/
+# 必须包含: agent.yaml, CLAUDE.md, .claude/skills/
+
+# 2. 验证 agent.yaml
+python3 -c "import yaml; print(yaml.safe_load(open('backend/agents/{agent_id}/agent.yaml'))['metadata']['id'])"
+
+# 3. 测试 Agent 注册
+# Agent 应该出现在 /api/v1/agents 列表中
+
+# 4. 测试 Skills（如果有）
+cd backend/agents/{agent_id}
+echo '{"action": "test"}' | python3 .claude/skills/skill_name.py
+```
+
+### 自动化验收脚本
+
+创建 `test_acceptance.py` 脚本来自动化验收流程：
+
+```python
+#!/usr/bin/env python3
+"""
+综合验收测试脚本
+"""
+import requests
+
+BASE_URL = "http://localhost:8000"
+
+def test_backend_health():
+    response = requests.get(f"{BASE_URL}/health")
+    assert response.status_code == 200
+    print("✅ Backend healthy")
+
+def test_new_agents():
+    response = requests.get(f"{BASE_URL}/api/v1/agents")
+    agents = response.json()['agents']
+    agent_roles = [a['role'] for a in agents]
+    
+    # 检查新增的 agents
+    assert 'new_agent_role' in agent_roles
+    print("✅ New agent registered")
+
+def test_new_api_endpoints():
+    # 测试新增的 API 端点
+    response = requests.get(f"{BASE_URL}/api/v1/new-endpoint")
+    assert response.status_code == 200
+    print("✅ New API endpoint works")
+
+if __name__ == "__main__":
+    test_backend_health()
+    test_new_agents()
+    test_new_api_endpoints()
+    print("\n✅ All acceptance tests passed!")
+```
+
+### webapp-testing Skill
+
+当需要测试 Flutter 应用时，使用 webapp-testing skill：
+
+```python
+# 示例：测试登录流程
+from webapp_testing import test_workflow
+
+test_workflow({
+    "url": "http://localhost:5000",
+    "credentials": {
+        "email": "test@example.com",
+        "password": "password"
+    },
+    "steps": [
+        {"action": "navigate", "target": "/login"},
+        {"action": "fill", "selector": "#email", "value": "test@example.com"},
+        {"action": "fill", "selector": "#password", "value": "password"},
+        {"action": "click", "selector": "button[type=submit]"},
+        {"action": "assert", "selector": ".dashboard", "exists": True}
+    ]
+})
+```
+
+### 常见验收失败原因
+
+1. **API 路由未注册**
+   - 问题：创建了 API 文件但没有在 `main.py` 中注册
+   - 解决：检查 `app.include_router()` 调用
+
+2. **导入路径错误**
+   - 问题：使用相对导入但目录结构不支持
+   - 解决：改用绝对导入或修复 `sys.path`
+
+3. **Agent 未注册到 AgentRegistry**
+   - 问题：agent.yaml 存在但 `visibility: private` 导致权限问题
+   - 解决：改为 `visibility: public` 或实现正确的权限检查
+
+4. **数据库迁移未执行**
+   - 问题：创建了迁移文件但表不存在
+   - 解决：执行 `supabase db push`
+
+5. **环境变量未配置**
+   - 问题：依赖 API Key 但未设置
+   - 解决：检查 `.env` 文件和环境变量
+
+### 验收报告模板
+
+每次重大功能实现后，应该生成验收报告：
+
+```markdown
+# 功能验收报告
+
+## 功能概述
+[简要说明实现的功能]
+
+## 验收结果
+- ✅ 后端健康检查通过
+- ✅ API 端点测试通过 (X/Y)
+- ✅ Agent 注册成功
+- ✅ 数据库迁移执行成功
+- ⚠️  Flutter UI 待开发
+
+## 测试覆盖率
+- 单元测试：X%
+- 集成测试：Y%
+- 端到端测试：Z%
+
+## 发现的问题
+1. [问题描述]
+2. [问题描述]
+
+## 待完成工作
+1. [任务描述]
+2. [任务描述]
+
+## 验收结论
+[✅ 通过 / ⚠️ 部分通过 / ❌ 未通过]
+```
+
+### 最后提醒
+
+**记住：验收不是走形式，而是确保代码真正可用。如果测试失败，必须修复问题，而不是声称"功能已完成"。**
+
+测试是质量的保证，是对用户负责，也是对自己负责。
+
