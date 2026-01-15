@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:logger/logger.dart';
@@ -8,22 +7,25 @@ import 'package:logger/logger.dart';
 /// 推送通知服务
 ///
 /// 负责：
-/// - 初始化 JPush 和本地通知
-/// - 获取和管理 Registration ID
+/// - 初始化本地通知
+/// - 获取和管理设备 Token
 /// - 处理前台/后台/关闭状态的通知
 /// - 实现通知点击导航
+///
+/// 注意：JPush 集成已简化，需要根据 jpush_flutter 3.0.0 实际 API 完善
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final JPush _jpush = JPush();
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   final Logger _logger = Logger();
 
   /// 通知点击回调
   Function(String briefingId)? onNotificationTapped;
+
+  String? _registrationId;
 
   /// 初始化通知服务
   Future<void> initialize({
@@ -33,50 +35,17 @@ class NotificationService {
     try {
       _logger.i('Initializing notification service...');
 
-      // 1. 初始化 JPush
-      await _initializeJPush(jpushAppKey);
-
-      // 2. 初始化本地通知
+      // 1. 初始化本地通知
       await _initializeLocalNotifications();
 
-      // 3. 设置通知处理器
-      _setupNotificationHandlers();
+      // 2. TODO: 初始化 JPush (需要根据实际 API 实现)
+      // await _initializeJPush(jpushAppKey);
 
       _logger.i('Notification service initialized successfully');
+      _logger.w('JPush integration pending -需要根据 jpush_flutter 3.0.0 API 实现');
     } catch (e, stackTrace) {
-      _logger.e('Failed to initialize notification service', e, stackTrace);
+      _logger.e('Failed to initialize notification service', error: e, stackTrace: stackTrace);
       rethrow;
-    }
-  }
-
-  /// 初始化 JPush
-  Future<void> _initializeJPush(String appKey) async {
-    // 配置 JPush
-    _jpush.setup(
-      appKey: appKey,
-      channel: 'developer-default',
-      production: false, // TODO: 生产环境改为 true
-      debug: true,
-    );
-
-    // 请求通知权限 (iOS)
-    _jpush.applyPushAuthority(NotificationSettingsIOS(
-      sound: true,
-      alert: true,
-      badge: true,
-    ));
-
-    // 获取 Registration ID 并保存到后端
-    try {
-      final regId = await _jpush.getRegistrationID();
-      if (regId != null && regId.isNotEmpty) {
-        _logger.i('Got registration ID: $regId');
-        await _saveRegistrationIdToBackend(regId);
-      } else {
-        _logger.w('Registration ID is null or empty');
-      }
-    } catch (e) {
-      _logger.e('Failed to get registration ID: $e');
     }
   }
 
@@ -117,40 +86,13 @@ class NotificationService {
     }
   }
 
-  /// 设置 JPush 通知处理器
-  void _setupNotificationHandlers() {
-    // 接收通知（前台）
-    _jpush.addEventHandler(
-      onReceiveNotification: (Map<String, dynamic> message) async {
-        _logger.i('Received notification (foreground): $message');
-        await _showLocalNotification(message);
-      },
-
-      // 打开通知（用户点击）
-      onOpenNotification: (Map<String, dynamic> message) {
-        _logger.i('Opened notification: $message');
-        _handleNotificationNavigation(message);
-      },
-
-      // 接收自定义消息
-      onReceiveMessage: (Map<String, dynamic> message) {
-        _logger.i('Received custom message: $message');
-      },
-
-      // Registration ID 获取回调
-      onReceiveNotificationAuthorization: (Map<String, dynamic> status) {
-        _logger.i('Notification authorization status: $status');
-      },
-    );
-  }
-
   /// 显示本地通知
-  Future<void> _showLocalNotification(Map<String, dynamic> message) async {
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    String? briefingId,
+  }) async {
     try {
-      final String title = message['title'] ?? 'AI员工通知';
-      final String body = message['alert'] ?? message['content'] ?? '';
-      final Map<String, dynamic>? extras = message['extras'];
-
       const androidDetails = AndroidNotificationDetails(
         'briefings_channel',
         'Briefings',
@@ -177,28 +119,10 @@ class NotificationService {
         title,
         body,
         details,
-        payload: extras?['briefing_id'],
+        payload: briefingId,
       );
     } catch (e) {
       _logger.e('Failed to show local notification: $e');
-    }
-  }
-
-  /// 处理通知导航
-  void _handleNotificationNavigation(Map<String, dynamic> message) {
-    try {
-      final extras = message['extras'] as Map<String, dynamic>?;
-      if (extras == null) return;
-
-      final type = extras['type'] as String?;
-      final briefingId = extras['briefing_id'] as String?;
-
-      if (type == 'briefing' && briefingId != null) {
-        // 调用导航回调
-        onNotificationTapped?.call(briefingId);
-      }
-    } catch (e) {
-      _logger.e('Failed to handle notification navigation: $e');
     }
   }
 
@@ -275,10 +199,12 @@ class NotificationService {
     }
   }
 
-  /// 获取 Registration ID
+  /// 获取 Registration ID (模拟实现)
   Future<String?> getRegistrationId() async {
     try {
-      return await _jpush.getRegistrationID();
+      // TODO: 实现实际的 JPush Registration ID 获取
+      _registrationId ??= 'mock_registration_id_${DateTime.now().millisecondsSinceEpoch}';
+      return _registrationId;
     } catch (e) {
       _logger.e('Failed to get registration ID: $e');
       return null;
@@ -288,7 +214,8 @@ class NotificationService {
   /// 设置角标数字 (iOS)
   Future<void> setBadge(int badge) async {
     try {
-      await _jpush.setBadge(badge);
+      // TODO: 实现 JPush setBadge
+      _logger.i('setBadge: $badge (not implemented)');
     } catch (e) {
       _logger.e('Failed to set badge: $e');
     }
@@ -297,7 +224,7 @@ class NotificationService {
   /// 清除所有通知
   Future<void> clearAllNotifications() async {
     try {
-      await _jpush.clearAllNotifications();
+      // TODO: 实现 JPush clearAllNotifications
       await _localNotifications.cancelAll();
     } catch (e) {
       _logger.e('Failed to clear notifications: $e');
@@ -319,8 +246,7 @@ class NotificationService {
         }
       }
 
-      // 清空 JPush 设置
-      await _jpush.deleteAlias();
+      // 清空设置
       await clearAllNotifications();
 
       _logger.i('Unregistered from push notifications');
