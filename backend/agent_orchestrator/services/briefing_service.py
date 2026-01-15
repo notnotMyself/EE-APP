@@ -20,10 +20,12 @@ class BriefingService:
         supabase_client: Any,
         importance_evaluator: ImportanceEvaluator = None,
         conversation_service: Any = None,
+        push_notification_service: Any = None,
     ):
         self.supabase = supabase_client
         self.evaluator = importance_evaluator or ImportanceEvaluator()
         self.conversation_service = conversation_service
+        self.push_notification_service = push_notification_service
 
     async def evaluate_importance(self, analysis_result: Dict[str, Any]) -> float:
         """评估分析结果的重要性分数"""
@@ -87,8 +89,31 @@ class BriefingService:
 
         try:
             result = self.supabase.table("briefings").insert(briefing).execute()
+            created_briefing = result.data[0] if result.data else briefing
             logger.info(f"Created briefing {briefing['id']} for user {user_id}")
-            return result.data[0] if result.data else briefing
+
+            # Send push notification if push service is configured
+            if self.push_notification_service and importance_score >= 0.7 and priority in ["P0", "P1"]:
+                try:
+                    # Get agent name from the registry or context
+                    agent_name = analysis_result.get("agent_name", "AI Employee")
+
+                    # Prepare briefing data for notification
+                    notification_briefing = {
+                        **created_briefing,
+                        "agent_name": agent_name
+                    }
+
+                    # Send notification asynchronously (don't wait for result)
+                    await self.push_notification_service.send_briefing_notification(
+                        user_id=user_id,
+                        briefing=notification_briefing
+                    )
+                except Exception as e:
+                    # Log but don't fail briefing creation if notification fails
+                    logger.error(f"Failed to send push notification for briefing {briefing['id']}: {e}")
+
+            return created_briefing
         except Exception as e:
             logger.error(f"Failed to create briefing: {e}")
             raise
