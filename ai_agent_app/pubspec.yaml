@@ -54,6 +54,10 @@ dev_dependencies:
   freezed: ^2.4.7
   riverpod_generator: ^2.4.0
 
+# Override app_links to fix CI build issue  
+dependency_overrides:
+  app_links: 6.3.1
+
 flutter:
   uses-material-design: true
 
