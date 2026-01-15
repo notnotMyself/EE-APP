@@ -21,11 +21,13 @@ class BriefingService:
         importance_evaluator: ImportanceEvaluator = None,
         conversation_service: Any = None,
         push_notification_service: Any = None,
+        ui_schema_generator: Any = None,
     ):
         self.supabase = supabase_client
         self.evaluator = importance_evaluator or ImportanceEvaluator()
         self.conversation_service = conversation_service
         self.push_notification_service = push_notification_service
+        self.ui_schema_generator = ui_schema_generator
 
     async def evaluate_importance(self, analysis_result: Dict[str, Any]) -> float:
         """评估分析结果的重要性分数"""
@@ -82,6 +84,30 @@ class BriefingService:
             "status": "new",
             "created_at": datetime.utcnow().isoformat(),
         }
+
+        # Generate UI Schema if generator is available
+        if self.ui_schema_generator:
+            try:
+                ui_schema = self.ui_schema_generator.generate_from_analysis(
+                    analysis_result=analysis_result.get("response", ""),
+                    data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
+                    agent_role=agent_id
+                )
+
+                if ui_schema:
+                    briefing["ui_schema"] = ui_schema
+                    briefing["ui_schema_version"] = "1.0"
+                    logger.info(f"Generated UI schema for briefing {briefing['id']}")
+                else:
+                    # Fallback to markdown schema
+                    briefing["ui_schema"] = self.ui_schema_generator.create_fallback_markdown_schema(
+                        briefing_data["summary"]
+                    )
+                    briefing["ui_schema_version"] = "1.0"
+                    logger.debug(f"Using fallback markdown schema for briefing {briefing['id']}")
+            except Exception as e:
+                logger.error(f"Error generating UI schema: {e}")
+                # Continue without UI schema
 
         if not self.supabase:
             logger.warning("Supabase not configured, briefing not saved")

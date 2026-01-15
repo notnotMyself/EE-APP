@@ -102,8 +102,9 @@ else:
 importance_evaluator = ImportanceEvaluator()
 
 # Initialize PushNotificationService
-from services import PushNotificationService
+from services import PushNotificationService, UISchemaGenerator
 push_notification_service = PushNotificationService(supabase_client=supabase_client)
+ui_schema_generator = UISchemaGenerator()
 
 # 注意：ConversationService、BriefingService、TaskExecutionService有复杂的循环依赖
 # 需要多步初始化来解决
@@ -114,6 +115,7 @@ briefing_service = BriefingService(
     importance_evaluator=importance_evaluator,
     conversation_service=None,  # 暂时为None
     push_notification_service=push_notification_service,
+    ui_schema_generator=ui_schema_generator,
 )
 
 # Step 2: 创建TaskExecutionService（不传conversation_service）

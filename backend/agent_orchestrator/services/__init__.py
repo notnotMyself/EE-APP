@@ -6,10 +6,12 @@ from .briefing_service import BriefingService
 from .importance_evaluator import ImportanceEvaluator
 from .conversation_service import ConversationService
 from .push_notification_service import PushNotificationService
+from .ui_schema_generator import UISchemaGenerator
 
 __all__ = [
     "BriefingService",
     "ImportanceEvaluator",
     "ConversationService",
-    "PushNotificationService"
+    "PushNotificationService",
+    "UISchemaGenerator"
 ]
