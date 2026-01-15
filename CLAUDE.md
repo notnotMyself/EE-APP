@@ -117,8 +117,34 @@ ee_app_claude/
 │           ├── .claude/skills/   # 可执行技能脚本
 │           └── reports/          # 生成的报告
 ├── supabase/                     # 数据库配置
+│   └── migrations/               # 数据库迁移文件
+├── scripts/                      # 项目脚本
+│   └── migrate_db.sh             # 数据库迁移脚本
+├── docs/                         # 文档目录
+│   └── DATABASE_MIGRATION.md     # 数据库迁移指南
 └── openspec/                     # 规范文档
 ```
+
+---
+
+## 数据库迁移
+
+### 快速执行迁移
+
+```bash
+# 使用封装脚本（推荐）
+./scripts/migrate_db.sh
+
+# 或手动执行
+supabase link --project-ref dwesyojvzbltqtgtctpt --password "ee-for-everything1"
+supabase db push
+```
+
+**详细文档**: 查看 `docs/DATABASE_MIGRATION.md` 了解完整指南。
+
+**项目配置**:
+- Project Reference: `dwesyojvzbltqtgtctpt`
+- Dashboard: https://supabase.com/dashboard/project/dwesyojvzbltqtgtctpt
 
 ---
 
