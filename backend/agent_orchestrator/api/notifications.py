@@ -10,7 +10,7 @@ from supabase import Client
 from ..api.deps import get_supabase_client, get_current_user
 from ..services import PushNotificationService
 
-router = APIRouter(prefix="/notifications", tags=["notifications"])
+router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
 
 
 # Request/Response Models
