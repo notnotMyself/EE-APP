@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from supabase import Client
 
-from ..api.deps import get_supabase_client, get_current_user
-from ..services import PushNotificationService
+from .deps import get_supabase_client, get_current_user
+from services import PushNotificationService
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
 
