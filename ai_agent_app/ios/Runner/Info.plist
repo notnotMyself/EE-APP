@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- JPush AppKey 配置 -->
+	<!-- TODO: 替换为实际的 JPush AppKey -->
+	<key>AppKey</key>
+	<string>YOUR_JPUSH_APP_KEY</string>
+	<!-- 后台模式 -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<!-- ATS 配置（允许 JPush HTTP 连接） -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
