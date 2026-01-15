@@ -50,7 +50,13 @@ from agent_registry import AgentRegistry, init_global_registry
 from scheduler import SchedulerService, JobExecutor
 from services import BriefingService, ImportanceEvaluator, ConversationService
 from services.task_execution_service import TaskExecutionService
-from api import briefings_router, scheduled_jobs_router, conversations_router, profile_router
+from api import (
+    briefings_router,
+    scheduled_jobs_router,
+    conversations_router,
+    profile_router,
+    notifications_router
+)
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
 from api.conversations import set_conversation_service
@@ -259,6 +265,7 @@ app.include_router(briefings_router)
 app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
 app.include_router(profile_router)
+app.include_router(notifications_router)
 
 # Agent Management API
 from api.agent_management import router as agent_management_router
