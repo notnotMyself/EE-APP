@@ -16,7 +16,7 @@ class RoleDial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(28),
@@ -34,7 +34,7 @@ class RoleDial extends StatelessWidget {
         children: List.generate(secretaries.length, (index) {
           final isLast = index == secretaries.length - 1;
           return Padding(
-            padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+            padding: EdgeInsets.only(bottom: isLast ? 0 : 6),
             child: _buildRoleButton(context, index),
           );
         }),
@@ -50,8 +50,8 @@ class RoleDial extends StatelessWidget {
       onTap: () => onSelect(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        width: isActive ? 44 : 38,
-        height: isActive ? 44 : 38,
+        width: isActive ? 40 : 36,
+        height: isActive ? 40 : 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
