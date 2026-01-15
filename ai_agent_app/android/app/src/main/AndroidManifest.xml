@@ -1,8 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 推送通知权限 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
     <application
         android:label="ai_agent_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- JPush AppKey 配置 -->
+        <!-- TODO: 替换为实际的 JPush AppKey -->
+        <meta-data
+            android:name="JPUSH_APPKEY"
+            android:value="YOUR_JPUSH_APP_KEY" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
