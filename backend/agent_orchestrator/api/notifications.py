@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from supabase import Client
 
-from .deps import get_supabase_client, get_current_user
+from .deps import get_supabase_admin, get_current_user_id
 from services import PushNotificationService
 
 router = APIRouter(prefix="/api/v1/notifications", tags=["notifications"])
@@ -59,15 +59,15 @@ class SuccessResponse(BaseModel):
 @router.post("/register-device", response_model=SuccessResponse)
 async def register_device(
     request: DeviceRegistrationRequest,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
+    user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase_admin)
 ):
     """
     Register a device for push notifications
 
     Args:
         request: Device registration data
-        current_user: Current authenticated user
+        user_id: Current authenticated user ID
         supabase: Supabase client
 
     Returns:
@@ -83,7 +83,7 @@ async def register_device(
     }
 
     success = await push_service.register_device(
-        user_id=current_user['id'],
+        user_id=user_id,
         registration_id=request.registration_id,
         platform=request.platform,
         device_info=device_info
@@ -104,15 +104,15 @@ async def register_device(
 @router.post("/unregister-device", response_model=SuccessResponse)
 async def unregister_device(
     request: DeviceUnregistrationRequest,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
+    user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase_admin)
 ):
     """
     Unregister a device from push notifications
 
     Args:
         request: Device unregistration data
-        current_user: Current authenticated user
+        user_id: Current authenticated user ID
         supabase: Supabase client
 
     Returns:
@@ -121,7 +121,7 @@ async def unregister_device(
     push_service = PushNotificationService(supabase)
 
     success = await push_service.unregister_device(
-        user_id=current_user['id'],
+        user_id=user_id,
         registration_id=request.registration_id
     )
 
@@ -139,14 +139,14 @@ async def unregister_device(
 
 @router.get("/settings", response_model=NotificationSettingsResponse)
 async def get_notification_settings(
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
+    user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase_admin)
 ):
     """
     Get user notification settings
 
     Args:
-        current_user: Current authenticated user
+        user_id: Current authenticated user ID
         supabase: Supabase client
 
     Returns:
@@ -155,7 +155,7 @@ async def get_notification_settings(
     try:
         response = supabase.table('user_notification_settings') \
             .select('*') \
-            .eq('user_id', current_user['id']) \
+            .eq('user_id', user_id) \
             .single() \
             .execute()
 
@@ -190,15 +190,15 @@ async def get_notification_settings(
 @router.put("/settings", response_model=SuccessResponse)
 async def update_notification_settings(
     request: NotificationSettingsRequest,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
+    user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase_admin)
 ):
     """
     Update user notification settings
 
     Args:
         request: Notification settings update data
-        current_user: Current authenticated user
+        user_id: Current authenticated user ID
         supabase: Supabase client
 
     Returns:
@@ -227,7 +227,7 @@ async def update_notification_settings(
             )
 
         # Upsert settings
-        update_data['user_id'] = current_user['id']
+        update_data['user_id'] = user_id
         supabase.table('user_notification_settings') \
             .upsert(update_data, on_conflict='user_id') \
             .execute()
@@ -248,14 +248,14 @@ async def update_notification_settings(
 
 @router.get("/devices")
 async def list_devices(
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase_client)
+    user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase_admin)
 ):
     """
     List user's registered devices
 
     Args:
-        current_user: Current authenticated user
+        user_id: Current authenticated user ID
         supabase: Supabase client
 
     Returns:
@@ -264,7 +264,7 @@ async def list_devices(
     try:
         response = supabase.table('user_devices') \
             .select('*') \
-            .eq('user_id', current_user['id']) \
+            .eq('user_id', user_id) \
             .eq('is_active', True) \
             .order('last_active_at', desc=True) \
             .execute()
