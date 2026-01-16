@@ -43,6 +43,8 @@ class ConversationResponse(BaseModel):
     id: str
     user_id: str
     agent_id: str
+    agent_name: Optional[str] = None  # Agent 名称
+    agent_role: Optional[str] = None  # Agent role（用于匹配 agent_registry）
     title: Optional[str] = None
     status: str
     started_at: str
@@ -291,7 +293,7 @@ async def list_user_conversations(
     **排序**: 按last_message_at降序（最近活跃的在前）
 
     Returns:
-        对话列表
+        对话列表（包含 agent_name 和 agent_role）
     """
     if not conversation_service:
         raise HTTPException(
@@ -303,7 +305,42 @@ async def list_user_conversations(
             user_id=user_id, limit=limit
         )
 
-        return [ConversationResponse(**conv) for conv in conversations]
+        # 获取所有 agent_id 并查询 agent 信息
+        agent_ids = list({conv["agent_id"] for conv in conversations})
+        agent_map = {}
+        
+        if agent_ids and conversation_service.supabase:
+            try:
+                result = conversation_service.supabase.table("agents").select(
+                    "id, name, role"
+                ).in_("id", agent_ids).execute()
+                
+                if result.data:
+                    for agent in result.data:
+                        agent_map[agent["id"]] = {
+                            "name": agent.get("name"),
+                            "role": agent.get("role"),
+                        }
+            except Exception as e:
+                logger.warning(f"Failed to fetch agent info: {e}")
+
+        # 构建带有 agent 信息的响应
+        result = []
+        for conv in conversations:
+            agent_info = agent_map.get(conv["agent_id"], {})
+            result.append(ConversationResponse(
+                id=conv["id"],
+                user_id=conv["user_id"],
+                agent_id=conv["agent_id"],
+                agent_name=agent_info.get("name"),
+                agent_role=agent_info.get("role"),
+                title=conv.get("title"),
+                status=conv["status"],
+                started_at=conv["started_at"],
+                last_message_at=conv.get("last_message_at"),
+            ))
+
+        return result
 
     except Exception as e:
         logger.error(f"Error listing conversations for user {user_id}: {e}")

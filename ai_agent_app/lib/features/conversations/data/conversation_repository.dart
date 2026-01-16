@@ -168,8 +168,7 @@ class ConversationRepository {
             'API请求失败: ${streamedResponse.statusCode} ${streamedResponse.reasonPhrase} $body');
       }
 
-      // 解析 SSE（ai_agent_platform 格式：只有 data: ... 行，且事件以空行分隔）
-      // 添加流超时控制
+      // 解析 SSE - 按行处理，更简单更可靠
       String buffer = '';
       await for (final chunk in streamedResponse.stream
           .timeout(
@@ -182,31 +181,48 @@ class ConversationRepository {
           .transform(utf8.decoder)) {
         buffer += chunk;
 
-        while (true) {
-          final idx = buffer.indexOf('\n\n');
-          if (idx == -1) break;
+        // 按行处理
+        while (buffer.contains('\n')) {
+          final idx = buffer.indexOf('\n');
+          final line = buffer.substring(0, idx).trim();
+          buffer = buffer.substring(idx + 1);
 
-          final eventBlock = buffer.substring(0, idx);
-          buffer = buffer.substring(idx + 2);
+          // 跳过空行
+          if (line.isEmpty) continue;
 
-          final lines = eventBlock.split('\n');
-          final dataLines = <String>[];
-          for (final rawLine in lines) {
-            final line = rawLine.trimRight();
-            if (line.startsWith('data:')) {
-              dataLines.add(line.substring(5).trimLeft());
+          // 解析 data: 行
+          if (line.startsWith('data:')) {
+            final data = line.substring(5).trim();
+            
+            // 跳过空数据
+            if (data.isEmpty) continue;
+            
+            // 检查结束标记
+            if (data == '[DONE]') return;
+            
+            // 检查错误
+            if (data.startsWith('[ERROR]')) {
+              throw Exception('AI响应错误: $data');
             }
+
+            // 尝试解析为 JSON（任务相关事件）
+            if (data.startsWith('{')) {
+              try {
+                final json = jsonDecode(data) as Map<String, dynamic>;
+                // 如果是错误类型，抛出异常
+                if (json['type'] == 'error') {
+                  throw Exception(json['error'] ?? '未知错误');
+                }
+                // 其他 JSON 事件暂时忽略（任务进度等）
+                continue;
+              } catch (e) {
+                // 不是有效 JSON，当作普通文本处理
+              }
+            }
+
+            // 普通文本 chunk
+            yield data;
           }
-
-          if (dataLines.isEmpty) continue;
-          final data = dataLines.join('\n');
-
-          if (data == '[DONE]') return;
-          if (data.startsWith('[ERROR]')) {
-            throw Exception('AI响应错误: $data');
-          }
-
-          yield data;
         }
       }
     } on TimeoutException catch (e) {
@@ -268,53 +284,22 @@ class ConversationRepository {
       final dio = Dio();
       final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
-      // 1. 获取对话列表
-      final conversationsResponse = await dio.get(
+      // 获取对话列表（后端现在直接返回 agent_name 和 agent_role）
+      final response = await dio.get(
         '${AppConfig.apiUrl}/conversations',
         queryParameters: {'limit': 50},
         options: Options(headers: authHeaders),
       );
 
-      // 2. 获取 agent 列表（用于填充 agent 信息）
-      final agentsResponse = await dio.get(
-        '${AppConfig.apiUrl}/agents',
-        options: Options(headers: authHeaders),
-      );
-
-      // 构建 agent 映射 (uuid -> agent info)
-      final agentMap = <String, Map<String, dynamic>>{};
-      if (agentsResponse.statusCode == 200) {
-        final agentsData = agentsResponse.data as Map<String, dynamic>;
-        final agents = agentsData['agents'] as List? ?? [];
-        for (final agent in agents) {
-          // 后端返回的 agent 包含 role, name, description 等
-          // 需要通过 role 查找对应的 uuid
-          agentMap[agent['role'] as String] = agent as Map<String, dynamic>;
-        }
-      }
-
-      // 3. 转换为 ConversationSummary
-      final conversations = conversationsResponse.data as List? ?? [];
+      final conversations = response.data as List? ?? [];
       final summaries = <ConversationSummary>[];
 
       for (final conv in conversations) {
-        final agentId = conv['agent_id'] as String;
-        
-        // 尝试通过 agent_id (uuid) 或 role 查找 agent 信息
-        Map<String, dynamic>? agentInfo;
-        for (final entry in agentMap.entries) {
-          // 简单匹配：检查 agent_id 是否包含 role 或者相等
-          if (agentId == entry.key || agentId.contains(entry.key)) {
-            agentInfo = entry.value;
-            break;
-          }
-        }
-
         summaries.add(ConversationSummary(
           id: conv['id'] as String,
-          agentId: agentId,
-          agentName: agentInfo?['name'] as String? ?? '未知员工',
-          agentRole: agentInfo?['role'] as String? ?? agentId,
+          agentId: conv['agent_id'] as String,
+          agentName: conv['agent_name'] as String? ?? '未知员工',
+          agentRole: conv['agent_role'] as String? ?? conv['agent_id'] as String,
           agentAvatarUrl: null, // TODO: 后端需要返回 avatar
           lastMessageContent: conv['title'] as String?, // 用 title 作为最后消息预览
           lastMessageAt: conv['last_message_at'] != null

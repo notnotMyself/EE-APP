@@ -138,7 +138,7 @@ class FeedHomePage extends ConsumerWidget {
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // Avatar (Left)
                             AvatarDisplay(secretary: activeSecretary),
@@ -146,15 +146,12 @@ class FeedHomePage extends ConsumerWidget {
                             const Spacer(),
 
                             // Role Dial (Right)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: RoleDial(
-                                secretaries: secretariesData,
-                                activeIndex: activeSecretaryIndex,
-                                onSelect: (index) => ref
-                                    .read(activeSecretaryIndexProvider.notifier)
-                                    .state = index,
-                              ),
+                            RoleDial(
+                              secretaries: secretariesData,
+                              activeIndex: activeSecretaryIndex,
+                              onSelect: (index) => ref
+                                  .read(activeSecretaryIndexProvider.notifier)
+                                  .state = index,
                             ),
                           ],
                         ),

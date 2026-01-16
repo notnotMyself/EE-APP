@@ -254,6 +254,7 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
         _messages = messages;
       });
 
+      // 直接跳转到底部（不用动画）
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
@@ -264,14 +265,19 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
     }
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool animate = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        if (animate) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        } else {
+          // 直接跳转到底部（reverse: true 时底部偏移为 0）
+          _scrollController.jumpTo(0);
+        }
       }
     });
   }
@@ -312,25 +318,37 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_isStreaming ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length && _isStreaming) {
-                  return MessageBubble(
-                    message: Message(
-                      id: 'streaming',
-                      conversationId: _currentConversationId!,
-                      role: 'assistant',
-                      content: _streamingContent,
-                      createdAt: DateTime.now(),
-                    ),
-                    isStreaming: true,
-                  );
-                }
+            child: Builder(
+              builder: (context) {
+                final displayMessages = _messages.reversed.toList();
+                final totalItems =
+                    displayMessages.length + (_isStreaming ? 1 : 0);
 
-                return MessageBubble(message: _messages[index]);
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: totalItems,
+                  itemBuilder: (context, index) {
+                    if (_isStreaming && index == 0) {
+                      return MessageBubble(
+                        message: Message(
+                          id: 'streaming',
+                          conversationId: _currentConversationId!,
+                          role: 'assistant',
+                          content: _streamingContent,
+                          createdAt: DateTime.now(),
+                        ),
+                        isStreaming: true,
+                      );
+                    }
+
+                    final messageIndex = _isStreaming ? index - 1 : index;
+                    return MessageBubble(
+                      message: displayMessages[messageIndex],
+                    );
+                  },
+                );
               },
             ),
           ),
