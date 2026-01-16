@@ -294,6 +294,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.7"
+  data_table_2:
+    dependency: "direct main"
+    description:
+      name: data_table_2
+      sha256: "5a540a7b64809eb46b3809c67fc6faa29ca217864341294df66b1f0eb040c20e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.18"
   dbus:
     dependency: transitive
     description:
@@ -326,6 +334,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "3e0141505477fd8ad55d6eb4e7776d3fe8430be8e497ccb1521370c3f21a3e2b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.8"
   fake_async:
     dependency: transitive
     description:
@@ -358,6 +374,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  fl_chart:
+    dependency: "direct main"
+    description:
+      name: fl_chart
+      sha256: d0f0d49112f2f4b192481c16d05b6418bd7820e021e265a3c22db98acf7ed7fb
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.68.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -379,6 +403,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_local_notifications:
+    dependency: "direct main"
+    description:
+      name: flutter_local_notifications
+      sha256: "55b9b229307a10974b26296ff29f2e132256ba4bd74266939118eaefa941cb00"
+      url: "https://pub.dev"
+    source: hosted
+    version: "16.3.3"
+  flutter_local_notifications_linux:
+    dependency: transitive
+    description:
+      name: flutter_local_notifications_linux
+      sha256: c49bd06165cad9beeb79090b18cd1eb0296f4bf4b23b84426e37dd7c027fc3af
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.1"
+  flutter_local_notifications_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_local_notifications_platform_interface
+      sha256: "85f8d07fe708c1bdcf45037f2c0109753b26ae077e9d9e899d55971711a4ea66"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.2.0"
   flutter_markdown:
     dependency: "direct main"
     description:
@@ -533,6 +581,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  jpush_flutter:
+    dependency: "direct main"
+    description:
+      name: jpush_flutter
+      sha256: b18c3317c355e5834246ca45fee2a3a377a1569425d2ce0ae03852df6f06c3c8
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.4.0"
   js:
     dependency: transitive
     description:
@@ -1098,6 +1154,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.2"
+  timeline_tile:
+    dependency: "direct main"
+    description:
+      name: timeline_tile
+      sha256: "85ec2023c67137397c2812e3e848b2fb20b410b67cd9aff304bb5480c376fc0c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
+  timezone:
+    dependency: "direct main"
+    description:
+      name: timezone
+      sha256: "2236ec079a174ce07434e89fcd3fcda430025eb7692244139a9cf54fdcf1fc7d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.9.4"
   timing:
     dependency: transitive
     description:
