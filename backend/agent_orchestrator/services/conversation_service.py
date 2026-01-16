@@ -15,7 +15,7 @@ from datetime import datetime
 
 from models import ConversationModel, MessageModel
 from services.task_intent_recognizer import TaskIntentRecognizer
-from agent_mapping import get_agent_role
+from agent_registry import get_global_registry
 
 logger = logging.getLogger(__name__)
 
@@ -71,18 +71,46 @@ class ConversationService:
         Returns:
             Agent 的 role string
 
-        Note:
-            如果 agent_id 已经是 role string（兼容旧数据），直接返回
+        Raises:
+            ValueError: 如果 agent 不存在
         """
-        role = get_agent_role(agent_id)
+        # 使用 agent_registry 的动态映射
+        registry = get_global_registry()
+
+        # 尝试通过 UUID 获取 role
+        role = registry.get_agent_id(agent_id)
         if role:
             return role
 
-        # Fallback: 如果映射不存在，假设 agent_id 已经是 role
-        logger.warning(
-            f"Agent ID '{agent_id}' not found in mapping, assuming it's already a role string"
+        # 如果 agent_id 已经是 role，检查是否存在
+        if registry.exists(agent_id):
+            return agent_id
+
+        # Fallback: 从数据库查询 agent 的 role
+        # 这处理了数据库 UUID 和 agent.yaml UUID 不一致的情况
+        try:
+            result = (
+                self.supabase.table("agents")
+                .select("role")
+                .eq("id", agent_id)
+                .execute()
+            )
+            if result.data and len(result.data) > 0:
+                db_role = result.data[0].get("role")
+                if db_role and registry.exists(db_role):
+                    logger.info(
+                        f"Found agent role '{db_role}' from database for UUID '{agent_id}'"
+                    )
+                    return db_role
+        except Exception as e:
+            logger.warning(f"Failed to query agent from database: {e}")
+
+        # 未找到 agent
+        logger.error(
+            f"Agent '{agent_id}' not found in registry or database. "
+            f"Available agents: {registry.get_all_ids()}"
         )
-        return agent_id
+        raise ValueError(f"Agent '{agent_id}' not found")
 
     async def get_or_create_conversation(
         self, user_id: str, agent_id: str
