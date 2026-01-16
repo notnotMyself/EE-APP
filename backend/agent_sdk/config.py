@@ -157,8 +157,38 @@ class AgentSDKConfig:
         }
 
     def get_agent_role(self, role: str) -> Optional[AgentRoleConfig]:
-        """获取 Agent 角色配置"""
-        return self.agent_roles.get(role)
+        """获取 Agent 角色配置
+        
+        先从预定义角色中查找，如果找不到则尝试从 agent.yaml 动态加载
+        """
+        # 1. 先从预定义角色中查找
+        if role in self.agent_roles:
+            return self.agent_roles[role]
+        
+        # 2. 尝试从 agent.yaml 动态加载
+        agent_yaml_path = self.agents_base_dir / role / "agent.yaml"
+        if agent_yaml_path.exists():
+            try:
+                import yaml
+                with open(agent_yaml_path, 'r', encoding='utf-8') as f:
+                    data = yaml.safe_load(f)
+                
+                metadata = data.get('metadata', {})
+                role_config = AgentRoleConfig(
+                    name=metadata.get('name', role),
+                    description=metadata.get('description', ''),
+                    model=metadata.get('model', 'saas/claude-sonnet-4.5'),
+                    allowed_tools=data.get('allowed_tools', ["Read", "Write", "Bash", "Grep", "Glob"]),
+                    max_turns=data.get('max_turns', 20),
+                )
+                # 缓存到 agent_roles 中，避免重复加载
+                self.agent_roles[role] = role_config
+                return role_config
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to load agent.yaml for {role}: {e}")
+        
+        return None
 
     def get_agent_workdir(self, role: str) -> Path:
         """获取 Agent 工作目录"""

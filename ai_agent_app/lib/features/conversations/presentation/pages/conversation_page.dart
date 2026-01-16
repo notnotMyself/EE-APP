@@ -223,6 +223,8 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
         setState(() {
           _currentConversationId = conversation.id;
         });
+        // 加载历史消息（get_or_create 可能返回已有对话）
+        await _loadMessages();
       } else {
         print('Failed to create conversation');
         if (mounted) {

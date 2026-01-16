@@ -13,20 +13,43 @@ import '../domain/models/conversation_summary.dart';
 class ConversationRepository {
   final _supabase = Supabase.instance.client;
 
-  /// 创建新对话
+  /// 获取或创建对话（通过后端 API）
+  ///
+  /// 数据库有唯一约束限制每个用户-Agent对只能有一个对话，
+  /// 所以这里改用后端的 get_or_create 逻辑。
   Future<Conversation> createConversation({
     required String userId,
     required String agentId,
   }) async {
     try {
-      final response = await _supabase.from('conversations').insert({
-        'user_id': userId,
-        'agent_id': agentId,
-      }).select().single();
+      // 使用后端 API 获取或创建对话
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
-      return Conversation.fromJson(response as Map<String, dynamic>);
+      final response = await dio.get(
+        '${AppConfig.apiUrl}/conversations/$agentId',
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        return Conversation(
+          id: data['id'] as String,
+          userId: data['user_id'] as String,
+          agentId: data['agent_id'] as String,
+          status: data['status'] as String?,
+          startedAt: DateTime.parse(data['started_at'] as String),
+          lastMessageAt: data['last_message_at'] != null
+              ? DateTime.parse(data['last_message_at'] as String)
+              : null,
+        );
+      } else {
+        throw Exception('获取对话失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('获取对话失败: ${e.message}');
     } catch (e) {
-      throw Exception('创建对话失败: $e');
+      throw Exception('获取对话失败: $e');
     }
   }
 
@@ -62,18 +85,28 @@ class ConversationRepository {
     }
   }
 
-  /// 获取对话中的所有消息
+  /// 获取对话中的所有消息（通过后端 API）
   Future<List<Message>> getMessages(String conversationId) async {
     try {
-      final response = await _supabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conversationId)
-          .order('created_at', ascending: true);
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
-      return (response as List)
-          .map((json) => Message.fromJson(json as Map<String, dynamic>))
-          .toList();
+      final response = await dio.get(
+        '${AppConfig.apiUrl}/conversations/$conversationId/messages',
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final messages = data['messages'] as List;
+        return messages
+            .map((json) => Message.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('获取消息列表失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('获取消息列表失败: ${e.message}');
     } catch (e) {
       throw Exception('获取消息列表失败: $e');
     }
@@ -232,20 +265,69 @@ class ConversationRepository {
   /// 获取用户的对话摘要列表（用于消息列表页）
   Future<List<ConversationSummary>> getConversationSummaries() async {
     try {
-      // 使用 agent_orchestrator API (新的 GET /conversations endpoint)
-      // user_id 现在从JWT token中获取，无需作为参数传递
       final dio = Dio();
       final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
 
-      final response = await dio.get(
-        '${AppConfig.apiUrl}/conversations',  // 修改为新的端点
+      // 1. 获取对话列表
+      final conversationsResponse = await dio.get(
+        '${AppConfig.apiUrl}/conversations',
         queryParameters: {'limit': 50},
         options: Options(headers: authHeaders),
       );
 
-      // TODO: 这里需要 backend 返回更丰富的信息（包括 agent name、role、avatar等）
-      // 目前先返回空列表，等 backend API 完善后再实现
-      return [];
+      // 2. 获取 agent 列表（用于填充 agent 信息）
+      final agentsResponse = await dio.get(
+        '${AppConfig.apiUrl}/agents',
+        options: Options(headers: authHeaders),
+      );
+
+      // 构建 agent 映射 (uuid -> agent info)
+      final agentMap = <String, Map<String, dynamic>>{};
+      if (agentsResponse.statusCode == 200) {
+        final agentsData = agentsResponse.data as Map<String, dynamic>;
+        final agents = agentsData['agents'] as List? ?? [];
+        for (final agent in agents) {
+          // 后端返回的 agent 包含 role, name, description 等
+          // 需要通过 role 查找对应的 uuid
+          agentMap[agent['role'] as String] = agent as Map<String, dynamic>;
+        }
+      }
+
+      // 3. 转换为 ConversationSummary
+      final conversations = conversationsResponse.data as List? ?? [];
+      final summaries = <ConversationSummary>[];
+
+      for (final conv in conversations) {
+        final agentId = conv['agent_id'] as String;
+        
+        // 尝试通过 agent_id (uuid) 或 role 查找 agent 信息
+        Map<String, dynamic>? agentInfo;
+        for (final entry in agentMap.entries) {
+          // 简单匹配：检查 agent_id 是否包含 role 或者相等
+          if (agentId == entry.key || agentId.contains(entry.key)) {
+            agentInfo = entry.value;
+            break;
+          }
+        }
+
+        summaries.add(ConversationSummary(
+          id: conv['id'] as String,
+          agentId: agentId,
+          agentName: agentInfo?['name'] as String? ?? '未知员工',
+          agentRole: agentInfo?['role'] as String? ?? agentId,
+          agentAvatarUrl: null, // TODO: 后端需要返回 avatar
+          lastMessageContent: conv['title'] as String?, // 用 title 作为最后消息预览
+          lastMessageAt: conv['last_message_at'] != null
+              ? DateTime.tryParse(conv['last_message_at'] as String)
+              : null,
+          unreadCount: 0, // TODO: 后端需要返回未读数
+          createdAt: DateTime.parse(conv['started_at'] as String),
+        ));
+      }
+
+      return summaries;
+    } on DioException catch (e) {
+      throw Exception('获取对话摘要列表失败: ${e.message}');
     } catch (e) {
       throw Exception('获取对话摘要列表失败: $e');
     }
