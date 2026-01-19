@@ -13,6 +13,8 @@ from pathlib import Path
 
 # 添加 backend 目录到 path，以便导入 agent_sdk
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 添加 agent_orchestrator 目录到 path，以便导入 config, services 等
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # 加载 .env 文件
 try:
@@ -346,6 +348,7 @@ async def health_check():
     health_status = {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
+        "features": ["sse", "websocket"],  # 支持的通信协议
     }
 
     # 数据库检查

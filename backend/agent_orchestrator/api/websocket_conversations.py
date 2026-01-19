@@ -25,9 +25,9 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from ..config import get_timeout_config
-from ..services.websocket_manager import ConnectionManager, get_connection_manager
-from ..services.websocket_writer import MessageType, WebSocketWriter
+from config import get_timeout_config
+from services.websocket_manager import ConnectionManager, get_connection_manager
+from services.websocket_writer import MessageType, WebSocketWriter
 
 logger = logging.getLogger(__name__)
 

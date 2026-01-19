@@ -13,7 +13,7 @@ from typing import Any, Callable, Dict, Optional, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from ..config import get_timeout_config
+from config import get_timeout_config
 
 logger = logging.getLogger(__name__)
 
