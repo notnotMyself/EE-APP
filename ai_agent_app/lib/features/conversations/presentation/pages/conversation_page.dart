@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/conversation_controller.dart';
-import '../../domain/models/conversation.dart';
 import '../../../agents/domain/models/agent.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../state/conversation_notifier.dart';

@@ -7,6 +7,7 @@ import '../../../../core/config/timeout_config.dart';
 import '../../data/conversation_repository.dart';
 import '../../data/websocket_client.dart';
 import '../../domain/models/conversation.dart';
+import '../controllers/conversation_controller.dart';
 import 'conversation_state.dart';
 
 /// 对话状态Notifier
