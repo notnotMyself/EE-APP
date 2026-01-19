@@ -43,9 +43,9 @@ class MessageBuffer:
     def __init__(
         self,
         flush_callback: Callable[[str], Any],
-        initial_flush_interval: float = 0.05,  # 首次 50ms 快速刷新
-        steady_flush_interval: float = 0.3,    # 后续 300ms 稳定刷新
-        max_buffer_size: int = 50,             # 50 字符触发刷新
+        initial_flush_interval: float = 0.03,  # 首次 30ms 快速刷新 (优化: 从50ms减少)
+        steady_flush_interval: float = 0.1,    # 后续 100ms 稳定刷新 (优化: 从300ms减少)
+        max_buffer_size: int = 30,             # 30 字符触发刷新 (优化: 从50减少)
     ):
         self.flush_callback = flush_callback
         self.initial_flush_interval = initial_flush_interval
