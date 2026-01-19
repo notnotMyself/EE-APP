@@ -1,29 +1,34 @@
 """
 Session Management for Claude Agent SDK
 
-Implements long-lived session connections using MessageQueue pattern.
-Inspired by the TypeScript simple-chatapp example.
+Implements long-lived session connections using ClaudeSDKClient.
+Based on the official Python SDK examples (streaming_mode.py).
 
 Key patterns:
-1. MessageQueue - Async iterator for bidirectional communication
-2. AgentSession - Maintains a single query() call with persistent state
+1. ClaudeSDKClient - Official bidirectional streaming client
+2. AgentSession - Wraps ClaudeSDKClient with session management
+3. SessionManager - Manages multiple sessions with lifecycle control
+
+Reference: claude-agent-sdk-python/examples/streaming_mode.py
 """
 
 import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Set
+from typing import Any, AsyncIterator, Dict, List, Optional, Set
 from uuid import uuid4
 
 from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
+    ClaudeSDKClient,
     ResultMessage,
+    SystemMessage,
     TextBlock,
     ToolResultBlock,
     ToolUseBlock,
-    query,
+    UserMessage as SDKUserMessage,
 )
 
 from .config import AgentSDKConfig, get_config
@@ -33,105 +38,28 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class UserMessage:
-    """User message wrapper"""
+class MessageRecord:
+    """Record of a message in the session"""
     content: str
+    role: str  # 'user' or 'assistant'
     message_id: str = field(default_factory=lambda: str(uuid4()))
     timestamp: float = field(default_factory=time.time)
 
 
-class MessageQueue:
-    """
-    Async message queue for bidirectional communication.
-
-    Messages go in via push(), come out via async iteration.
-    This enables the SDK's async generator (prompt) to be fed with new messages at any time.
-    """
-
-    def __init__(self):
-        self._messages: List[UserMessage] = []
-        self._waiting: Optional[asyncio.Future] = None
-        self._closed: bool = False
-        self._lock = asyncio.Lock()
-
-    async def push(self, content: str) -> str:
-        """
-        Add message to queue (or deliver immediately if consumer waiting).
-
-        Returns:
-            message_id for tracking
-        """
-        msg = UserMessage(content=content)
-
-        async with self._lock:
-            if self._closed:
-                raise AgentSDKError("MessageQueue is closed")
-
-            if self._waiting is not None and not self._waiting.done():
-                # Direct delivery if consumer is waiting
-                self._waiting.set_result(msg)
-                self._waiting = None
-            else:
-                # Queue for later consumption
-                self._messages.append(msg)
-
-        logger.debug(f"Message pushed to queue: {msg.message_id[:8]}...")
-        return msg.message_id
-
-    async def __aiter__(self) -> AsyncIterator[Dict[str, Any]]:
-        """Async iterator for consuming messages"""
-        while not self._closed:
-            msg = await self._get_next()
-            if msg is None:
-                break
-
-            # Yield in SDK expected format
-            yield {
-                "type": "user",
-                "message": {
-                    "role": "user",
-                    "content": msg.content
-                }
-            }
-
-    async def _get_next(self) -> Optional[UserMessage]:
-        """Get next message, waiting if necessary"""
-        async with self._lock:
-            if self._messages:
-                return self._messages.pop(0)
-
-            if self._closed:
-                return None
-
-            # Create a new future to wait on
-            self._waiting = asyncio.get_event_loop().create_future()
-
-        try:
-            # Wait outside the lock
-            return await self._waiting
-        except asyncio.CancelledError:
-            return None
-
-    def close(self):
-        """Close the queue, stopping iteration"""
-        self._closed = True
-        if self._waiting is not None and not self._waiting.done():
-            self._waiting.cancel()
-        logger.debug("MessageQueue closed")
-
-    @property
-    def is_closed(self) -> bool:
-        return self._closed
-
-
 class AgentSession:
     """
-    Maintains a long-lived connection to Claude Agent SDK.
+    Maintains a long-lived connection to Claude using ClaudeSDKClient.
+
+    Based on the official SDK pattern from streaming_mode.py:
+    - Uses ClaudeSDKClient for bidirectional streaming
+    - Supports multi-turn conversation with client.query()
+    - Properly handles receive_response() for message consumption
 
     Key benefits:
-    - SDK connection stays open, no initialization overhead per message
     - True multi-turn conversation support
+    - Connection stays open between messages
     - Streaming output naturally supported
+    - Support for interrupts
     """
 
     def __init__(
@@ -146,17 +74,25 @@ class AgentSession:
         self.config = config or get_config()
         self.system_prompt = system_prompt
 
-        self._queue = MessageQueue()
-        self._output_iterator: Optional[AsyncIterator] = None
-        self._is_listening = False
+        self._client: Optional[ClaudeSDKClient] = None
+        self._is_connected: bool = False
         self._created_at = time.time()
         self._last_activity = time.time()
         self._message_count = 0
         self._total_cost_usd = 0.0
+        self._lock = asyncio.Lock()
 
     async def initialize(self):
-        """Initialize the agent session (call once)"""
-        if self._output_iterator is not None:
+        """
+        Initialize the agent session by connecting ClaudeSDKClient.
+
+        Based on the official pattern:
+        async with ClaudeSDKClient(options) as client:
+            ...
+
+        We manage connect/disconnect manually for long-lived sessions.
+        """
+        if self._is_connected:
             logger.warning(f"Session {self.session_id} already initialized")
             return
 
@@ -194,96 +130,132 @@ class AgentSession:
             env=self.config.get_env_dict(),
         )
 
-        # Start the query with the queue as input
-        # This is the key pattern: pass an async iterable queue as the prompt
         try:
-            self._output_iterator = query(
-                prompt=self._queue,  # Pass the async iterable queue
-                options=options
-            ).__aiter__()
-
+            self._client = ClaudeSDKClient(options=options)
+            await self._client.connect()  # Connect for long-lived session
+            self._is_connected = True
             logger.info(f"AgentSession {self.session_id} initialized for {self.agent_role}")
         except Exception as e:
             logger.error(f"Failed to initialize session {self.session_id}: {e}")
             raise
 
-    async def send_message(self, content: str) -> str:
+    async def send_message_stream(self, content: str) -> AsyncIterator[Dict[str, Any]]:
         """
-        Send a message to the agent.
+        Send a message and stream the response.
 
-        Returns:
-            message_id for tracking
-        """
-        if self._output_iterator is None:
-            await self.initialize()
-
-        self._last_activity = time.time()
-        self._message_count += 1
-
-        return await self._queue.push(content)
-
-    async def get_output_stream(self) -> AsyncIterator[Dict[str, Any]]:
-        """
-        Stream messages from the agent.
+        This follows the official pattern from streaming_mode.py:
+        1. client.query(prompt) - Send the message
+        2. client.receive_response() - Receive messages until ResultMessage
 
         Yields:
             Event dictionaries with type and content
         """
-        if self._output_iterator is None:
-            raise AgentSDKError("Session not initialized")
+        async with self._lock:
+            if not self._is_connected or self._client is None:
+                await self.initialize()
 
-        try:
-            async for message in self._output_iterator:
-                self._last_activity = time.time()
+            self._last_activity = time.time()
+            self._message_count += 1
 
-                if isinstance(message, AssistantMessage):
-                    for block in message.content:
-                        if isinstance(block, TextBlock):
-                            yield {
-                                "type": "text_chunk",
-                                "content": block.text,
-                                "session_id": self.session_id,
-                            }
-                        elif isinstance(block, ToolUseBlock):
-                            yield {
-                                "type": "tool_use",
-                                "tool_name": block.name,
-                                "tool_id": block.id,
-                                "input": block.input,
-                                "session_id": self.session_id,
-                            }
-                        elif isinstance(block, ToolResultBlock):
-                            yield {
-                                "type": "tool_result",
-                                "tool_id": block.tool_use_id,
-                                "content": block.content,
-                                "session_id": self.session_id,
-                            }
+            try:
+                # Send message using the official client.query() pattern
+                await self._client.query(content)
 
-                elif isinstance(message, ResultMessage):
-                    self._total_cost_usd += getattr(message, "total_cost_usd", 0)
-                    yield {
-                        "type": "result",
-                        "total_cost_usd": message.total_cost_usd,
-                        "session_id": self.session_id,
-                    }
+                # Receive response using receive_response() which terminates at ResultMessage
+                async for message in self._client.receive_response():
+                    self._last_activity = time.time()
 
-        except asyncio.CancelledError:
-            logger.info(f"Output stream cancelled for session {self.session_id}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in output stream for session {self.session_id}: {e}")
-            yield {
-                "type": "error",
-                "error": str(e),
-                "session_id": self.session_id,
-            }
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                yield {
+                                    "type": "text_chunk",
+                                    "content": block.text,
+                                    "session_id": self.session_id,
+                                }
+                            elif isinstance(block, ToolUseBlock):
+                                yield {
+                                    "type": "tool_use",
+                                    "tool_name": block.name,
+                                    "tool_id": block.id,
+                                    "input": block.input,
+                                    "session_id": self.session_id,
+                                }
+                            elif isinstance(block, ToolResultBlock):
+                                yield {
+                                    "type": "tool_result",
+                                    "tool_id": block.tool_use_id,
+                                    "content": block.content,
+                                    "session_id": self.session_id,
+                                }
 
-    def close(self):
-        """Close the session"""
-        self._queue.close()
-        self._output_iterator = None
+                    elif isinstance(message, SDKUserMessage):
+                        # User messages can contain tool results
+                        for block in message.content if isinstance(message.content, list) else []:
+                            if isinstance(block, ToolResultBlock):
+                                yield {
+                                    "type": "tool_result",
+                                    "tool_id": block.tool_use_id,
+                                    "content": block.content,
+                                    "session_id": self.session_id,
+                                }
+
+                    elif isinstance(message, SystemMessage):
+                        # System messages (usually ignored)
+                        pass
+
+                    elif isinstance(message, ResultMessage):
+                        # Result message indicates response is complete
+                        if message.total_cost_usd:
+                            self._total_cost_usd += message.total_cost_usd
+                        yield {
+                            "type": "result",
+                            "total_cost_usd": message.total_cost_usd,
+                            "duration_ms": message.duration_ms,
+                            "num_turns": message.num_turns,
+                            "session_id": self.session_id,
+                        }
+                        # receive_response() automatically terminates after ResultMessage
+
+            except asyncio.CancelledError:
+                logger.info(f"Message stream cancelled for session {self.session_id}")
+                raise
+            except Exception as e:
+                logger.error(f"Error in message stream for session {self.session_id}: {e}")
+                yield {
+                    "type": "error",
+                    "error": str(e),
+                    "session_id": self.session_id,
+                }
+
+    async def interrupt(self):
+        """
+        Send interrupt signal to stop current response.
+
+        Based on the official pattern from streaming_mode.py example_with_interrupt().
+        """
+        if self._client and self._is_connected:
+            try:
+                await self._client.interrupt()
+                logger.info(f"Interrupt sent to session {self.session_id}")
+            except Exception as e:
+                logger.error(f"Error sending interrupt to session {self.session_id}: {e}")
+
+    async def close(self):
+        """Close the session and disconnect the client"""
+        if self._client:
+            try:
+                await self._client.disconnect()
+            except Exception as e:
+                logger.error(f"Error disconnecting session {self.session_id}: {e}")
+            finally:
+                self._client = None
+                self._is_connected = False
         logger.info(f"AgentSession {self.session_id} closed")
+
+    @property
+    def is_connected(self) -> bool:
+        return self._is_connected
 
     @property
     def stats(self) -> Dict[str, Any]:
@@ -295,7 +267,7 @@ class AgentSession:
             "last_activity": self._last_activity,
             "message_count": self._message_count,
             "total_cost_usd": self._total_cost_usd,
-            "is_closed": self._queue.is_closed,
+            "is_connected": self._is_connected,
         }
 
 
@@ -339,14 +311,15 @@ class SessionManager:
         session_key = conversation_id or f"{user_id}:{agent_role}"
 
         async with self._lock:
-            # Return existing session if available
+            # Return existing session if available and connected
             if session_key in self._sessions:
                 session = self._sessions[session_key]
-                if not session._queue.is_closed:
+                if session.is_connected:
                     logger.debug(f"Reusing existing session: {session_key}")
                     return session
                 else:
-                    # Clean up closed session
+                    # Clean up disconnected session
+                    await session.close()
                     del self._sessions[session_key]
 
             # Check if we need to cleanup before creating new session
@@ -379,7 +352,7 @@ class SessionManager:
         async with self._lock:
             if session_key in self._sessions:
                 session = self._sessions[session_key]
-                session.close()
+                await session.close()
                 del self._sessions[session_key]
 
                 # Clean up user session mapping
@@ -392,7 +365,7 @@ class SessionManager:
             if user_id in self._user_sessions:
                 for session_key in list(self._user_sessions[user_id]):
                     if session_key in self._sessions:
-                        self._sessions[session_key].close()
+                        await self._sessions[session_key].close()
                         del self._sessions[session_key]
                 del self._user_sessions[user_id]
 
@@ -406,7 +379,7 @@ class SessionManager:
         # Remove 20% of sessions
         to_remove = max(1, len(sessions_by_activity) // 5)
         for session_key, session in sessions_by_activity[:to_remove]:
-            session.close()
+            await session.close()
             del self._sessions[session_key]
             logger.info(f"Cleaned up idle session: {session_key}")
 
@@ -421,7 +394,7 @@ class SessionManager:
                     to_remove.append(session_key)
 
             for session_key in to_remove:
-                self._sessions[session_key].close()
+                await self._sessions[session_key].close()
                 del self._sessions[session_key]
                 logger.info(f"Cleaned up idle session: {session_key}")
 
@@ -452,7 +425,7 @@ class SessionManager:
 
         async with self._lock:
             for session in self._sessions.values():
-                session.close()
+                await session.close()
             self._sessions.clear()
             self._user_sessions.clear()
 
