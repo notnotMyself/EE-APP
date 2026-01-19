@@ -22,6 +22,7 @@ dependencies:
   # HTTP客户端
   dio: ^5.4.0
   http: ^1.1.0
+  web_socket_channel: ^2.4.0
 
   # SSE (Server-Sent Events) - 使用http包来处理
 
