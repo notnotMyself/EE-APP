@@ -203,7 +203,9 @@ class MessageModel:
     async def get_recent_messages(
         self, conversation_id: str, count: int = 20
     ) -> List[Dict[str, Any]]:
-        """获取对话的最近N条消息
+        """获取对话的最近N条消息（优化版）
+
+        优化：只查询必要字段，减少数据传输
 
         用于构建AI上下文，避免加载过多历史消息。
 
@@ -215,9 +217,10 @@ class MessageModel:
             最近N条消息，按created_at升序排列
         """
         try:
+            # 优化：只查询必要字段
             result = (
                 self.supabase.table("messages")
-                .select("*")
+                .select("id, role, content_type, content, briefing_id, created_at")
                 .eq("conversation_id", conversation_id)
                 .order("created_at", desc=True)  # 先降序获取最新的
                 .limit(count)

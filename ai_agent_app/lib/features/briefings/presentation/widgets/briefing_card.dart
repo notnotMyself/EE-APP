@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/briefing.dart';
+import 'dynamic_briefing_renderer.dart';
+import '../pages/dynamic_briefing_detail_page.dart';
 
 /// 简报卡片组件
 class BriefingCard extends StatelessWidget {
@@ -13,7 +15,11 @@ class BriefingCard extends StatelessWidget {
   final VoidCallback onTap;
 
   /// 判断是否为资讯类简报（使用紧凑样式）
+  // ignore: deprecated_member_use_from_same_package
   bool get _isNewsType => briefing.coverStyle == 'news_list';
+
+  /// 判断是否有 A2UI 动态 UI Schema
+  bool get _hasUiSchema => briefing.uiSchema != null && briefing.uiSchema!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -32,12 +38,29 @@ class BriefingCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          // 优先使用动态渲染页面
+          if (_hasUiSchema) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DynamicBriefingDetailPage(
+                  briefing: briefing,
+                ),
+              ),
+            );
+          } else {
+            onTap();
+          }
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 根据类型选择封面样式
-            if (_isNewsType)
+            // 优先使用 ui_schema 的封面
+            if (_hasUiSchema && _hasUiSchemaCover())
+              _buildUiSchemaCover(context)
+            else if (_isNewsType)
               _buildCompactCover(context)
             else
               _buildCoverImage(context),
@@ -66,7 +89,10 @@ class BriefingCard extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // 根据类型选择摘要样式
-                  if (_isNewsType && briefing.summaryStructured.isNotEmpty)
+                  // 优先使用 ui_schema 的预览
+                  if (_hasUiSchema)
+                    _buildUiSchemaPreview(context)
+                  else if (_isNewsType && briefing.summaryStructured.isNotEmpty)
                     _buildNewsListPreview(context, theme)
                   else
                     _buildSummaryText(context, theme),
@@ -107,6 +133,82 @@ class BriefingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 检查 ui_schema 是否有封面组件
+  bool _hasUiSchemaCover() {
+    if (!_hasUiSchema) return false;
+    try {
+      final content = briefing.uiSchema!['content'] as Map<String, dynamic>?;
+      if (content == null) return false;
+      final sections = content['sections'] as List?;
+      if (sections == null || sections.isEmpty) return false;
+      return sections.any((s) => s['type'] == 'cover' || s['type'] == 'header');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 构建 ui_schema 封面
+  Widget _buildUiSchemaCover(BuildContext context) {
+    try {
+      final content = briefing.uiSchema!['content'] as Map<String, dynamic>;
+      final sections = content['sections'] as List;
+      final coverSection = sections.firstWhere(
+        (s) => s['type'] == 'cover' || s['type'] == 'header',
+        orElse: () => null,
+      );
+
+      if (coverSection != null) {
+        final renderer = DynamicBriefingRenderer();
+        return SizedBox(
+          height: 120,
+          child: ClipRect(
+            child: renderer.renderComponent(Map<String, dynamic>.from(coverSection)),
+          ),
+        );
+      }
+    } catch (e) {
+      // Fallback to compact cover on error
+    }
+    return _buildCompactCover(context);
+  }
+
+  /// 构建 ui_schema 预览
+  Widget _buildUiSchemaPreview(BuildContext context) {
+    try {
+      final content = briefing.uiSchema!['content'] as Map<String, dynamic>;
+      final sections = content['sections'] as List;
+
+      // 过滤掉封面，取前 2 个组件作为预览
+      final previewSections = sections
+          .where((s) => s['type'] != 'cover' && s['type'] != 'header')
+          .take(2)
+          .toList();
+
+      if (previewSections.isEmpty) {
+        return _buildSummaryText(context, Theme.of(context));
+      }
+
+      final renderer = DynamicBriefingRenderer();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: previewSections.map((section) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 100),
+              child: ClipRect(
+                child: renderer.renderComponent(Map<String, dynamic>.from(section)),
+              ),
+            ),
+          );
+        }).toList(),
+      );
+    } catch (e) {
+      // Fallback to summary text on error
+      return _buildSummaryText(context, Theme.of(context));
+    }
   }
 
   /// 构建紧凑封面（资讯类型专用）

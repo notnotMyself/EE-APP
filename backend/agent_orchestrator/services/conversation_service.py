@@ -6,8 +6,14 @@ Conversation Service - 对话服务
 2. 将简报添加为对话中的卡片消息
 3. 处理用户消息并流式返回AI响应
 4. 构建包含简报卡片的对话上下文
+
+优化（v2）：
+- Agent role 缓存减少数据库查询
+- 并行化 IO 操作减少 TTFT
+- 增强超时控制
 """
 
+import asyncio
 import logging
 import json
 from typing import Any, AsyncGenerator, Dict, List, Optional
@@ -21,7 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 class ConversationService:
-    """对话服务 - 支持共享对话模式"""
+    """对话服务 - 支持共享对话模式（优化版）"""
+
+    # 配置常量
+    CONVERSATION_TIMEOUT = 180  # 对话总超时 3 分钟
+    API_CALL_TIMEOUT = 120      # 单次 API 调用 2 分钟
+    MAX_CONTEXT_MESSAGES = 20   # 上下文消息数量
 
     def __init__(
         self,
@@ -46,6 +57,9 @@ class ConversationService:
         self.task_recognizer = TaskIntentRecognizer()
         self.task_executor = None  # 从main.py延迟注入，避免循环依赖
 
+        # 优化：Agent role 缓存（减少数据库查询）
+        self._agent_role_cache: Dict[str, str] = {}
+
     def set_briefing_service(self, briefing_service: Any) -> None:
         """设置BriefingService（解决循环依赖）
 
@@ -63,7 +77,12 @@ class ConversationService:
         self.task_executor = task_executor
 
     def _get_agent_role(self, agent_id: str) -> str:
-        """获取 Agent 的 role string
+        """获取 Agent 的 role string（带缓存优化）
+
+        优化：三级缓存策略
+        1. 实例级缓存（内存）
+        2. AgentRegistry（内存）
+        3. 数据库查询（缓存结果）
 
         Args:
             agent_id: Agent 的 UUID 或 role string
@@ -74,20 +93,25 @@ class ConversationService:
         Raises:
             ValueError: 如果 agent 不存在
         """
+        # 1. 检查实例缓存
+        if agent_id in self._agent_role_cache:
+            return self._agent_role_cache[agent_id]
+
         # 使用 agent_registry 的动态映射
         registry = get_global_registry()
 
-        # 尝试通过 UUID 获取 role
+        # 2. 尝试通过 UUID 获取 role
         role = registry.get_agent_id(agent_id)
         if role:
+            self._agent_role_cache[agent_id] = role
             return role
 
         # 如果 agent_id 已经是 role，检查是否存在
         if registry.exists(agent_id):
+            self._agent_role_cache[agent_id] = agent_id
             return agent_id
 
-        # Fallback: 从数据库查询 agent 的 role
-        # 这处理了数据库 UUID 和 agent.yaml UUID 不一致的情况
+        # 3. Fallback: 从数据库查询 agent 的 role（并缓存结果）
         try:
             result = (
                 self.supabase.table("agents")
@@ -101,6 +125,7 @@ class ConversationService:
                     logger.info(
                         f"Found agent role '{db_role}' from database for UUID '{agent_id}'"
                     )
+                    self._agent_role_cache[agent_id] = db_role
                     return db_role
         except Exception as e:
             logger.warning(f"Failed to query agent from database: {e}")
@@ -218,6 +243,10 @@ class ConversationService:
     ) -> AsyncGenerator[str, None]:
         """发送消息并流式返回AI回复（增强支持任务执行）
 
+        优化：
+        - 增加分层超时控制
+        - 友好的错误提示
+
         工作流程：
         1. 保存用户消息
         2. 任务意图识别
@@ -239,47 +268,55 @@ class ConversationService:
             Exception: AI调用失败或数据库操作失败时
         """
         try:
-            # 0. 验证对话存在且用户有权访问
-            conversation = await self.conversation_model.get_by_id(conversation_id)
-            if not conversation:
-                raise ValueError(f"Conversation not found: {conversation_id}")
+            # 增强超时控制
+            async with asyncio.timeout(self.CONVERSATION_TIMEOUT):
+                # 0. 验证对话存在且用户有权访问
+                conversation = await self.conversation_model.get_by_id(conversation_id)
+                if not conversation:
+                    raise ValueError(f"Conversation not found: {conversation_id}")
 
-            if conversation["user_id"] != user_id:
-                raise ValueError(
-                    f"User {user_id} does not have access to conversation {conversation_id}"
+                if conversation["user_id"] != user_id:
+                    raise ValueError(
+                        f"User {user_id} does not have access to conversation {conversation_id}"
+                    )
+
+                # 1. 保存用户消息
+                await self.message_model.create_text_message(
+                    conversation_id=conversation_id,
+                    role="user",
+                    content=user_message,
                 )
 
-            # 1. 保存用户消息
-            await self.message_model.create_text_message(
-                conversation_id=conversation_id,
-                role="user",
-                content=user_message,
-            )
+                # 2. 任务意图识别（Phase 1 新增）
+                task_intent = None
+                if self.task_recognizer:
+                    task_intent = await self.task_recognizer.recognize(
+                        user_message, conversation_context={"agent_id": conversation["agent_id"]}
+                    )
 
-            # 2. 任务意图识别（Phase 1 新增）
-            task_intent = None
-            if self.task_recognizer:
-                task_intent = await self.task_recognizer.recognize(
-                    user_message, conversation_context={"agent_id": conversation["agent_id"]}
-                )
+                # 3. 根据是否为任务选择执行流程
+                if task_intent and self.task_executor:
+                    # 3a. 执行任务并流式输出
+                    logger.info(f"Task recognized: {task_intent.task_type}")
+                    async for event in self._execute_task_and_generate_briefing(
+                        conversation=conversation,
+                        task_intent=task_intent,
+                        user_id=user_id,
+                    ):
+                        yield event
+                else:
+                    # 3b. 原有对话流程
+                    async for chunk in self._normal_chat_flow(
+                        conversation=conversation, user_message=user_message
+                    ):
+                        yield chunk
 
-            # 3. 根据是否为任务选择执行流程
-            if task_intent and self.task_executor:
-                # 3a. 执行任务并流式输出
-                logger.info(f"Task recognized: {task_intent.task_type}")
-                async for event in self._execute_task_and_generate_briefing(
-                    conversation=conversation,
-                    task_intent=task_intent,
-                    user_id=user_id,
-                ):
-                    yield event
-            else:
-                # 3b. 原有对话流程
-                async for chunk in self._normal_chat_flow(
-                    conversation=conversation, user_message=user_message
-                ):
-                    yield chunk
-
+        except asyncio.TimeoutError:
+            logger.error(f"Conversation timeout after {self.CONVERSATION_TIMEOUT}s")
+            yield json.dumps({
+                "type": "error",
+                "error": f"对话处理超时（{self.CONVERSATION_TIMEOUT}秒），请稍后重试"
+            })
         except Exception as e:
             logger.error(f"Error in send_message: {e}", exc_info=True)
             # 返回错误给用户
@@ -387,6 +424,8 @@ class ConversationService:
     ) -> AsyncGenerator[str, None]:
         """原有对话流程（Phase 1 提取为独立方法）
 
+        优化：并行化 IO 操作减少 TTFT
+
         Args:
             conversation: 对话记录
             user_message: 用户消息
@@ -394,15 +433,22 @@ class ConversationService:
         Yields:
             AI响应的文本块
         """
-        # 🔧 获取 Agent Role (从 UUID 转换)
-        agent_role = self._get_agent_role(conversation["agent_id"])
-
-        # 2. 获取对话上下文（最近20条消息）
-        messages = await self.message_model.get_recent_messages(
-            conversation["id"], count=20
+        # 优化：并行执行多个 IO 操作
+        # 1. Agent role 查询（已缓存）
+        # 2. 历史消息查询
+        agent_role_task = asyncio.create_task(
+            asyncio.to_thread(self._get_agent_role, conversation["agent_id"])
+        )
+        messages_task = asyncio.create_task(
+            self.message_model.get_recent_messages(
+                conversation["id"], count=self.MAX_CONTEXT_MESSAGES
+            )
         )
 
-        # 3. 构建包含简报的上下文提示词
+        # 等待所有任务完成
+        agent_role, messages = await asyncio.gather(agent_role_task, messages_task)
+
+        # 3. 构建包含简报的上下文提示词（CPU 密集型，保持同步）
         context_prompt = self._build_context_with_briefings(
             conversation, messages
         )

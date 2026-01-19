@@ -13,6 +13,10 @@ import '../domain/models/conversation_summary.dart';
 class ConversationRepository {
   final _supabase = Supabase.instance.client;
 
+  // 优化：超时配置常量（与后端对齐）
+  static const Duration _requestTimeout = Duration(seconds: 180);  // 3分钟总超时
+  static const Duration _streamChunkTimeout = Duration(seconds: 30); // 单个chunk超时
+
   /// 获取或创建对话（通过后端 API）
   ///
   /// 数据库有唯一约束限制每个用户-Agent对只能有一个对话，
@@ -132,11 +136,15 @@ class ConversationRepository {
   }
 
   /// 调用 agent_orchestrator 的流式对话接口（带超时控制）
+  ///
+  /// 优化：使用与后端对齐的超时配置
   Stream<String> sendMessageStream({
     required String conversationId,
     required String newMessage,
-    Duration timeout = const Duration(seconds: 60),
+    Duration? timeout,
   }) async* {
+    final effectiveTimeout = timeout ?? _requestTimeout;
+
     try {
       // 获取认证Token
       final authHeaders = await AuthenticatedHttpClient.getAuthHeadersOnly();
@@ -156,9 +164,9 @@ class ConversationRepository {
       request.body = jsonEncode(requestBody);
 
       final streamedResponse = await request.send().timeout(
-        timeout,
+        effectiveTimeout,
         onTimeout: () {
-          throw TimeoutException('消息发送超时，请检查网络连接');
+          throw TimeoutException('消息发送超时（${effectiveTimeout.inSeconds}秒），请检查网络连接');
         },
       );
 
@@ -172,9 +180,9 @@ class ConversationRepository {
       String buffer = '';
       await for (final chunk in streamedResponse.stream
           .timeout(
-            timeout,
+            _streamChunkTimeout,
             onTimeout: (sink) {
-              sink.addError(TimeoutException('消息接收超时，请检查网络连接'));
+              sink.addError(TimeoutException('数据接收超时，请检查网络连接'));
               sink.close();
             },
           )
@@ -193,13 +201,13 @@ class ConversationRepository {
           // 解析 data: 行
           if (line.startsWith('data:')) {
             final data = line.substring(5).trim();
-            
+
             // 跳过空数据
             if (data.isEmpty) continue;
-            
+
             // 检查结束标记
             if (data == '[DONE]') return;
-            
+
             // 检查错误
             if (data.startsWith('[ERROR]')) {
               throw Exception('AI响应错误: $data');
@@ -239,8 +247,9 @@ class ConversationRepository {
     required String conversationId,
     required String newMessage,
     int maxRetries = 3,
-    Duration timeout = const Duration(seconds: 60),
+    Duration? timeout,
   }) async* {
+    final effectiveTimeout = timeout ?? _requestTimeout;
     int retryCount = 0;
 
     while (retryCount <= maxRetries) {
@@ -248,7 +257,7 @@ class ConversationRepository {
         yield* sendMessageStream(
           conversationId: conversationId,
           newMessage: newMessage,
-          timeout: timeout,
+          timeout: effectiveTimeout,
         );
         return; // 成功则退出
       } on TimeoutException catch (e) {

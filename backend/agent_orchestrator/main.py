@@ -328,16 +328,55 @@ async def root():
     description="用于负载均衡器和监控系统的健康检查端点"
 )
 async def health_check():
-    """健康检查接口"""
-    scheduler_jobs = scheduler_service.get_jobs() if scheduler_service.scheduler else []
-    return {
+    """健康检查接口（增强版）
+
+    返回系统各组件的健康状态：
+    - 整体状态
+    - 数据库连接状态
+    - 调度器状态
+    - Agent 注册状态
+    - 错误统计
+    """
+    from datetime import datetime
+    from monitoring import error_tracker
+
+    health_status = {
         "status": "healthy",
-        "supabase": "connected" if supabase_client else "not_configured",
-        "scheduler": {
-            "status": "running" if scheduler_service.scheduler else "not_initialized",
-            "jobs_count": len(scheduler_jobs)
-        }
+        "timestamp": datetime.utcnow().isoformat(),
     }
+
+    # 数据库检查
+    if supabase_client:
+        try:
+            supabase_client.table("agents").select("id").limit(1).execute()
+            health_status["database"] = "connected"
+        except Exception as e:
+            health_status["database"] = f"error: {str(e)[:50]}"
+            health_status["status"] = "degraded"
+    else:
+        health_status["database"] = "not_configured"
+
+    # 调度器检查
+    scheduler_jobs = scheduler_service.get_jobs() if scheduler_service.scheduler else []
+    health_status["scheduler"] = {
+        "status": "running" if scheduler_service.scheduler else "not_initialized",
+        "jobs_count": len(scheduler_jobs)
+    }
+
+    # Agent Registry 检查
+    health_status["agents_loaded"] = len(agent_registry.get_all_ids())
+
+    # 错误统计
+    error_health = error_tracker.get_health_status()
+    health_status["errors"] = error_health
+
+    # 根据错误状态调整整体状态
+    if error_health["status"] == "unhealthy":
+        health_status["status"] = "unhealthy"
+    elif error_health["status"] == "degraded" and health_status["status"] == "healthy":
+        health_status["status"] = "degraded"
+
+    return health_status
 
 
 # ============================================

@@ -35,29 +35,42 @@ logger = logging.getLogger(__name__)
 
 
 class MessageBuffer:
-    """消息内容缓冲器，用于批量更新数据库"""
+    """消息内容缓冲器，用于批量更新数据库
+
+    优化：支持首次快速刷新，减少 TTFT（Time to First Token）
+    """
 
     def __init__(
         self,
         flush_callback: Callable[[str], Any],
-        flush_interval: float = 0.5,
-        max_buffer_size: int = 1000,
+        initial_flush_interval: float = 0.05,  # 首次 50ms 快速刷新
+        steady_flush_interval: float = 0.3,    # 后续 300ms 稳定刷新
+        max_buffer_size: int = 50,             # 50 字符触发刷新
     ):
         self.flush_callback = flush_callback
-        self.flush_interval = flush_interval
+        self.initial_flush_interval = initial_flush_interval
+        self.steady_flush_interval = steady_flush_interval
         self.max_buffer_size = max_buffer_size
         self.content = ""
         self.last_flush_time = time.time()
         self.last_flush_length = 0
+        self.flush_count = 0
         self._pending_flush: Optional[asyncio.Task] = None
 
     async def append(self, text: str) -> None:
-        """追加文本到缓冲区"""
+        """追加文本到缓冲区（优化：首次快速响应）"""
         self.content += text
+
+        # 第一次刷新使用快速间隔，后续使用稳定间隔
+        flush_interval = (
+            self.initial_flush_interval
+            if self.flush_count == 0
+            else self.steady_flush_interval
+        )
 
         current_time = time.time()
         should_flush = (
-            current_time - self.last_flush_time >= self.flush_interval
+            current_time - self.last_flush_time >= flush_interval
             or len(self.content) - self.last_flush_length >= self.max_buffer_size
         )
 
@@ -77,12 +90,19 @@ class MessageBuffer:
             await self.flush_callback(self.content)
             self.last_flush_time = time.time()
             self.last_flush_length = len(self.content)
+            self.flush_count += 1  # Track flush count for adaptive intervals
         except Exception as e:
             logger.error(f"Failed to flush message buffer: {e}")
 
     async def _delayed_flush(self) -> None:
         """延迟刷新"""
-        await asyncio.sleep(self.flush_interval)
+        # Use appropriate interval based on flush count
+        flush_interval = (
+            self.initial_flush_interval
+            if self.flush_count == 0
+            else self.steady_flush_interval
+        )
+        await asyncio.sleep(flush_interval)
         await self._flush()
         self._pending_flush = None
 

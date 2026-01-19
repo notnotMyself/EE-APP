@@ -96,8 +96,11 @@ class Briefing with _$Briefing {
     @JsonKey(name: 'agent_role') String? agentRole,
     // 结构化新闻列表（用于AI资讯类简报）
     @JsonKey(name: 'summary_structured') @Default([]) List<BriefingNewsItem> summaryStructured,
-    // 封面样式提示
-    @JsonKey(name: 'cover_style') String? coverStyle,
+    // 封面样式提示（废弃字段，保留兼容性）
+    @JsonKey(name: 'cover_style') @Deprecated('Use ui_schema instead') String? coverStyle,
+    // A2UI 动态 UI Schema（新增）
+    @JsonKey(name: 'ui_schema') Map<String, dynamic>? uiSchema,
+    @JsonKey(name: 'ui_schema_version') String? uiSchemaVersion,
   }) = _Briefing;
 
   factory Briefing.fromJson(Map<String, dynamic> json) =>
