@@ -15,7 +15,7 @@ from .exceptions import (
 from .agent_sdk_service import AgentSDKService, MessageBuffer
 from .task_manager import TaskManager
 from .session import (
-    MessageQueue,
+    MessageRecord,
     AgentSession,
     SessionManager,
     get_session_manager,
@@ -32,7 +32,7 @@ __all__ = [
     "ToolExecutionError",
     "ConfigurationError",
     # Session management
-    "MessageQueue",
+    "MessageRecord",
     "AgentSession",
     "SessionManager",
     "get_session_manager",
