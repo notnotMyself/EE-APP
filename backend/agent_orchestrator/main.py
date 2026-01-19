@@ -61,6 +61,7 @@ from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client
 from api.conversations import set_conversation_service
 from api.profile import set_services as set_profile_services
+from api.websocket_conversations import router as websocket_router, set_websocket_services
 
 # Supabase 客户端
 try:
@@ -158,6 +159,7 @@ set_conversation_service(conversation_service)
 set_scheduler_service(scheduler_service)
 set_supabase_client(supabase_client)
 set_profile_services(conversation_service, briefing_service)
+set_websocket_services(conversation_service, supabase_client)  # WebSocket服务注入
 
 # 调试：输出配置信息
 logger.info(f"Agent SDK Config loaded:")
@@ -273,6 +275,7 @@ app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
 app.include_router(profile_router)
 app.include_router(notifications_router)
+app.include_router(websocket_router)  # WebSocket对话路由
 
 # Agent Management API
 from api.agent_management import router as agent_management_router
@@ -317,7 +320,7 @@ async def root():
         "version": "3.1.0",
         "status": "running",
         "backend": "Claude Agent SDK",
-        "features": ["chat", "briefings", "scheduled_jobs"]
+        "features": ["chat", "briefings", "scheduled_jobs", "websocket"]
     }
 
 
