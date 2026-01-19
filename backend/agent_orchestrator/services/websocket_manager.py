@@ -69,9 +69,7 @@ class ConnectionManager:
         conversation_id: str,
         user_id: str,
     ) -> ConnectionState:
-        """接受并注册新的WebSocket连接"""
-        await websocket.accept()
-
+        """注册新的WebSocket连接（websocket.accept() 应该在调用此方法前完成）"""
         # 创建连接状态
         state = ConnectionState(
             websocket=websocket,
