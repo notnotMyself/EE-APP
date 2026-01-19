@@ -10,19 +10,43 @@ from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
+# Default LLM Gateway configuration
+DEFAULT_BASE_URL = "https://llm-gateway.oppoer.me"
+DEFAULT_MODEL = "saas/claude-haiku-4.5"  # Use haiku for cost efficiency
+
 
 class UISchemaGenerator:
     """Generate UI schemas from analysis results using Claude"""
 
-    def __init__(self):
-        """Initialize UI Schema Generator"""
-        self.anthropic_client = None
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
+        """
+        Initialize UI Schema Generator
 
-        if api_key:
-            self.anthropic_client = Anthropic(api_key=api_key)
+        Args:
+            base_url: LLM Gateway base URL (default: from env or DEFAULT_BASE_URL)
+            api_key: API key/token (default: from ANTHROPIC_AUTH_TOKEN env)
+            model: Model to use (default: saas/claude-haiku-4.5)
+        """
+        self.anthropic_client = None
+        self.model = model or os.getenv("UI_SCHEMA_MODEL", DEFAULT_MODEL)
+
+        # Get configuration from parameters or environment
+        effective_base_url = base_url or os.getenv("ANTHROPIC_BASE_URL", DEFAULT_BASE_URL)
+        effective_api_key = api_key or os.getenv("ANTHROPIC_AUTH_TOKEN")
+
+        if effective_api_key:
+            self.anthropic_client = Anthropic(
+                base_url=effective_base_url,
+                api_key=effective_api_key,
+            )
+            logger.info(f"UISchemaGenerator initialized with base_url={effective_base_url}, model={self.model}")
         else:
-            logger.warning("ANTHROPIC_API_KEY not set, UI schema generation will be disabled")
+            logger.warning("ANTHROPIC_AUTH_TOKEN not set, UI schema generation will be disabled")
 
     def generate_from_analysis(
         self,
@@ -49,9 +73,9 @@ class UISchemaGenerator:
             # Build prompt for UI schema generation
             prompt = self._build_schema_prompt(analysis_result, data_context, agent_role)
 
-            # Call Claude API
+            # Call Claude API via LLM Gateway
             response = self.anthropic_client.messages.create(
-                model="claude-sonnet-4",
+                model=self.model,
                 max_tokens=2048,
                 temperature=0.3,
                 messages=[{
@@ -194,7 +218,8 @@ Generate the UI schema now:"""
             # Validate each section
             valid_types = {
                 'metric_cards', 'line_chart', 'bar_chart',
-                'table', 'timeline', 'alert_list', 'markdown'
+                'table', 'timeline', 'alert_list', 'markdown',
+                'alert', 'insight', 'summary', 'action_list'  # Additional types
             }
 
             for section in sections:
@@ -234,7 +259,8 @@ Generate the UI schema now:"""
 
     def _validate_metric_cards(self, section: Dict) -> bool:
         """Validate metric_cards section"""
-        data = section.get('data', [])
+        # Accept both 'data' and 'cards' keys (LLM may use either)
+        data = section.get('data') or section.get('cards', [])
         if not isinstance(data, list) or len(data) == 0:
             return False
 
