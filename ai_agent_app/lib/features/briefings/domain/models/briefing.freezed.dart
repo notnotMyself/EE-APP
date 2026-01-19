@@ -562,9 +562,15 @@ mixin _$Briefing {
       throw _privateConstructorUsedError; // 结构化新闻列表（用于AI资讯类简报）
   @JsonKey(name: 'summary_structured')
   List<BriefingNewsItem> get summaryStructured =>
-      throw _privateConstructorUsedError; // 封面样式提示
+      throw _privateConstructorUsedError; // 封面样式提示（废弃字段，保留兼容性）
   @JsonKey(name: 'cover_style')
-  String? get coverStyle => throw _privateConstructorUsedError;
+  @Deprecated('Use ui_schema instead')
+  String? get coverStyle =>
+      throw _privateConstructorUsedError; // A2UI 动态 UI Schema（新增）
+  @JsonKey(name: 'ui_schema')
+  Map<String, dynamic>? get uiSchema => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ui_schema_version')
+  String? get uiSchemaVersion => throw _privateConstructorUsedError;
 
   /// Serializes this Briefing to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -605,7 +611,11 @@ abstract class $BriefingCopyWith<$Res> {
       @JsonKey(name: 'agent_role') String? agentRole,
       @JsonKey(name: 'summary_structured')
       List<BriefingNewsItem> summaryStructured,
-      @JsonKey(name: 'cover_style') String? coverStyle});
+      @JsonKey(name: 'cover_style')
+      @Deprecated('Use ui_schema instead')
+      String? coverStyle,
+      @JsonKey(name: 'ui_schema') Map<String, dynamic>? uiSchema,
+      @JsonKey(name: 'ui_schema_version') String? uiSchemaVersion});
 }
 
 /// @nodoc
@@ -646,6 +656,8 @@ class _$BriefingCopyWithImpl<$Res, $Val extends Briefing>
     Object? agentRole = freezed,
     Object? summaryStructured = null,
     Object? coverStyle = freezed,
+    Object? uiSchema = freezed,
+    Object? uiSchemaVersion = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -740,6 +752,14 @@ class _$BriefingCopyWithImpl<$Res, $Val extends Briefing>
           ? _value.coverStyle
           : coverStyle // ignore: cast_nullable_to_non_nullable
               as String?,
+      uiSchema: freezed == uiSchema
+          ? _value.uiSchema
+          : uiSchema // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      uiSchemaVersion: freezed == uiSchemaVersion
+          ? _value.uiSchemaVersion
+          : uiSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -776,7 +796,11 @@ abstract class _$$BriefingImplCopyWith<$Res>
       @JsonKey(name: 'agent_role') String? agentRole,
       @JsonKey(name: 'summary_structured')
       List<BriefingNewsItem> summaryStructured,
-      @JsonKey(name: 'cover_style') String? coverStyle});
+      @JsonKey(name: 'cover_style')
+      @Deprecated('Use ui_schema instead')
+      String? coverStyle,
+      @JsonKey(name: 'ui_schema') Map<String, dynamic>? uiSchema,
+      @JsonKey(name: 'ui_schema_version') String? uiSchemaVersion});
 }
 
 /// @nodoc
@@ -815,6 +839,8 @@ class __$$BriefingImplCopyWithImpl<$Res>
     Object? agentRole = freezed,
     Object? summaryStructured = null,
     Object? coverStyle = freezed,
+    Object? uiSchema = freezed,
+    Object? uiSchemaVersion = freezed,
   }) {
     return _then(_$BriefingImpl(
       id: null == id
@@ -909,6 +935,14 @@ class __$$BriefingImplCopyWithImpl<$Res>
           ? _value.coverStyle
           : coverStyle // ignore: cast_nullable_to_non_nullable
               as String?,
+      uiSchema: freezed == uiSchema
+          ? _value._uiSchema
+          : uiSchema // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      uiSchemaVersion: freezed == uiSchemaVersion
+          ? _value.uiSchemaVersion
+          : uiSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -940,10 +974,15 @@ class _$BriefingImpl implements _Briefing {
       @JsonKey(name: 'agent_role') this.agentRole,
       @JsonKey(name: 'summary_structured')
       final List<BriefingNewsItem> summaryStructured = const [],
-      @JsonKey(name: 'cover_style') this.coverStyle})
+      @JsonKey(name: 'cover_style')
+      @Deprecated('Use ui_schema instead')
+      this.coverStyle,
+      @JsonKey(name: 'ui_schema') final Map<String, dynamic>? uiSchema,
+      @JsonKey(name: 'ui_schema_version') this.uiSchemaVersion})
       : _actions = actions,
         _contextData = contextData,
-        _summaryStructured = summaryStructured;
+        _summaryStructured = summaryStructured,
+        _uiSchema = uiSchema;
 
   factory _$BriefingImpl.fromJson(Map<String, dynamic> json) =>
       _$$BriefingImplFromJson(json);
@@ -1032,14 +1071,31 @@ class _$BriefingImpl implements _Briefing {
     return EqualUnmodifiableListView(_summaryStructured);
   }
 
-// 封面样式提示
+// 封面样式提示（废弃字段，保留兼容性）
   @override
   @JsonKey(name: 'cover_style')
+  @Deprecated('Use ui_schema instead')
   final String? coverStyle;
+// A2UI 动态 UI Schema（新增）
+  final Map<String, dynamic>? _uiSchema;
+// A2UI 动态 UI Schema（新增）
+  @override
+  @JsonKey(name: 'ui_schema')
+  Map<String, dynamic>? get uiSchema {
+    final value = _uiSchema;
+    if (value == null) return null;
+    if (_uiSchema is EqualUnmodifiableMapView) return _uiSchema;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  @JsonKey(name: 'ui_schema_version')
+  final String? uiSchemaVersion;
 
   @override
   String toString() {
-    return 'Briefing(id: $id, agentId: $agentId, userId: $userId, briefingType: $briefingType, priority: $priority, title: $title, summary: $summary, impact: $impact, actions: $actions, reportArtifactId: $reportArtifactId, conversationId: $conversationId, contextData: $contextData, status: $status, importanceScore: $importanceScore, readAt: $readAt, actionedAt: $actionedAt, createdAt: $createdAt, expiresAt: $expiresAt, agentName: $agentName, agentAvatarUrl: $agentAvatarUrl, agentRole: $agentRole, summaryStructured: $summaryStructured, coverStyle: $coverStyle)';
+    return 'Briefing(id: $id, agentId: $agentId, userId: $userId, briefingType: $briefingType, priority: $priority, title: $title, summary: $summary, impact: $impact, actions: $actions, reportArtifactId: $reportArtifactId, conversationId: $conversationId, contextData: $contextData, status: $status, importanceScore: $importanceScore, readAt: $readAt, actionedAt: $actionedAt, createdAt: $createdAt, expiresAt: $expiresAt, agentName: $agentName, agentAvatarUrl: $agentAvatarUrl, agentRole: $agentRole, summaryStructured: $summaryStructured, coverStyle: $coverStyle, uiSchema: $uiSchema, uiSchemaVersion: $uiSchemaVersion)';
   }
 
   @override
@@ -1083,7 +1139,10 @@ class _$BriefingImpl implements _Briefing {
             const DeepCollectionEquality()
                 .equals(other._summaryStructured, _summaryStructured) &&
             (identical(other.coverStyle, coverStyle) ||
-                other.coverStyle == coverStyle));
+                other.coverStyle == coverStyle) &&
+            const DeepCollectionEquality().equals(other._uiSchema, _uiSchema) &&
+            (identical(other.uiSchemaVersion, uiSchemaVersion) ||
+                other.uiSchemaVersion == uiSchemaVersion));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1112,7 +1171,9 @@ class _$BriefingImpl implements _Briefing {
         agentAvatarUrl,
         agentRole,
         const DeepCollectionEquality().hash(_summaryStructured),
-        coverStyle
+        coverStyle,
+        const DeepCollectionEquality().hash(_uiSchema),
+        uiSchemaVersion
       ]);
 
   /// Create a copy of Briefing
@@ -1156,7 +1217,12 @@ abstract class _Briefing implements Briefing {
       @JsonKey(name: 'agent_role') final String? agentRole,
       @JsonKey(name: 'summary_structured')
       final List<BriefingNewsItem> summaryStructured,
-      @JsonKey(name: 'cover_style') final String? coverStyle}) = _$BriefingImpl;
+      @JsonKey(name: 'cover_style')
+      @Deprecated('Use ui_schema instead')
+      final String? coverStyle,
+      @JsonKey(name: 'ui_schema') final Map<String, dynamic>? uiSchema,
+      @JsonKey(name: 'ui_schema_version')
+      final String? uiSchemaVersion}) = _$BriefingImpl;
 
   factory _Briefing.fromJson(Map<String, dynamic> json) =
       _$BriefingImpl.fromJson;
@@ -1219,10 +1285,17 @@ abstract class _Briefing implements Briefing {
   String? get agentRole; // 结构化新闻列表（用于AI资讯类简报）
   @override
   @JsonKey(name: 'summary_structured')
-  List<BriefingNewsItem> get summaryStructured; // 封面样式提示
+  List<BriefingNewsItem> get summaryStructured; // 封面样式提示（废弃字段，保留兼容性）
   @override
   @JsonKey(name: 'cover_style')
-  String? get coverStyle;
+  @Deprecated('Use ui_schema instead')
+  String? get coverStyle; // A2UI 动态 UI Schema（新增）
+  @override
+  @JsonKey(name: 'ui_schema')
+  Map<String, dynamic>? get uiSchema;
+  @override
+  @JsonKey(name: 'ui_schema_version')
+  String? get uiSchemaVersion;
 
   /// Create a copy of Briefing
   /// with the given fields replaced by the non-null parameter values.

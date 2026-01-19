@@ -84,6 +84,8 @@ _$BriefingImpl _$$BriefingImplFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const [],
       coverStyle: json['cover_style'] as String?,
+      uiSchema: json['ui_schema'] as Map<String, dynamic>?,
+      uiSchemaVersion: json['ui_schema_version'] as String?,
     );
 
 Map<String, dynamic> _$$BriefingImplToJson(_$BriefingImpl instance) =>
@@ -111,6 +113,8 @@ Map<String, dynamic> _$$BriefingImplToJson(_$BriefingImpl instance) =>
       'agent_role': instance.agentRole,
       'summary_structured': instance.summaryStructured,
       'cover_style': instance.coverStyle,
+      'ui_schema': instance.uiSchema,
+      'ui_schema_version': instance.uiSchemaVersion,
     };
 
 const _$BriefingTypeEnumMap = {
