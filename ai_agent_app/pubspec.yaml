@@ -39,7 +39,7 @@ dependencies:
 
   # A2UI 动态组件
   fl_chart: ^0.68.0
-  data_table_2: ^2.5.10
+  data_table_2: 2.5.12
   timeline_tile: ^2.0.0
 
   # 工具类
