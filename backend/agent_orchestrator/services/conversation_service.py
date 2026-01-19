@@ -578,3 +578,232 @@ class ConversationService:
             对话列表
         """
         return await self.conversation_model.list_by_user(user_id, limit)
+
+    async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
+        """获取单个对话
+
+        Args:
+            conversation_id: 对话UUID
+
+        Returns:
+            对话记录，如果不存在返回None
+        """
+        return await self.conversation_model.get_by_id(conversation_id)
+
+    async def send_message_ws(
+        self,
+        conversation_id: str,
+        user_message: str,
+        user_id: str,
+        ws_writer: Any,  # WebSocketWriter
+    ) -> None:
+        """通过WebSocket发送消息并流式返回AI回复
+
+        这是send_message的WebSocket版本，直接写入WebSocketWriter而不是yield。
+
+        Args:
+            conversation_id: 对话UUID
+            user_message: 用户消息内容
+            user_id: 用户UUID
+            ws_writer: WebSocketWriter实例
+
+        Raises:
+            ValueError: 对话不存在或用户无权访问时
+            Exception: AI调用失败或数据库操作失败时
+        """
+        try:
+            async with asyncio.timeout(self.CONVERSATION_TIMEOUT):
+                # 0. 验证对话存在且用户有权访问
+                conversation = await self.conversation_model.get_by_id(conversation_id)
+                if not conversation:
+                    raise ValueError(f"Conversation not found: {conversation_id}")
+
+                if conversation["user_id"] != user_id:
+                    raise ValueError(
+                        f"User {user_id} does not have access to conversation {conversation_id}"
+                    )
+
+                # 1. 保存用户消息
+                await self.message_model.create_text_message(
+                    conversation_id=conversation_id,
+                    role="user",
+                    content=user_message,
+                )
+
+                # 2. 任务意图识别
+                task_intent = None
+                if self.task_recognizer:
+                    task_intent = await self.task_recognizer.recognize(
+                        user_message,
+                        conversation_context={"agent_id": conversation["agent_id"]},
+                    )
+
+                # 3. 根据是否为任务选择执行流程
+                if task_intent and self.task_executor:
+                    # 3a. 执行任务
+                    logger.info(f"Task recognized: {task_intent.task_type}")
+                    await self._execute_task_ws(
+                        conversation=conversation,
+                        task_intent=task_intent,
+                        user_id=user_id,
+                        ws_writer=ws_writer,
+                    )
+                else:
+                    # 3b. 原有对话流程
+                    await self._normal_chat_flow_ws(
+                        conversation=conversation,
+                        user_message=user_message,
+                        ws_writer=ws_writer,
+                    )
+
+        except asyncio.TimeoutError:
+            logger.error(f"Conversation timeout after {self.CONVERSATION_TIMEOUT}s")
+            await ws_writer.write_error(
+                f"对话处理超时（{self.CONVERSATION_TIMEOUT}秒），请稍后重试"
+            )
+        except Exception as e:
+            logger.error(f"Error in send_message_ws: {e}", exc_info=True)
+            await ws_writer.write_error("消息处理失败，请稍后重试")
+
+    async def _execute_task_ws(
+        self,
+        conversation: Dict,
+        task_intent: Any,
+        user_id: str,
+        ws_writer: Any,
+    ) -> None:
+        """执行任务（WebSocket版本）"""
+        agent_role = self._get_agent_role(conversation["agent_id"])
+
+        # 1. 任务开始事件
+        await ws_writer.write_task_start(
+            task_type=task_intent.task_type,
+            task_id=None,
+        )
+
+        try:
+            result = await self.task_executor.execute_ad_hoc_task(
+                agent_role=agent_role,
+                task_prompt=task_intent.task_prompt,
+                user_id=user_id,
+                conversation_id=conversation["id"],
+            )
+
+            # 2. 简报创建事件
+            if result.get("briefing"):
+                briefing = result["briefing"]
+                # 通过metadata发送briefing_created事件
+                await ws_writer.websocket.send_json({
+                    "type": "briefing_created",
+                    "briefing_id": briefing["id"],
+                    "title": briefing["title"],
+                    "priority": briefing.get("priority", "P2"),
+                    "ts": asyncio.get_event_loop().time(),
+                })
+                briefing_title = briefing["title"]
+            else:
+                await ws_writer.websocket.send_json({
+                    "type": "task_complete",
+                    "briefing_created": False,
+                    "reason": "importance_too_low",
+                    "ts": asyncio.get_event_loop().time(),
+                })
+                briefing_title = None
+
+            # 3. AI总结回复
+            if briefing_title:
+                summary_prompt = f"""
+任务已完成。简报标题：{briefing_title}
+
+请给用户一个友好的总结（1-2句话），告诉他们分析结果已经生成。
+"""
+            else:
+                summary_prompt = """
+任务已完成，分析结果显示一切正常，暂无需要特别关注的问题。
+
+请给用户一个友好的回复（1-2句话）。
+"""
+
+            async for event in self.agent_service.execute_query(
+                prompt=summary_prompt,
+                agent_role=agent_role,
+            ):
+                if event.get("type") == "text_chunk":
+                    await ws_writer.write_text_chunk(event.get("content", ""))
+
+            # 4. 保存AI回复
+            await self.message_model.create_text_message(
+                conversation_id=conversation["id"],
+                role="assistant",
+                content=ws_writer.accumulated_content,
+            )
+
+            # 5. 更新对话时间戳
+            await self.conversation_model.update_last_message_time(conversation["id"])
+
+        except Exception as e:
+            logger.error(f"Task execution failed: {e}", exc_info=True)
+            await ws_writer.write_error("任务执行失败，请稍后重试")
+
+    async def _normal_chat_flow_ws(
+        self,
+        conversation: Dict,
+        user_message: str,
+        ws_writer: Any,
+    ) -> None:
+        """原有对话流程（WebSocket版本）"""
+        # 并行执行多个IO操作
+        agent_role_task = asyncio.create_task(
+            asyncio.to_thread(self._get_agent_role, conversation["agent_id"])
+        )
+        messages_task = asyncio.create_task(
+            self.message_model.get_recent_messages(
+                conversation["id"], count=self.MAX_CONTEXT_MESSAGES
+            )
+        )
+
+        agent_role, messages = await asyncio.gather(agent_role_task, messages_task)
+
+        # 构建上下文
+        context_prompt = self._build_context_with_briefings(conversation, messages)
+        full_prompt = (
+            f"{context_prompt}\n\n"
+            f"用户最新消息: {user_message}\n\n"
+            f"请根据对话历史和简报信息回答用户的问题。"
+        )
+
+        # 流式生成回复
+        async for event in self.agent_service.execute_query(
+            prompt=full_prompt,
+            agent_role=agent_role,
+        ):
+            if event.get("type") == "text_chunk":
+                await ws_writer.write_text_chunk(event.get("content", ""))
+            elif event.get("type") == "tool_use":
+                await ws_writer.write_tool_use(
+                    tool_name=event.get("tool_name", ""),
+                    tool_id=event.get("tool_id", ""),
+                    tool_input=event.get("tool_input"),
+                )
+            elif event.get("type") == "tool_result":
+                await ws_writer.write_tool_result(
+                    tool_id=event.get("tool_id", ""),
+                    result=event.get("result"),
+                    is_error=event.get("is_error", False),
+                )
+
+        # 保存AI回复
+        await self.message_model.create_text_message(
+            conversation_id=conversation["id"],
+            role="assistant",
+            content=ws_writer.accumulated_content,
+        )
+
+        # 更新对话时间戳
+        await self.conversation_model.update_last_message_time(conversation["id"])
+
+        logger.info(
+            f"Completed WS message exchange in conversation {conversation['id']}, "
+            f"assistant response length: {len(ws_writer.accumulated_content)}"
+        )
+
