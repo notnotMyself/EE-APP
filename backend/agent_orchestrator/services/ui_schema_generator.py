@@ -350,3 +350,280 @@ Generate the UI schema now:"""
                 ]
             }
         }
+
+    def generate_from_structured_data(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        从结构化数据生成UI Schema（确定性，无需LLM调用）
+
+        优先使用此方法，因为它:
+        1. 无需网络调用，速度快
+        2. 结果可预测，便于调试
+        3. 成本为零
+
+        Args:
+            data: 结构化数据，包含:
+                - metrics: 关键指标字典
+                - findings: 发现列表
+                - key_data: 关键数据（可包含 suspicious_stories, scattered_people 等）
+
+        Returns:
+            UI Schema dict or None if no sections could be generated
+        """
+        sections = []
+
+        # 1. metrics -> metric_cards
+        metrics = data.get("metrics", {})
+        if metrics:
+            metric_cards = self._build_metric_cards(metrics)
+            if metric_cards:
+                sections.append(metric_cards)
+
+        # 2. findings -> alert_list
+        findings = data.get("findings", [])
+        if findings:
+            alert_list = self._build_alert_list(findings)
+            if alert_list:
+                sections.append(alert_list)
+
+        # 3. key_data 中的各种数据
+        key_data = data.get("key_data", {})
+
+        # 3.1 suspicious_stories -> table
+        suspicious_stories = key_data.get("suspicious_stories", [])
+        if suspicious_stories:
+            table = self._build_stories_table(suspicious_stories)
+            if table:
+                sections.append(table)
+
+        # 3.2 scattered_people -> table
+        scattered_people = key_data.get("scattered_people", [])
+        if scattered_people:
+            table = self._build_people_table(scattered_people)
+            if table:
+                sections.append(table)
+
+        # 3.3 patchset_distribution / distribution -> bar_chart
+        distribution = (
+            key_data.get("patchset_distribution")
+            or key_data.get("distribution")
+            or metrics.get("distribution")
+        )
+        if distribution and isinstance(distribution, dict):
+            chart = self._build_bar_chart_from_distribution(distribution, "分布统计")
+            if chart:
+                sections.append(chart)
+
+        if not sections:
+            logger.debug("No sections generated from structured data")
+            return None
+
+        schema = {
+            "type": "briefing",
+            "version": "1.0",
+            "content": {
+                "sections": sections
+            }
+        }
+
+        logger.info(f"Generated deterministic UI schema with {len(sections)} sections")
+        return schema
+
+    def _build_metric_cards(self, metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """从指标数据构建 metric_cards section"""
+        cards = []
+
+        # 定义指标的显示名称和趋势判断
+        metric_configs = {
+            "total_changes": {"label": "总提交数", "trend_threshold": None},
+            "one_shot_rate": {"label": "一次性通过率", "trend_threshold": 50, "unit": "%", "higher_better": True},
+            "total_rework": {"label": "总返工次数", "trend_threshold": 100, "higher_better": False},
+            "avg_branches_per_person": {"label": "人均分支数", "trend_threshold": 15, "higher_better": False},
+            "ideal_story_rate": {"label": "理想Story率", "trend_threshold": 60, "unit": "%", "higher_better": True},
+            "contributors": {"label": "参与人数", "trend_threshold": None},
+            # 构建效率指标
+            "p95_minutes": {"label": "P95构建时间", "unit": "分钟", "trend_threshold": 120, "higher_better": False},
+            "p50_minutes": {"label": "P50构建时间", "unit": "分钟", "trend_threshold": 60, "higher_better": False},
+            "total_builds": {"label": "总构建数", "trend_threshold": None},
+        }
+
+        for key, value in metrics.items():
+            if value is None:
+                continue
+
+            config = metric_configs.get(key, {"label": self._humanize_label(key)})
+            label = config["label"]
+            unit = config.get("unit", "")
+            threshold = config.get("trend_threshold")
+            higher_better = config.get("higher_better", True)
+
+            # 格式化值
+            if isinstance(value, float):
+                formatted_value = f"{value:.1f}{unit}"
+            else:
+                formatted_value = f"{value}{unit}"
+
+            # 计算趋势
+            trend = "flat"
+            if threshold is not None:
+                if isinstance(value, (int, float)):
+                    if higher_better:
+                        trend = "up" if value >= threshold else "down"
+                    else:
+                        trend = "up" if value <= threshold else "down"
+
+            cards.append({
+                "label": label,
+                "value": formatted_value,
+                "trend": trend,
+            })
+
+            # 限制最多4个卡片
+            if len(cards) >= 4:
+                break
+
+        if not cards:
+            return None
+
+        return {
+            "type": "metric_cards",
+            "title": "关键指标",
+            "cards": cards
+        }
+
+    def _build_alert_list(self, findings: List[Dict]) -> Optional[Dict[str, Any]]:
+        """从发现列表构建 alert_list section"""
+        if not findings:
+            return None
+
+        items = []
+        for finding in findings[:5]:  # 最多5条
+            severity = finding.get("severity", "medium")
+            # 标准化 severity
+            if severity in ["critical", "high"]:
+                severity = "high"
+            elif severity == "medium":
+                severity = "medium"
+            else:
+                severity = "low"
+
+            message = finding.get("title", finding.get("finding", str(finding)))
+            detail = finding.get("detail", "")
+
+            items.append({
+                "severity": severity,
+                "message": message,
+                "detail": detail if detail else None
+            })
+
+        if not items:
+            return None
+
+        return {
+            "type": "alert_list",
+            "title": "效率洞察",
+            "items": items
+        }
+
+    def _build_stories_table(self, stories: List[Dict]) -> Optional[Dict[str, Any]]:
+        """构建疑似借单Story表格"""
+        if not stories:
+            return None
+
+        headers = ["Story ID", "Change数", "参与人数", "问题"]
+        rows = []
+
+        for story in stories[:5]:  # 最多5行
+            row = [
+                f"#{story.get('issue_id', 'N/A')}",
+                str(story.get('change_id_count', story.get('change_count', 'N/A'))),
+                str(story.get('contributor_count', 'N/A')),
+                story.get('possible_issue', story.get('reason', '需排查'))
+            ]
+            rows.append(row)
+
+        if not rows:
+            return None
+
+        return {
+            "type": "table",
+            "title": "疑似借单Story",
+            "headers": headers,
+            "rows": rows
+        }
+
+    def _build_people_table(self, people: List[Dict]) -> Optional[Dict[str, Any]]:
+        """构建工作分散人员表格"""
+        if not people:
+            return None
+
+        headers = ["人员", "分支数", "仓库数", "建议"]
+        rows = []
+
+        for person in people[:5]:  # 最多5行
+            row = [
+                person.get('name', 'N/A'),
+                str(person.get('branch_count', 'N/A')),
+                str(person.get('repo_count', 'N/A')),
+                "建议优化分支管理"
+            ]
+            rows.append(row)
+
+        if not rows:
+            return None
+
+        return {
+            "type": "table",
+            "title": "工作分散人员",
+            "headers": headers,
+            "rows": rows
+        }
+
+    def _build_bar_chart_from_distribution(
+        self,
+        distribution: Dict[str, Any],
+        title: str
+    ) -> Optional[Dict[str, Any]]:
+        """从分布数据构建柱状图"""
+        if not distribution:
+            return None
+
+        x_axis = []
+        data = []
+
+        for key, value in distribution.items():
+            if isinstance(value, (int, float)):
+                x_axis.append(str(key))
+                data.append(value)
+
+        if not x_axis:
+            return None
+
+        return {
+            "type": "bar_chart",
+            "title": title,
+            "xAxis": x_axis,
+            "series": [{"name": "数量", "data": data}]
+        }
+
+    def _humanize_label(self, key: str) -> str:
+        """将下划线分隔的key转换为人类可读的标签"""
+        # 常见的转换映射
+        mappings = {
+            "total_changes": "总提交数",
+            "one_shot_rate": "一次性通过率",
+            "total_rework": "总返工次数",
+            "avg_branches": "平均分支数",
+            "avg_branches_per_person": "人均分支数",
+            "contributors": "参与人数",
+            "total_contributors": "总参与人数",
+            "ideal_story_rate": "理想Story率",
+            "p50_minutes": "P50时间",
+            "p95_minutes": "P95时间",
+            "p99_minutes": "P99时间",
+        }
+
+        if key in mappings:
+            return mappings[key]
+
+        # 默认：下划线转空格，首字母大写
+        return key.replace("_", " ").title()
