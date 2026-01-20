@@ -108,8 +108,11 @@ importance_evaluator = ImportanceEvaluator()
 
 # Initialize PushNotificationService
 from services import PushNotificationService, UISchemaGenerator
+from services.cover_image_service import CoverImageService
+
 push_notification_service = PushNotificationService(supabase_client=supabase_client)
 ui_schema_generator = UISchemaGenerator()
+cover_image_service = CoverImageService()  # 自动从 GEMINI_API_KEY 环境变量读取
 
 # 注意：ConversationService、BriefingService、TaskExecutionService有复杂的循环依赖
 # 需要多步初始化来解决
@@ -121,6 +124,7 @@ briefing_service = BriefingService(
     conversation_service=None,  # 暂时为None
     push_notification_service=push_notification_service,
     ui_schema_generator=ui_schema_generator,
+    cover_image_service=cover_image_service,  # 新增：封面图片生成服务
 )
 
 # Step 2: 创建TaskExecutionService（不传conversation_service）
