@@ -17,6 +17,9 @@ class ConversationRepository {
   static const Duration _requestTimeout = Duration(seconds: 180);  // 3分钟总超时
   static const Duration _streamChunkTimeout = Duration(seconds: 30); // 单个chunk超时
 
+  /// 获取后端API基础URL
+  String get baseUrl => AppConfig.apiUrl;
+
   /// 获取或创建对话（通过后端 API）
   ///
   /// 数据库有唯一约束限制每个用户-Agent对只能有一个对话，
