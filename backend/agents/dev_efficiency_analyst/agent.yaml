@@ -8,10 +8,20 @@ metadata:
   owner_team: null
 
 skills:
+  - name: gerrit_analysis
+    entry: .claude/skills/gerrit_analysis.py
+    description: 从MySQL数据库分析Gerrit代码审查效率指标和异常
+    timeout: 300
+
   - name: build_analysis
     entry: .claude/skills/build_analysis.py
-    description: 分析 CI/CD 构建数据和效能指标
+    description: 分析CI/CD门禁构建数据，发现瓶颈和趋势
     timeout: 300
+
+  - name: report_generation
+    entry: .claude/skills/report_generation.py
+    description: 生成标准化Markdown格式的效能报告
+    timeout: 120
 
 schedule:
   - cron: "0 9 * * 1-5"
@@ -20,7 +30,7 @@ schedule:
 
   - cron: "0 18 * * 5"
     task: 生成周度效能分析报告
-    enabled: false
+    enabled: true
 
 secrets:
   - name: GERRIT_DB_PASSWORD

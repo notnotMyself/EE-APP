@@ -5,17 +5,17 @@
       "project": "backend-api",
       "branch": "main",
       "subject": "Add user authentication",
-      "created": "2024-12-29T10:00:00Z",
-      "updated": "2024-12-30T14:00:00Z",
+      "created": "2026-01-17T10:00:00Z",
+      "updated": "2026-01-18T14:00:00Z",
       "status": "MERGED",
       "revisions": {
         "rev1": {
           "number": 1,
-          "created": "2024-12-29T10:00:00Z"
+          "created": "2026-01-17T10:00:00Z"
         },
         "rev2": {
           "number": 2,
-          "created": "2024-12-29T18:00:00Z"
+          "created": "2026-01-17T18:00:00Z"
         }
       }
     },
@@ -24,21 +24,21 @@
       "project": "frontend-app",
       "branch": "main",
       "subject": "Fix login button styling",
-      "created": "2024-12-28T09:00:00Z",
-      "updated": "2024-12-30T10:00:00Z",
+      "created": "2026-01-16T09:00:00Z",
+      "updated": "2026-01-18T10:00:00Z",
       "status": "MERGED",
       "revisions": {
         "rev1": {
           "number": 1,
-          "created": "2024-12-28T09:00:00Z"
+          "created": "2026-01-16T09:00:00Z"
         },
         "rev2": {
           "number": 2,
-          "created": "2024-12-28T15:00:00Z"
+          "created": "2026-01-16T15:00:00Z"
         },
         "rev3": {
           "number": 3,
-          "created": "2024-12-29T10:00:00Z"
+          "created": "2026-01-17T10:00:00Z"
         }
       }
     },
@@ -47,13 +47,13 @@
       "project": "backend-api",
       "branch": "feature/payment",
       "subject": "Implement payment gateway",
-      "created": "2024-12-27T14:00:00Z",
-      "updated": "2024-12-30T16:00:00Z",
+      "created": "2026-01-15T14:00:00Z",
+      "updated": "2026-01-18T16:00:00Z",
       "status": "MERGED",
       "revisions": {
         "rev1": {
           "number": 1,
-          "created": "2024-12-27T14:00:00Z"
+          "created": "2026-01-15T14:00:00Z"
         }
       }
     }
