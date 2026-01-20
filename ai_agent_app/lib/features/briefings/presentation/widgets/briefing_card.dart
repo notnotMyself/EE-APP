@@ -18,6 +18,21 @@ class BriefingCard extends StatelessWidget {
   // ignore: deprecated_member_use_from_same_package
   bool get _isNewsType => briefing.coverStyle == 'news_list';
 
+  /// 判断是否有 AI 生成的封面图片
+  bool get _hasCoverImageUrl {
+    final contextData = briefing.contextData;
+    if (contextData == null) return false;
+    final coverUrl = contextData['cover_image_url'] as String?;
+    return coverUrl != null && coverUrl.isNotEmpty;
+  }
+
+  /// 获取封面图片 URL
+  String? get _coverImageUrl {
+    final contextData = briefing.contextData;
+    if (contextData == null) return null;
+    return contextData['cover_image_url'] as String?;
+  }
+
   /// 判断是否有 A2UI 动态 UI Schema
   bool get _hasUiSchema => briefing.uiSchema != null && briefing.uiSchema!.isNotEmpty;
 
@@ -57,8 +72,10 @@ class BriefingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 根据类型选择封面样式
-            // 优先使用 ui_schema 的封面
-            if (_hasUiSchema && _hasUiSchemaCover())
+            // 优先级：AI生成封面 > ui_schema封面 > 紧凑封面 > 渐变占位符
+            if (_hasCoverImageUrl)
+              _buildAICoverImage(context)
+            else if (_hasUiSchema && _hasUiSchemaCover())
               _buildUiSchemaCover(context)
             else if (_isNewsType)
               _buildCompactCover(context)
@@ -132,6 +149,142 @@ class BriefingCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// 构建 AI 生成的封面图片
+  Widget _buildAICoverImage(BuildContext context) {
+    final theme = Theme.of(context);
+    final coverUrl = _coverImageUrl!;
+
+    return Stack(
+      children: [
+        // AI 生成的封面图片
+        Container(
+          width: double.infinity,
+          height: 240,
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+          ),
+          child: Image.network(
+            coverUrl,
+            width: double.infinity,
+            height: 240,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              // 加载中显示渐变占位符
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _getCoverGradientColors(briefing.briefingType),
+                  ),
+                ),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                    color: Colors.white.withOpacity(0.7),
+                    strokeWidth: 2,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              // 加载失败时回退到渐变占位符
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _getCoverGradientColors(briefing.briefingType),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    _getTypeIcon(briefing.briefingType),
+                    size: 96,
+                    color: Colors.white.withOpacity(0.4),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        // 状态指示器（左上角）
+        Positioned(
+          top: 12,
+          left: 12,
+          child: Row(
+            children: [
+              // 优先级标签
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getPriorityColor(briefing.priority),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _getPriorityLabel(briefing.priority),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // AI 生成标记
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 12,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'AI',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 未读标记（右上角）
+        if (briefing.status == BriefingStatus.newItem)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: _getPriorityColor(briefing.priority),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
