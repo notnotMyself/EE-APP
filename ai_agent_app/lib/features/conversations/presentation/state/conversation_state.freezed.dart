@@ -15,10 +15,782 @@ final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
+mixin _$ToolExecutionState {
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)
+        executing,
+    required TResult Function(
+            String toolName, String toolId, String? result, bool? isError)
+        completed,
+  }) =>
+      throw _privateConstructorUsedError;
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult? Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+  }) =>
+      throw _privateConstructorUsedError;
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+    required TResult orElse(),
+  }) =>
+      throw _privateConstructorUsedError;
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(ToolExecutionStateIdle value) idle,
+    required TResult Function(ToolExecutionStateExecuting value) executing,
+    required TResult Function(ToolExecutionStateCompleted value) completed,
+  }) =>
+      throw _privateConstructorUsedError;
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(ToolExecutionStateIdle value)? idle,
+    TResult? Function(ToolExecutionStateExecuting value)? executing,
+    TResult? Function(ToolExecutionStateCompleted value)? completed,
+  }) =>
+      throw _privateConstructorUsedError;
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(ToolExecutionStateIdle value)? idle,
+    TResult Function(ToolExecutionStateExecuting value)? executing,
+    TResult Function(ToolExecutionStateCompleted value)? completed,
+    required TResult orElse(),
+  }) =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ToolExecutionStateCopyWith<$Res> {
+  factory $ToolExecutionStateCopyWith(
+          ToolExecutionState value, $Res Function(ToolExecutionState) then) =
+      _$ToolExecutionStateCopyWithImpl<$Res, ToolExecutionState>;
+}
+
+/// @nodoc
+class _$ToolExecutionStateCopyWithImpl<$Res, $Val extends ToolExecutionState>
+    implements $ToolExecutionStateCopyWith<$Res> {
+  _$ToolExecutionStateCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+}
+
+/// @nodoc
+abstract class _$$ToolExecutionStateIdleImplCopyWith<$Res> {
+  factory _$$ToolExecutionStateIdleImplCopyWith(
+          _$ToolExecutionStateIdleImpl value,
+          $Res Function(_$ToolExecutionStateIdleImpl) then) =
+      __$$ToolExecutionStateIdleImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$ToolExecutionStateIdleImplCopyWithImpl<$Res>
+    extends _$ToolExecutionStateCopyWithImpl<$Res, _$ToolExecutionStateIdleImpl>
+    implements _$$ToolExecutionStateIdleImplCopyWith<$Res> {
+  __$$ToolExecutionStateIdleImplCopyWithImpl(
+      _$ToolExecutionStateIdleImpl _value,
+      $Res Function(_$ToolExecutionStateIdleImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+}
+
+/// @nodoc
+
+class _$ToolExecutionStateIdleImpl implements ToolExecutionStateIdle {
+  const _$ToolExecutionStateIdleImpl();
+
+  @override
+  String toString() {
+    return 'ToolExecutionState.idle()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ToolExecutionStateIdleImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)
+        executing,
+    required TResult Function(
+            String toolName, String toolId, String? result, bool? isError)
+        completed,
+  }) {
+    return idle();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult? Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+  }) {
+    return idle?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+    required TResult orElse(),
+  }) {
+    if (idle != null) {
+      return idle();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(ToolExecutionStateIdle value) idle,
+    required TResult Function(ToolExecutionStateExecuting value) executing,
+    required TResult Function(ToolExecutionStateCompleted value) completed,
+  }) {
+    return idle(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(ToolExecutionStateIdle value)? idle,
+    TResult? Function(ToolExecutionStateExecuting value)? executing,
+    TResult? Function(ToolExecutionStateCompleted value)? completed,
+  }) {
+    return idle?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(ToolExecutionStateIdle value)? idle,
+    TResult Function(ToolExecutionStateExecuting value)? executing,
+    TResult Function(ToolExecutionStateCompleted value)? completed,
+    required TResult orElse(),
+  }) {
+    if (idle != null) {
+      return idle(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class ToolExecutionStateIdle implements ToolExecutionState {
+  const factory ToolExecutionStateIdle() = _$ToolExecutionStateIdleImpl;
+}
+
+/// @nodoc
+abstract class _$$ToolExecutionStateExecutingImplCopyWith<$Res> {
+  factory _$$ToolExecutionStateExecutingImplCopyWith(
+          _$ToolExecutionStateExecutingImpl value,
+          $Res Function(_$ToolExecutionStateExecutingImpl) then) =
+      __$$ToolExecutionStateExecutingImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call(
+      {String toolName,
+      String toolId,
+      Map<String, dynamic>? toolInput,
+      DateTime startedAt,
+      double progress,
+      String status,
+      String? filePath,
+      String? statusMessage});
+}
+
+/// @nodoc
+class __$$ToolExecutionStateExecutingImplCopyWithImpl<$Res>
+    extends _$ToolExecutionStateCopyWithImpl<$Res,
+        _$ToolExecutionStateExecutingImpl>
+    implements _$$ToolExecutionStateExecutingImplCopyWith<$Res> {
+  __$$ToolExecutionStateExecutingImplCopyWithImpl(
+      _$ToolExecutionStateExecutingImpl _value,
+      $Res Function(_$ToolExecutionStateExecutingImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? toolName = null,
+    Object? toolId = null,
+    Object? toolInput = freezed,
+    Object? startedAt = null,
+    Object? progress = null,
+    Object? status = null,
+    Object? filePath = freezed,
+    Object? statusMessage = freezed,
+  }) {
+    return _then(_$ToolExecutionStateExecutingImpl(
+      toolName: null == toolName
+          ? _value.toolName
+          : toolName // ignore: cast_nullable_to_non_nullable
+              as String,
+      toolId: null == toolId
+          ? _value.toolId
+          : toolId // ignore: cast_nullable_to_non_nullable
+              as String,
+      toolInput: freezed == toolInput
+          ? _value._toolInput
+          : toolInput // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+      startedAt: null == startedAt
+          ? _value.startedAt
+          : startedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      progress: null == progress
+          ? _value.progress
+          : progress // ignore: cast_nullable_to_non_nullable
+              as double,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      filePath: freezed == filePath
+          ? _value.filePath
+          : filePath // ignore: cast_nullable_to_non_nullable
+              as String?,
+      statusMessage: freezed == statusMessage
+          ? _value.statusMessage
+          : statusMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$ToolExecutionStateExecutingImpl implements ToolExecutionStateExecuting {
+  const _$ToolExecutionStateExecutingImpl(
+      {required this.toolName,
+      required this.toolId,
+      final Map<String, dynamic>? toolInput,
+      required this.startedAt,
+      this.progress = 0.0,
+      this.status = 'executing',
+      this.filePath,
+      this.statusMessage})
+      : _toolInput = toolInput;
+
+  @override
+  final String toolName;
+  @override
+  final String toolId;
+  final Map<String, dynamic>? _toolInput;
+  @override
+  Map<String, dynamic>? get toolInput {
+    final value = _toolInput;
+    if (value == null) return null;
+    if (_toolInput is EqualUnmodifiableMapView) return _toolInput;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  final DateTime startedAt;
+  @override
+  @JsonKey()
+  final double progress;
+// 0.0 - 1.0
+  @override
+  @JsonKey()
+  final String status;
+// executing, writing, etc.
+  @override
+  final String? filePath;
+// 对于 Write 工具，显示文件路径
+  @override
+  final String? statusMessage;
+
+  @override
+  String toString() {
+    return 'ToolExecutionState.executing(toolName: $toolName, toolId: $toolId, toolInput: $toolInput, startedAt: $startedAt, progress: $progress, status: $status, filePath: $filePath, statusMessage: $statusMessage)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ToolExecutionStateExecutingImpl &&
+            (identical(other.toolName, toolName) ||
+                other.toolName == toolName) &&
+            (identical(other.toolId, toolId) || other.toolId == toolId) &&
+            const DeepCollectionEquality()
+                .equals(other._toolInput, _toolInput) &&
+            (identical(other.startedAt, startedAt) ||
+                other.startedAt == startedAt) &&
+            (identical(other.progress, progress) ||
+                other.progress == progress) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.filePath, filePath) ||
+                other.filePath == filePath) &&
+            (identical(other.statusMessage, statusMessage) ||
+                other.statusMessage == statusMessage));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      toolName,
+      toolId,
+      const DeepCollectionEquality().hash(_toolInput),
+      startedAt,
+      progress,
+      status,
+      filePath,
+      statusMessage);
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ToolExecutionStateExecutingImplCopyWith<_$ToolExecutionStateExecutingImpl>
+      get copyWith => __$$ToolExecutionStateExecutingImplCopyWithImpl<
+          _$ToolExecutionStateExecutingImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)
+        executing,
+    required TResult Function(
+            String toolName, String toolId, String? result, bool? isError)
+        completed,
+  }) {
+    return executing(toolName, toolId, toolInput, startedAt, progress, status,
+        filePath, statusMessage);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult? Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+  }) {
+    return executing?.call(toolName, toolId, toolInput, startedAt, progress,
+        status, filePath, statusMessage);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+    required TResult orElse(),
+  }) {
+    if (executing != null) {
+      return executing(toolName, toolId, toolInput, startedAt, progress, status,
+          filePath, statusMessage);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(ToolExecutionStateIdle value) idle,
+    required TResult Function(ToolExecutionStateExecuting value) executing,
+    required TResult Function(ToolExecutionStateCompleted value) completed,
+  }) {
+    return executing(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(ToolExecutionStateIdle value)? idle,
+    TResult? Function(ToolExecutionStateExecuting value)? executing,
+    TResult? Function(ToolExecutionStateCompleted value)? completed,
+  }) {
+    return executing?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(ToolExecutionStateIdle value)? idle,
+    TResult Function(ToolExecutionStateExecuting value)? executing,
+    TResult Function(ToolExecutionStateCompleted value)? completed,
+    required TResult orElse(),
+  }) {
+    if (executing != null) {
+      return executing(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class ToolExecutionStateExecuting implements ToolExecutionState {
+  const factory ToolExecutionStateExecuting(
+      {required final String toolName,
+      required final String toolId,
+      final Map<String, dynamic>? toolInput,
+      required final DateTime startedAt,
+      final double progress,
+      final String status,
+      final String? filePath,
+      final String? statusMessage}) = _$ToolExecutionStateExecutingImpl;
+
+  String get toolName;
+  String get toolId;
+  Map<String, dynamic>? get toolInput;
+  DateTime get startedAt;
+  double get progress; // 0.0 - 1.0
+  String get status; // executing, writing, etc.
+  String? get filePath; // 对于 Write 工具，显示文件路径
+  String? get statusMessage;
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ToolExecutionStateExecutingImplCopyWith<_$ToolExecutionStateExecutingImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$ToolExecutionStateCompletedImplCopyWith<$Res> {
+  factory _$$ToolExecutionStateCompletedImplCopyWith(
+          _$ToolExecutionStateCompletedImpl value,
+          $Res Function(_$ToolExecutionStateCompletedImpl) then) =
+      __$$ToolExecutionStateCompletedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String toolName, String toolId, String? result, bool? isError});
+}
+
+/// @nodoc
+class __$$ToolExecutionStateCompletedImplCopyWithImpl<$Res>
+    extends _$ToolExecutionStateCopyWithImpl<$Res,
+        _$ToolExecutionStateCompletedImpl>
+    implements _$$ToolExecutionStateCompletedImplCopyWith<$Res> {
+  __$$ToolExecutionStateCompletedImplCopyWithImpl(
+      _$ToolExecutionStateCompletedImpl _value,
+      $Res Function(_$ToolExecutionStateCompletedImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? toolName = null,
+    Object? toolId = null,
+    Object? result = freezed,
+    Object? isError = freezed,
+  }) {
+    return _then(_$ToolExecutionStateCompletedImpl(
+      toolName: null == toolName
+          ? _value.toolName
+          : toolName // ignore: cast_nullable_to_non_nullable
+              as String,
+      toolId: null == toolId
+          ? _value.toolId
+          : toolId // ignore: cast_nullable_to_non_nullable
+              as String,
+      result: freezed == result
+          ? _value.result
+          : result // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isError: freezed == isError
+          ? _value.isError
+          : isError // ignore: cast_nullable_to_non_nullable
+              as bool?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$ToolExecutionStateCompletedImpl implements ToolExecutionStateCompleted {
+  const _$ToolExecutionStateCompletedImpl(
+      {required this.toolName,
+      required this.toolId,
+      this.result,
+      this.isError});
+
+  @override
+  final String toolName;
+  @override
+  final String toolId;
+  @override
+  final String? result;
+  @override
+  final bool? isError;
+
+  @override
+  String toString() {
+    return 'ToolExecutionState.completed(toolName: $toolName, toolId: $toolId, result: $result, isError: $isError)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ToolExecutionStateCompletedImpl &&
+            (identical(other.toolName, toolName) ||
+                other.toolName == toolName) &&
+            (identical(other.toolId, toolId) || other.toolId == toolId) &&
+            (identical(other.result, result) || other.result == result) &&
+            (identical(other.isError, isError) || other.isError == isError));
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, toolName, toolId, result, isError);
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ToolExecutionStateCompletedImplCopyWith<_$ToolExecutionStateCompletedImpl>
+      get copyWith => __$$ToolExecutionStateCompletedImplCopyWithImpl<
+          _$ToolExecutionStateCompletedImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)
+        executing,
+    required TResult Function(
+            String toolName, String toolId, String? result, bool? isError)
+        completed,
+  }) {
+    return completed(toolName, toolId, result, isError);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult? Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+  }) {
+    return completed?.call(toolName, toolId, result, isError);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(
+            String toolName,
+            String toolId,
+            Map<String, dynamic>? toolInput,
+            DateTime startedAt,
+            double progress,
+            String status,
+            String? filePath,
+            String? statusMessage)?
+        executing,
+    TResult Function(
+            String toolName, String toolId, String? result, bool? isError)?
+        completed,
+    required TResult orElse(),
+  }) {
+    if (completed != null) {
+      return completed(toolName, toolId, result, isError);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(ToolExecutionStateIdle value) idle,
+    required TResult Function(ToolExecutionStateExecuting value) executing,
+    required TResult Function(ToolExecutionStateCompleted value) completed,
+  }) {
+    return completed(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(ToolExecutionStateIdle value)? idle,
+    TResult? Function(ToolExecutionStateExecuting value)? executing,
+    TResult? Function(ToolExecutionStateCompleted value)? completed,
+  }) {
+    return completed?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(ToolExecutionStateIdle value)? idle,
+    TResult Function(ToolExecutionStateExecuting value)? executing,
+    TResult Function(ToolExecutionStateCompleted value)? completed,
+    required TResult orElse(),
+  }) {
+    if (completed != null) {
+      return completed(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class ToolExecutionStateCompleted implements ToolExecutionState {
+  const factory ToolExecutionStateCompleted(
+      {required final String toolName,
+      required final String toolId,
+      final String? result,
+      final bool? isError}) = _$ToolExecutionStateCompletedImpl;
+
+  String get toolName;
+  String get toolId;
+  String? get result;
+  bool? get isError;
+
+  /// Create a copy of ToolExecutionState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$ToolExecutionStateCompletedImplCopyWith<_$ToolExecutionStateCompletedImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
 mixin _$StreamingState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
     required TResult Function(String content, DateTime startedAt) streaming,
     required TResult Function() completed,
     required TResult Function(String message) error,
@@ -27,6 +799,7 @@ mixin _$StreamingState {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
     TResult? Function(String content, DateTime startedAt)? streaming,
     TResult? Function()? completed,
     TResult? Function(String message)? error,
@@ -35,6 +808,7 @@ mixin _$StreamingState {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
     TResult Function(String content, DateTime startedAt)? streaming,
     TResult Function()? completed,
     TResult Function(String message)? error,
@@ -44,6 +818,7 @@ mixin _$StreamingState {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
     required TResult Function(StreamingStateStreaming value) streaming,
     required TResult Function(StreamingStateCompleted value) completed,
     required TResult Function(StreamingStateError value) error,
@@ -52,6 +827,7 @@ mixin _$StreamingState {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
     TResult? Function(StreamingStateStreaming value)? streaming,
     TResult? Function(StreamingStateCompleted value)? completed,
     TResult? Function(StreamingStateError value)? error,
@@ -60,6 +836,7 @@ mixin _$StreamingState {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
     TResult Function(StreamingStateStreaming value)? streaming,
     TResult Function(StreamingStateCompleted value)? completed,
     TResult Function(StreamingStateError value)? error,
@@ -131,6 +908,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
     required TResult Function(String content, DateTime startedAt) streaming,
     required TResult Function() completed,
     required TResult Function(String message) error,
@@ -142,6 +920,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
     TResult? Function(String content, DateTime startedAt)? streaming,
     TResult? Function()? completed,
     TResult? Function(String message)? error,
@@ -153,6 +932,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
     TResult Function(String content, DateTime startedAt)? streaming,
     TResult Function()? completed,
     TResult Function(String message)? error,
@@ -168,6 +948,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
     required TResult Function(StreamingStateStreaming value) streaming,
     required TResult Function(StreamingStateCompleted value) completed,
     required TResult Function(StreamingStateError value) error,
@@ -179,6 +960,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
     TResult? Function(StreamingStateStreaming value)? streaming,
     TResult? Function(StreamingStateCompleted value)? completed,
     TResult? Function(StreamingStateError value)? error,
@@ -190,6 +972,7 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
     TResult Function(StreamingStateStreaming value)? streaming,
     TResult Function(StreamingStateCompleted value)? completed,
     TResult Function(StreamingStateError value)? error,
@@ -204,6 +987,168 @@ class _$StreamingStateIdleImpl implements StreamingStateIdle {
 
 abstract class StreamingStateIdle implements StreamingState {
   const factory StreamingStateIdle() = _$StreamingStateIdleImpl;
+}
+
+/// @nodoc
+abstract class _$$StreamingStateWaitingImplCopyWith<$Res> {
+  factory _$$StreamingStateWaitingImplCopyWith(
+          _$StreamingStateWaitingImpl value,
+          $Res Function(_$StreamingStateWaitingImpl) then) =
+      __$$StreamingStateWaitingImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({DateTime startedAt});
+}
+
+/// @nodoc
+class __$$StreamingStateWaitingImplCopyWithImpl<$Res>
+    extends _$StreamingStateCopyWithImpl<$Res, _$StreamingStateWaitingImpl>
+    implements _$$StreamingStateWaitingImplCopyWith<$Res> {
+  __$$StreamingStateWaitingImplCopyWithImpl(_$StreamingStateWaitingImpl _value,
+      $Res Function(_$StreamingStateWaitingImpl) _then)
+      : super(_value, _then);
+
+  /// Create a copy of StreamingState
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? startedAt = null,
+  }) {
+    return _then(_$StreamingStateWaitingImpl(
+      startedAt: null == startedAt
+          ? _value.startedAt
+          : startedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$StreamingStateWaitingImpl implements StreamingStateWaiting {
+  const _$StreamingStateWaitingImpl({required this.startedAt});
+
+  @override
+  final DateTime startedAt;
+
+  @override
+  String toString() {
+    return 'StreamingState.waiting(startedAt: $startedAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$StreamingStateWaitingImpl &&
+            (identical(other.startedAt, startedAt) ||
+                other.startedAt == startedAt));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, startedAt);
+
+  /// Create a copy of StreamingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$StreamingStateWaitingImplCopyWith<_$StreamingStateWaitingImpl>
+      get copyWith => __$$StreamingStateWaitingImplCopyWithImpl<
+          _$StreamingStateWaitingImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
+    required TResult Function(String content, DateTime startedAt) streaming,
+    required TResult Function() completed,
+    required TResult Function(String message) error,
+  }) {
+    return waiting(startedAt);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
+    TResult? Function(String content, DateTime startedAt)? streaming,
+    TResult? Function()? completed,
+    TResult? Function(String message)? error,
+  }) {
+    return waiting?.call(startedAt);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
+    TResult Function(String content, DateTime startedAt)? streaming,
+    TResult Function()? completed,
+    TResult Function(String message)? error,
+    required TResult orElse(),
+  }) {
+    if (waiting != null) {
+      return waiting(startedAt);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
+    required TResult Function(StreamingStateStreaming value) streaming,
+    required TResult Function(StreamingStateCompleted value) completed,
+    required TResult Function(StreamingStateError value) error,
+  }) {
+    return waiting(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
+    TResult? Function(StreamingStateStreaming value)? streaming,
+    TResult? Function(StreamingStateCompleted value)? completed,
+    TResult? Function(StreamingStateError value)? error,
+  }) {
+    return waiting?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
+    TResult Function(StreamingStateStreaming value)? streaming,
+    TResult Function(StreamingStateCompleted value)? completed,
+    TResult Function(StreamingStateError value)? error,
+    required TResult orElse(),
+  }) {
+    if (waiting != null) {
+      return waiting(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class StreamingStateWaiting implements StreamingState {
+  const factory StreamingStateWaiting({required final DateTime startedAt}) =
+      _$StreamingStateWaitingImpl;
+
+  DateTime get startedAt;
+
+  /// Create a copy of StreamingState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$StreamingStateWaitingImplCopyWith<_$StreamingStateWaitingImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -288,6 +1233,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
     required TResult Function(String content, DateTime startedAt) streaming,
     required TResult Function() completed,
     required TResult Function(String message) error,
@@ -299,6 +1245,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
     TResult? Function(String content, DateTime startedAt)? streaming,
     TResult? Function()? completed,
     TResult? Function(String message)? error,
@@ -310,6 +1257,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
     TResult Function(String content, DateTime startedAt)? streaming,
     TResult Function()? completed,
     TResult Function(String message)? error,
@@ -325,6 +1273,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
     required TResult Function(StreamingStateStreaming value) streaming,
     required TResult Function(StreamingStateCompleted value) completed,
     required TResult Function(StreamingStateError value) error,
@@ -336,6 +1285,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
     TResult? Function(StreamingStateStreaming value)? streaming,
     TResult? Function(StreamingStateCompleted value)? completed,
     TResult? Function(StreamingStateError value)? error,
@@ -347,6 +1297,7 @@ class _$StreamingStateStreamingImpl implements StreamingStateStreaming {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
     TResult Function(StreamingStateStreaming value)? streaming,
     TResult Function(StreamingStateCompleted value)? completed,
     TResult Function(StreamingStateError value)? error,
@@ -419,6 +1370,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
     required TResult Function(String content, DateTime startedAt) streaming,
     required TResult Function() completed,
     required TResult Function(String message) error,
@@ -430,6 +1382,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
     TResult? Function(String content, DateTime startedAt)? streaming,
     TResult? Function()? completed,
     TResult? Function(String message)? error,
@@ -441,6 +1394,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
     TResult Function(String content, DateTime startedAt)? streaming,
     TResult Function()? completed,
     TResult Function(String message)? error,
@@ -456,6 +1410,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
     required TResult Function(StreamingStateStreaming value) streaming,
     required TResult Function(StreamingStateCompleted value) completed,
     required TResult Function(StreamingStateError value) error,
@@ -467,6 +1422,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
     TResult? Function(StreamingStateStreaming value)? streaming,
     TResult? Function(StreamingStateCompleted value)? completed,
     TResult? Function(StreamingStateError value)? error,
@@ -478,6 +1434,7 @@ class _$StreamingStateCompletedImpl implements StreamingStateCompleted {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
     TResult Function(StreamingStateStreaming value)? streaming,
     TResult Function(StreamingStateCompleted value)? completed,
     TResult Function(StreamingStateError value)? error,
@@ -564,6 +1521,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() idle,
+    required TResult Function(DateTime startedAt) waiting,
     required TResult Function(String content, DateTime startedAt) streaming,
     required TResult Function() completed,
     required TResult Function(String message) error,
@@ -575,6 +1533,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? idle,
+    TResult? Function(DateTime startedAt)? waiting,
     TResult? Function(String content, DateTime startedAt)? streaming,
     TResult? Function()? completed,
     TResult? Function(String message)? error,
@@ -586,6 +1545,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? idle,
+    TResult Function(DateTime startedAt)? waiting,
     TResult Function(String content, DateTime startedAt)? streaming,
     TResult Function()? completed,
     TResult Function(String message)? error,
@@ -601,6 +1561,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(StreamingStateIdle value) idle,
+    required TResult Function(StreamingStateWaiting value) waiting,
     required TResult Function(StreamingStateStreaming value) streaming,
     required TResult Function(StreamingStateCompleted value) completed,
     required TResult Function(StreamingStateError value) error,
@@ -612,6 +1573,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(StreamingStateIdle value)? idle,
+    TResult? Function(StreamingStateWaiting value)? waiting,
     TResult? Function(StreamingStateStreaming value)? streaming,
     TResult? Function(StreamingStateCompleted value)? completed,
     TResult? Function(StreamingStateError value)? error,
@@ -623,6 +1585,7 @@ class _$StreamingStateErrorImpl implements StreamingStateError {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(StreamingStateIdle value)? idle,
+    TResult Function(StreamingStateWaiting value)? waiting,
     TResult Function(StreamingStateStreaming value)? streaming,
     TResult Function(StreamingStateCompleted value)? completed,
     TResult Function(StreamingStateError value)? error,
@@ -1255,6 +2218,9 @@ mixin _$ConversationViewState {
   List<Message> get messages => throw _privateConstructorUsedError;
   StreamingState get streamingState => throw _privateConstructorUsedError;
   WsConnectionState get connectionState => throw _privateConstructorUsedError;
+
+  /// 工具执行状态（新增：让用户看到工具执行进度）
+  ToolExecutionState get toolState => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
 
@@ -1276,11 +2242,13 @@ abstract class $ConversationViewStateCopyWith<$Res> {
       List<Message> messages,
       StreamingState streamingState,
       WsConnectionState connectionState,
+      ToolExecutionState toolState,
       String? error,
       bool isLoading});
 
   $StreamingStateCopyWith<$Res> get streamingState;
   $WsConnectionStateCopyWith<$Res> get connectionState;
+  $ToolExecutionStateCopyWith<$Res> get toolState;
 }
 
 /// @nodoc
@@ -1303,6 +2271,7 @@ class _$ConversationViewStateCopyWithImpl<$Res,
     Object? messages = null,
     Object? streamingState = null,
     Object? connectionState = null,
+    Object? toolState = null,
     Object? error = freezed,
     Object? isLoading = null,
   }) {
@@ -1323,6 +2292,10 @@ class _$ConversationViewStateCopyWithImpl<$Res,
           ? _value.connectionState
           : connectionState // ignore: cast_nullable_to_non_nullable
               as WsConnectionState,
+      toolState: null == toolState
+          ? _value.toolState
+          : toolState // ignore: cast_nullable_to_non_nullable
+              as ToolExecutionState,
       error: freezed == error
           ? _value.error
           : error // ignore: cast_nullable_to_non_nullable
@@ -1353,6 +2326,16 @@ class _$ConversationViewStateCopyWithImpl<$Res,
       return _then(_value.copyWith(connectionState: value) as $Val);
     });
   }
+
+  /// Create a copy of ConversationViewState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $ToolExecutionStateCopyWith<$Res> get toolState {
+    return $ToolExecutionStateCopyWith<$Res>(_value.toolState, (value) {
+      return _then(_value.copyWith(toolState: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -1369,6 +2352,7 @@ abstract class _$$ConversationViewStateImplCopyWith<$Res>
       List<Message> messages,
       StreamingState streamingState,
       WsConnectionState connectionState,
+      ToolExecutionState toolState,
       String? error,
       bool isLoading});
 
@@ -1376,6 +2360,8 @@ abstract class _$$ConversationViewStateImplCopyWith<$Res>
   $StreamingStateCopyWith<$Res> get streamingState;
   @override
   $WsConnectionStateCopyWith<$Res> get connectionState;
+  @override
+  $ToolExecutionStateCopyWith<$Res> get toolState;
 }
 
 /// @nodoc
@@ -1396,6 +2382,7 @@ class __$$ConversationViewStateImplCopyWithImpl<$Res>
     Object? messages = null,
     Object? streamingState = null,
     Object? connectionState = null,
+    Object? toolState = null,
     Object? error = freezed,
     Object? isLoading = null,
   }) {
@@ -1416,6 +2403,10 @@ class __$$ConversationViewStateImplCopyWithImpl<$Res>
           ? _value.connectionState
           : connectionState // ignore: cast_nullable_to_non_nullable
               as WsConnectionState,
+      toolState: null == toolState
+          ? _value.toolState
+          : toolState // ignore: cast_nullable_to_non_nullable
+              as ToolExecutionState,
       error: freezed == error
           ? _value.error
           : error // ignore: cast_nullable_to_non_nullable
@@ -1436,6 +2427,7 @@ class _$ConversationViewStateImpl implements _ConversationViewState {
       required final List<Message> messages,
       required this.streamingState,
       required this.connectionState,
+      this.toolState = const ToolExecutionState.idle(),
       this.error,
       this.isLoading = false})
       : _messages = messages;
@@ -1454,6 +2446,11 @@ class _$ConversationViewStateImpl implements _ConversationViewState {
   final StreamingState streamingState;
   @override
   final WsConnectionState connectionState;
+
+  /// 工具执行状态（新增：让用户看到工具执行进度）
+  @override
+  @JsonKey()
+  final ToolExecutionState toolState;
   @override
   final String? error;
   @override
@@ -1462,7 +2459,7 @@ class _$ConversationViewStateImpl implements _ConversationViewState {
 
   @override
   String toString() {
-    return 'ConversationViewState(conversationId: $conversationId, messages: $messages, streamingState: $streamingState, connectionState: $connectionState, error: $error, isLoading: $isLoading)';
+    return 'ConversationViewState(conversationId: $conversationId, messages: $messages, streamingState: $streamingState, connectionState: $connectionState, toolState: $toolState, error: $error, isLoading: $isLoading)';
   }
 
   @override
@@ -1477,6 +2474,8 @@ class _$ConversationViewStateImpl implements _ConversationViewState {
                 other.streamingState == streamingState) &&
             (identical(other.connectionState, connectionState) ||
                 other.connectionState == connectionState) &&
+            (identical(other.toolState, toolState) ||
+                other.toolState == toolState) &&
             (identical(other.error, error) || other.error == error) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading));
@@ -1489,6 +2488,7 @@ class _$ConversationViewStateImpl implements _ConversationViewState {
       const DeepCollectionEquality().hash(_messages),
       streamingState,
       connectionState,
+      toolState,
       error,
       isLoading);
 
@@ -1508,6 +2508,7 @@ abstract class _ConversationViewState implements ConversationViewState {
       required final List<Message> messages,
       required final StreamingState streamingState,
       required final WsConnectionState connectionState,
+      final ToolExecutionState toolState,
       final String? error,
       final bool isLoading}) = _$ConversationViewStateImpl;
 
@@ -1519,6 +2520,10 @@ abstract class _ConversationViewState implements ConversationViewState {
   StreamingState get streamingState;
   @override
   WsConnectionState get connectionState;
+
+  /// 工具执行状态（新增：让用户看到工具执行进度）
+  @override
+  ToolExecutionState get toolState;
   @override
   String? get error;
   @override

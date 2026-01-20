@@ -73,8 +73,10 @@ except ImportError:
     SUPABASE_AVAILABLE = False
     Client = None
 
-# 配置日志
-logging.basicConfig(level=logging.INFO)
+# 配置日志（默认 INFO，可用 APP_LOG_LEVEL / LOG_LEVEL 覆盖：DEBUG/INFO/WARNING/ERROR）
+_app_log_level_str = os.getenv("APP_LOG_LEVEL") or os.getenv("LOG_LEVEL") or "INFO"
+_app_log_level = getattr(logging, _app_log_level_str.upper(), logging.INFO)
+logging.basicConfig(level=_app_log_level)
 logger = logging.getLogger(__name__)
 
 # 初始化 Agent Registry（新增）
@@ -186,6 +188,41 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时
     logger.info("Starting application...")
+
+    # 强制设置应用层日志级别（保持 INFO，同时确保我们自定义 logger 的 INFO 一定能输出）
+    try:
+        # 总开关：默认 INFO（用户诉求：整体保持 INFO）
+        level_str = os.getenv("APP_LOG_LEVEL") or os.getenv("LOG_LEVEL") or "INFO"
+        level = getattr(logging, level_str.upper(), logging.INFO)
+
+        root_logger = logging.getLogger()
+        root_logger.setLevel(level)
+        for h in root_logger.handlers:
+            h.setLevel(level)
+
+        # 压低三方库噪声（否则 INFO 会被 httpx/httpcore/scheduler 打满）
+        # 如需看三方库细节，可设置 APP_VERBOSE_LIB_LOGS=1
+        if os.getenv("APP_VERBOSE_LIB_LOGS", "0") not in ("1", "true", "True"):
+            for noisy in [
+                "httpx",
+                "httpcore",
+                "hpack",
+                "apscheduler",
+            ]:
+                logging.getLogger(noisy).setLevel(logging.WARNING)
+
+        for name in [
+            "api.websocket_conversations",
+            "services.websocket_manager",
+            "services.websocket_writer",
+            "uvicorn",
+            "uvicorn.error",
+            "uvicorn.access",
+            __name__,
+        ]:
+            logging.getLogger(name).setLevel(level)
+    except Exception as e:
+        logger.warning(f"Failed to adjust log levels: {e}")
 
     # 初始化并启动调度器
     try:

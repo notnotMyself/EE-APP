@@ -22,6 +22,7 @@ from claude_agent_sdk import (
     ToolUseBlock,
     query,
 )
+from claude_agent_sdk.types import StreamEvent  # 细粒度流式输出事件
 
 from .config import AgentSDKConfig, get_config
 from .exceptions import (
@@ -167,6 +168,8 @@ class AgentSDKService:
             max_turns=role_config.max_turns,
             permission_mode=self.config.permission_mode,
             env=self.config.get_env_dict(),
+            # 启用细粒度流式输出：返回 StreamEvent 包含 content_block_delta
+            include_partial_messages=True,
         )
 
         # 添加 MCP 服务器
@@ -202,9 +205,76 @@ class AgentSDKService:
 
         try:
             async for message in query(prompt=prompt, options=options):
-                if isinstance(message, AssistantMessage):
+                # 处理 StreamEvent：细粒度流式输出（token 级别）
+                if isinstance(message, StreamEvent):
+                    event = message.event
+                    event_type = event.get("type", "")
+                    
+                    # content_block_delta 包含 text_delta（文本增量）
+                    if event_type == "content_block_delta":
+                        delta = event.get("delta", {})
+                        delta_type = delta.get("type", "")
+                        
+                        if delta_type == "text_delta":
+                            text = delta.get("text", "")
+                            if text:
+                                if on_text_chunk:
+                                    await self._safe_callback(on_text_chunk, text)
+                                yield {
+                                    "type": "text_delta",  # 使用 text_delta 区分于完整 TextBlock
+                                    "content": text,
+                                }
+                        elif delta_type == "thinking_delta":
+                            # 思考过程增量（如果启用了 extended thinking）
+                            thinking = delta.get("thinking", "")
+                            if thinking:
+                                yield {
+                                    "type": "thinking_delta",
+                                    "content": thinking,
+                                }
+                        elif delta_type == "input_json_delta":
+                            # 工具调用输入的增量
+                            partial_json = delta.get("partial_json", "")
+                            if partial_json:
+                                yield {
+                                    "type": "tool_input_delta",
+                                    "content": partial_json,
+                                }
+                    
+                    # content_block_start: 内容块开始
+                    elif event_type == "content_block_start":
+                        content_block = event.get("content_block", {})
+                        block_type = content_block.get("type", "")
+                        if block_type == "tool_use":
+                            # 工具调用开始
+                            yield {
+                                "type": "tool_use_start",
+                                "tool_name": content_block.get("name", ""),
+                                "tool_id": content_block.get("id", ""),
+                            }
+                        elif block_type == "thinking":
+                            yield {
+                                "type": "thinking_start",
+                            }
+                    
+                    # content_block_stop: 内容块结束
+                    elif event_type == "content_block_stop":
+                        yield {
+                            "type": "content_block_stop",
+                            "index": event.get("index", 0),
+                        }
+                    
+                    # message_start / message_delta / message_stop 可以忽略或做元数据处理
+                    elif event_type in ("message_start", "message_delta", "message_stop"):
+                        # 可选：传递消息级别的元数据
+                        pass
+
+                # 处理 AssistantMessage：完整的消息块（作为补充/备用）
+                elif isinstance(message, AssistantMessage):
                     for block in message.content:
                         if isinstance(block, TextBlock):
+                            # 如果已经通过 StreamEvent 发送了 text_delta，这里可能是重复的
+                            # 但为了兼容性，仍然处理完整的 TextBlock
                             if on_text_chunk:
                                 await self._safe_callback(on_text_chunk, block.text)
                             yield {

@@ -47,6 +47,10 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
 
   @override
   void dispose() {
+    // 主动释放 conversation notifier，确保 WS 连接被关闭，避免残留连接导致后端互相替换/重连循环
+    if (_currentConversationId != null) {
+      ref.invalidate(conversationNotifierProvider(_currentConversationId!));
+    }
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();

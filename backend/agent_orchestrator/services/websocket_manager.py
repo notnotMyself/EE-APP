@@ -134,6 +134,9 @@ class ConnectionManager:
 
         # 关闭WebSocket
         try:
+            logger.info(
+                f"Closing websocket: conversation={state.conversation_id}, user={state.user_id}, reason={reason}"
+            )
             await state.websocket.close(code=1000, reason=reason)
         except Exception as e:
             logger.debug(f"Error closing websocket: {e}")
@@ -220,14 +223,30 @@ class ConnectionManager:
 
         state = self._connections[conversation_id][user_id]
         state.last_pong = time.time()
+        # pong 也代表连接有活动（浏览器端不会自动回 websocket ping 帧，
+        # 我们使用的是应用层 JSON ping/pong，因此收到 pong 时也应刷新 activity）
+        state.last_activity = time.time()
 
         # 通知等待中的ping
         pong_key = f"{conversation_id}:{user_id}"
         if pong_key in self._pending_pongs:
             self._pending_pongs[pong_key].set()
 
+    def handle_client_activity(self, conversation_id: str, user_id: str) -> None:
+        """记录客户端活动（任何收到的消息都应刷新 last_activity）"""
+        if conversation_id not in self._connections:
+            return
+        if user_id not in self._connections[conversation_id]:
+            return
+        state = self._connections[conversation_id][user_id]
+        state.last_activity = time.time()
+
     async def _heartbeat_loop(self, state: ConnectionState) -> None:
-        """心跳循环：每3秒发送ping，等待5秒内的pong响应"""
+        """心跳循环：每3秒发送应用层 ping。
+
+        注意：这是 JSON 消息（不是 WebSocket 协议层 ping 帧），浏览器不会自动回复。
+        因此 pong **可选**：不回 pong 不应立刻断开连接，真正断开由 idle_timeout 控制。
+        """
         try:
             while state.is_alive:
                 await asyncio.sleep(self.heartbeat_interval)
@@ -256,7 +275,7 @@ class ConnectionManager:
                     await self.disconnect(state.conversation_id, state.user_id)
                     break
 
-                # 等待pong（使用事件机制）
+                # 等待 pong（可选）：仅用于统计/诊断，不作为强制断连条件
                 pong_key = f"{state.conversation_id}:{state.user_id}"
                 pong_event = asyncio.Event()
                 self._pending_pongs[pong_key] = pong_event
@@ -267,12 +286,11 @@ class ConnectionManager:
                         timeout=self.ping_timeout,
                     )
                 except asyncio.TimeoutError:
-                    logger.warning(
-                        f"Ping timeout: conversation={state.conversation_id}, "
-                        f"user={state.user_id}"
+                    # 浏览器客户端可能不实现应用层 pong；不要因此断开。
+                    logger.debug(
+                        f"Ping timeout (pong not received): "
+                        f"conversation={state.conversation_id}, user={state.user_id}"
                     )
-                    await self.disconnect(state.conversation_id, state.user_id)
-                    break
                 finally:
                     self._pending_pongs.pop(pong_key, None)
 

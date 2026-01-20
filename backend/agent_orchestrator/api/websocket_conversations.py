@@ -141,6 +141,18 @@ async def conversation_websocket(
             logger.warning(f"Failed to verify conversation (continuing anyway): {e}")
             # 继续连接，不阻塞（开发环境）
 
+    # 如果同一用户在同一 conversation 已经有活跃连接，拒绝新连接以避免“互相替换→无限重连”
+    # （前端若意外创建了多个 WS 实例，会导致后端不断 close old_state，从而形成循环）
+    if manager.is_connected(conversation_id, user_id):
+        logger.info(
+            f"Rejecting duplicate WS connection: conversation={conversation_id}, user={user_id}"
+        )
+        await websocket.send_json(
+            {"type": "error", "content": "Already connected to this conversation"}
+        )
+        await websocket.close(code=4000, reason="Already connected")
+        return
+
     # 连接WebSocket
     try:
         connection_state = await manager.connect(
@@ -161,6 +173,8 @@ async def conversation_websocket(
             try:
                 # 接收消息
                 data = await websocket.receive_text()
+                # 任何收到的消息都算活动（否则可能被 idle_timeout 误判）
+                manager.handle_client_activity(conversation_id, user_id)
                 message = json.loads(data)
 
                 msg_type = message.get("type")
@@ -173,6 +187,10 @@ async def conversation_websocket(
                     # 处理用户消息
                     content = message.get("content", "").strip()
                     if content:
+                        logger.info(
+                            f"WS received user message: conversation={conversation_id}, user={user_id}, "
+                            f"len={len(content)}"
+                        )
                         await handle_user_message(
                             websocket=websocket,
                             manager=manager,
@@ -186,6 +204,8 @@ async def conversation_websocket(
 
             except json.JSONDecodeError:
                 logger.warning("Received invalid JSON message")
+                # 无效 JSON 也说明连接仍在活动
+                manager.handle_client_activity(conversation_id, user_id)
                 await websocket.send_json({
                     "type": "error",
                     "content": "Invalid JSON format",
@@ -238,6 +258,9 @@ async def handle_user_message(
         logger.info(f"Message handling cancelled: {conversation_id}")
         await writer.write_error("Request cancelled")
         raise
+    except WebSocketDisconnect:
+        # 连接已断开（例如心跳/客户端关闭）；不要再尝试写 error/done
+        logger.info(f"WebSocket disconnected during message handling: {conversation_id}")
     except Exception as e:
         logger.error(f"Error handling message: {e}")
         await writer.write_error(str(e))

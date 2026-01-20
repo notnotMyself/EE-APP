@@ -45,10 +45,12 @@ class JobExecutor:
         briefing_config: Dict[str, Any],
         target_user_ids: Optional[List[str]] = None,
         retry_count: int = 0,  # 当前重试次数
+        source: Optional[str] = None,  # 调用来源（例如：agent_yaml / db / manual）
+        **_ignored_kwargs: Any,  # 兼容调度器可能传入的额外参数
     ) -> Dict[str, Any]:
         """执行定时任务"""
         start_time = datetime.utcnow()
-        logger.info(f"Executing job {job_id}")
+        logger.info(f"Executing job {job_id} source={source or 'unknown'}")
 
         result = {
             "job_id": job_id,

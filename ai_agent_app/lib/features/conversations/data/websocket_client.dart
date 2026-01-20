@@ -12,6 +12,7 @@ enum WSMessageType {
   textChunk,
   toolUse,
   toolResult,
+  toolProgress, // 新增：工具执行进度
   taskStart,
   taskProgress,
   briefingCreated,
@@ -58,6 +59,8 @@ class WSMessage {
         return WSMessageType.toolUse;
       case 'tool_result':
         return WSMessageType.toolResult;
+      case 'tool_progress':
+        return WSMessageType.toolProgress;
       case 'task_start':
         return WSMessageType.taskStart;
       case 'task_progress':

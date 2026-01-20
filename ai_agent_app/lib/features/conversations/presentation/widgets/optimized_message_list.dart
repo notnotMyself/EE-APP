@@ -5,6 +5,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../domain/models/conversation.dart';
 import '../state/conversation_notifier.dart';
 import '../state/conversation_state.dart';
+import 'tool_execution_card.dart';
 
 /// 优化的消息列表组件
 ///
@@ -31,16 +32,45 @@ class OptimizedMessageList extends ConsumerWidget {
       ),
     );
 
-    final isStreaming = ref.watch(
+    // 监听流式状态
+    final streamingState = ref.watch(
       conversationNotifierProvider(conversationId).select(
-        (state) => state.streamingState is StreamingStateStreaming,
+        (state) => state.streamingState,
       ),
     );
+
+    final isStreaming = streamingState is StreamingStateStreaming;
+    final isWaiting = streamingState is StreamingStateWaiting;
+
+    // 监听工具执行状态
+    final toolState = ref.watch(
+      conversationNotifierProvider(conversationId).select(
+        (state) => state.toolState,
+      ),
+    );
+
+    // 判断是否需要显示工具状态卡片
+    final showToolCard = toolState is! ToolExecutionStateIdle;
 
     return CustomScrollView(
       controller: scrollController,
       reverse: true,
       slivers: [
+        // 工具执行状态卡片（在最顶部显示）
+        if (showToolCard)
+          SliverToBoxAdapter(
+            child: ToolExecutionCard(toolState: toolState),
+          ),
+
+        // 等待AI响应的指示器（发送消息后立即显示）
+        if (isWaiting && !isStreaming && !showToolCard)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: WaitingIndicator(),
+            ),
+          ),
+
         // 流式消息（正在生成中）
         if (isStreaming)
           SliverToBoxAdapter(
@@ -291,6 +321,91 @@ class ConnectionStatusIndicator extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 等待AI响应的指示器
+///
+/// 在用户发送消息后立即显示，让用户知道系统正在处理
+class WaitingIndicator extends StatefulWidget {
+  const WaitingIndicator({super.key});
+
+  @override
+  State<WaitingIndicator> createState() => _WaitingIndicatorState();
+}
+
+class _WaitingIndicatorState extends State<WaitingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 三个跳动的点
+            _buildDot(colorScheme, 0),
+            const SizedBox(width: 4),
+            _buildDot(colorScheme, 1),
+            const SizedBox(width: 4),
+            _buildDot(colorScheme, 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDot(ColorScheme colorScheme, int index) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // 错开动画时间
+        final delay = index * 0.2;
+        final value = ((_controller.value + delay) % 1.0);
+        // 使用 sin 曲线实现上下跳动
+        final offset = (value < 0.5)
+            ? (value * 2) // 0 -> 1
+            : (2 - value * 2); // 1 -> 0
+
+        return Transform.translate(
+          offset: Offset(0, -4 * offset),
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.6 + 0.4 * offset),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
     );
   }
 }

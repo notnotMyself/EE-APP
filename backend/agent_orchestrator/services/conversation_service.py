@@ -10,7 +10,7 @@ Conversation Service - 对话服务
 优化（v2）：
 - Agent role 缓存减少数据库查询
 - 并行化 IO 操作减少 TTFT
-- 增强超时控制
+- 增强超时控制（使用全局配置）
 """
 
 import asyncio
@@ -22,6 +22,7 @@ from datetime import datetime
 from models import ConversationModel, MessageModel
 from services.task_intent_recognizer import TaskIntentRecognizer
 from agent_registry import get_global_registry
+from config import get_timeout_config
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,8 @@ logger = logging.getLogger(__name__)
 class ConversationService:
     """对话服务 - 支持共享对话模式（优化版）"""
 
-    # 配置常量
-    CONVERSATION_TIMEOUT = 180  # 对话总超时 3 分钟
-    API_CALL_TIMEOUT = 120      # 单次 API 调用 2 分钟
-    MAX_CONTEXT_MESSAGES = 20   # 上下文消息数量
+    # 上下文消息数量限制
+    MAX_CONTEXT_MESSAGES = 20
 
     def __init__(
         self,
@@ -53,12 +52,30 @@ class ConversationService:
         self.briefing_service = briefing_service
         self.supabase = supabase_client
 
+        # 加载全局超时配置
+        self._timeout_config = get_timeout_config()
+
         # 任务相关组件（Phase 1新增）
         self.task_recognizer = TaskIntentRecognizer()
         self.task_executor = None  # 从main.py延迟注入，避免循环依赖
 
         # 优化：Agent role 缓存（减少数据库查询）
         self._agent_role_cache: Dict[str, str] = {}
+
+    @property
+    def conversation_timeout(self) -> int:
+        """对话超时时间（秒）- 使用全局配置"""
+        return self._timeout_config.CONVERSATION_TIMEOUT
+
+    @property
+    def api_call_timeout(self) -> int:
+        """单次API调用超时时间（秒）- 使用全局配置"""
+        return self._timeout_config.API_CALL_TIMEOUT
+
+    @property
+    def long_running_task_timeout(self) -> int:
+        """长时间运行任务超时（秒）- 用于生成报告等耗时操作"""
+        return self._timeout_config.TOOL_LONG_RUNNING_TIMEOUT
 
     def set_briefing_service(self, briefing_service: Any) -> None:
         """设置BriefingService（解决循环依赖）
@@ -268,18 +285,33 @@ class ConversationService:
             Exception: AI调用失败或数据库操作失败时
         """
         try:
+            # 根据是否为任务选择不同超时时间
+            # 先快速验证对话存在
+            conversation = await self.conversation_model.get_by_id(conversation_id)
+            if not conversation:
+                raise ValueError(f"Conversation not found: {conversation_id}")
+
+            if conversation["user_id"] != user_id:
+                raise ValueError(
+                    f"User {user_id} does not have access to conversation {conversation_id}"
+                )
+
+            # 任务意图识别（决定超时时间）
+            task_intent = None
+            if self.task_recognizer:
+                task_intent = await self.task_recognizer.recognize(
+                    user_message, conversation_context={"agent_id": conversation["agent_id"]}
+                )
+
+            # 根据任务类型选择超时时间：任务执行用长超时，普通对话用标准超时
+            timeout_seconds = (
+                self.long_running_task_timeout * 2  # 任务执行：10分钟（可生成长报告）
+                if task_intent and self.task_executor
+                else self.conversation_timeout  # 普通对话：使用配置的超时
+            )
+
             # 增强超时控制
-            async with asyncio.timeout(self.CONVERSATION_TIMEOUT):
-                # 0. 验证对话存在且用户有权访问
-                conversation = await self.conversation_model.get_by_id(conversation_id)
-                if not conversation:
-                    raise ValueError(f"Conversation not found: {conversation_id}")
-
-                if conversation["user_id"] != user_id:
-                    raise ValueError(
-                        f"User {user_id} does not have access to conversation {conversation_id}"
-                    )
-
+            async with asyncio.timeout(timeout_seconds):
                 # 1. 保存用户消息
                 await self.message_model.create_text_message(
                     conversation_id=conversation_id,
@@ -287,17 +319,10 @@ class ConversationService:
                     content=user_message,
                 )
 
-                # 2. 任务意图识别（Phase 1 新增）
-                task_intent = None
-                if self.task_recognizer:
-                    task_intent = await self.task_recognizer.recognize(
-                        user_message, conversation_context={"agent_id": conversation["agent_id"]}
-                    )
-
-                # 3. 根据是否为任务选择执行流程
+                # 2. 根据是否为任务选择执行流程
                 if task_intent and self.task_executor:
-                    # 3a. 执行任务并流式输出
-                    logger.info(f"Task recognized: {task_intent.task_type}")
+                    # 2a. 执行任务并流式输出
+                    logger.info(f"Task recognized: {task_intent.task_type}, timeout={timeout_seconds}s")
                     async for event in self._execute_task_and_generate_briefing(
                         conversation=conversation,
                         task_intent=task_intent,
@@ -305,17 +330,17 @@ class ConversationService:
                     ):
                         yield event
                 else:
-                    # 3b. 原有对话流程
+                    # 2b. 原有对话流程
                     async for chunk in self._normal_chat_flow(
                         conversation=conversation, user_message=user_message
                     ):
                         yield chunk
 
         except asyncio.TimeoutError:
-            logger.error(f"Conversation timeout after {self.CONVERSATION_TIMEOUT}s")
+            logger.error(f"Conversation timeout after {timeout_seconds}s")
             yield json.dumps({
                 "type": "error",
-                "error": f"对话处理超时（{self.CONVERSATION_TIMEOUT}秒），请稍后重试"
+                "error": f"对话处理超时（{timeout_seconds}秒），请稍后重试"
             })
         except Exception as e:
             logger.error(f"Error in send_message: {e}", exc_info=True)
@@ -394,7 +419,9 @@ class ConversationService:
                 prompt=summary_prompt,
                 agent_role=agent_role,  # 使用 role string
             ):
-                if event.get("type") == "text_chunk":
+                event_type = event.get("type")
+                # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
+                if event_type in ("text_chunk", "text_delta"):
                     chunk = event.get("content", "")
                     assistant_content += chunk
                     yield json.dumps({
@@ -468,8 +495,9 @@ class ConversationService:
             prompt=full_prompt,
             agent_role=agent_role,  # 使用 role string
         ):
-            # 只处理 text_chunk 类型的事件
-            if event.get("type") == "text_chunk":
+            event_type = event.get("type")
+            # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
+            if event_type in ("text_chunk", "text_delta"):
                 chunk = event.get("content", "")
                 assistant_content += chunk
                 yield chunk
@@ -611,18 +639,35 @@ class ConversationService:
             ValueError: 对话不存在或用户无权访问时
             Exception: AI调用失败或数据库操作失败时
         """
+        # 用于 finally 中访问
+        timeout_seconds = self.conversation_timeout
         try:
-            async with asyncio.timeout(self.CONVERSATION_TIMEOUT):
-                # 0. 验证对话存在且用户有权访问
-                conversation = await self.conversation_model.get_by_id(conversation_id)
-                if not conversation:
-                    raise ValueError(f"Conversation not found: {conversation_id}")
+            # 先快速验证对话存在
+            conversation = await self.conversation_model.get_by_id(conversation_id)
+            if not conversation:
+                raise ValueError(f"Conversation not found: {conversation_id}")
 
-                if conversation["user_id"] != user_id:
-                    raise ValueError(
-                        f"User {user_id} does not have access to conversation {conversation_id}"
-                    )
+            if conversation["user_id"] != user_id:
+                raise ValueError(
+                    f"User {user_id} does not have access to conversation {conversation_id}"
+                )
 
+            # 任务意图识别（决定超时时间）
+            task_intent = None
+            if self.task_recognizer:
+                task_intent = await self.task_recognizer.recognize(
+                    user_message,
+                    conversation_context={"agent_id": conversation["agent_id"]},
+                )
+
+            # 根据任务类型选择超时时间
+            timeout_seconds = (
+                self.long_running_task_timeout * 2  # 任务执行：10分钟
+                if task_intent and self.task_executor
+                else self.conversation_timeout  # 普通对话：使用配置的超时
+            )
+
+            async with asyncio.timeout(timeout_seconds):
                 # 1. 保存用户消息
                 await self.message_model.create_text_message(
                     conversation_id=conversation_id,
@@ -630,18 +675,10 @@ class ConversationService:
                     content=user_message,
                 )
 
-                # 2. 任务意图识别
-                task_intent = None
-                if self.task_recognizer:
-                    task_intent = await self.task_recognizer.recognize(
-                        user_message,
-                        conversation_context={"agent_id": conversation["agent_id"]},
-                    )
-
-                # 3. 根据是否为任务选择执行流程
+                # 2. 根据是否为任务选择执行流程
                 if task_intent and self.task_executor:
-                    # 3a. 执行任务
-                    logger.info(f"Task recognized: {task_intent.task_type}")
+                    # 2a. 执行任务
+                    logger.info(f"Task recognized: {task_intent.task_type}, timeout={timeout_seconds}s")
                     await self._execute_task_ws(
                         conversation=conversation,
                         task_intent=task_intent,
@@ -649,7 +686,7 @@ class ConversationService:
                         ws_writer=ws_writer,
                     )
                 else:
-                    # 3b. 原有对话流程
+                    # 2b. 原有对话流程
                     await self._normal_chat_flow_ws(
                         conversation=conversation,
                         user_message=user_message,
@@ -657,9 +694,14 @@ class ConversationService:
                     )
 
         except asyncio.TimeoutError:
-            logger.error(f"Conversation timeout after {self.CONVERSATION_TIMEOUT}s")
+            logger.error(f"Conversation timeout after {timeout_seconds}s")
+            # 超时时尝试刷新已缓冲的内容
+            try:
+                await ws_writer.finalize()
+            except Exception:
+                pass
             await ws_writer.write_error(
-                f"对话处理超时（{self.CONVERSATION_TIMEOUT}秒），请稍后重试"
+                f"对话处理超时（{timeout_seconds}秒），请稍后重试"
             )
         except Exception as e:
             logger.error(f"Error in send_message_ws: {e}", exc_info=True)
@@ -728,7 +770,9 @@ class ConversationService:
                 prompt=summary_prompt,
                 agent_role=agent_role,
             ):
-                if event.get("type") == "text_chunk":
+                event_type = event.get("type")
+                # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
+                if event_type in ("text_chunk", "text_delta"):
                     await ws_writer.write_text_chunk(event.get("content", ""))
 
             # 4. 保存AI回复
@@ -773,24 +817,100 @@ class ConversationService:
         )
 
         # 流式生成回复
+        # 工具执行进度心跳任务
+        tool_progress_task: Optional[asyncio.Task] = None
+        current_tool_info: dict = {}
+
+        async def _send_tool_progress_heartbeat():
+            """发送工具执行进度心跳（模拟进度，让用户知道系统在工作）"""
+            try:
+                progress = 0.1
+                while True:
+                    await asyncio.sleep(3)  # 每3秒发送一次心跳
+                    progress = min(progress + 0.05, 0.9)  # 进度最多到90%
+                    await ws_writer.write_tool_progress(
+                        tool_name=current_tool_info.get("tool_name", ""),
+                        tool_id=current_tool_info.get("tool_id", ""),
+                        progress=progress,
+                        status="executing",
+                        message_text=current_tool_info.get("status_message"),
+                        file_path=current_tool_info.get("file_path"),
+                    )
+            except asyncio.CancelledError:
+                pass  # 正常取消
+
         async for event in self.agent_service.execute_query(
             prompt=full_prompt,
             agent_role=agent_role,
         ):
-            if event.get("type") == "text_chunk":
+            event_type = event.get("type")
+            # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
+            if event_type in ("text_chunk", "text_delta"):
                 await ws_writer.write_text_chunk(event.get("content", ""))
-            elif event.get("type") == "tool_use":
+            elif event_type == "tool_use":
+                # 取消之前的进度任务（如果有）
+                if tool_progress_task:
+                    tool_progress_task.cancel()
+                    try:
+                        await tool_progress_task
+                    except asyncio.CancelledError:
+                        pass
+
+                tool_name = event.get("tool_name", "")
+                tool_id = event.get("tool_id", "")
+                tool_input = event.get("input", {})
+
+                # 提取状态信息
+                file_path = None
+                status_message = "正在执行..."
+                if tool_name == "Write":
+                    file_path = tool_input.get("file_path") if tool_input else None
+                    if file_path:
+                        status_message = f"正在生成: {file_path.split('/')[-1]}"
+                elif tool_name == "Bash":
+                    command = tool_input.get("command", "") if tool_input else ""
+                    if "skill" in command:
+                        status_message = "正在执行数据分析..."
+
+                current_tool_info = {
+                    "tool_name": tool_name,
+                    "tool_id": tool_id,
+                    "file_path": file_path,
+                    "status_message": status_message,
+                }
+
                 await ws_writer.write_tool_use(
-                    tool_name=event.get("tool_name", ""),
-                    tool_id=event.get("tool_id", ""),
-                    tool_input=event.get("tool_input"),
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    tool_input=tool_input,
                 )
-            elif event.get("type") == "tool_result":
+
+                # 启动进度心跳任务
+                tool_progress_task = asyncio.create_task(_send_tool_progress_heartbeat())
+
+            elif event_type == "tool_result":
+                # 取消进度心跳任务
+                if tool_progress_task:
+                    tool_progress_task.cancel()
+                    try:
+                        await tool_progress_task
+                    except asyncio.CancelledError:
+                        pass
+                    tool_progress_task = None
+
                 await ws_writer.write_tool_result(
                     tool_id=event.get("tool_id", ""),
                     result=event.get("result"),
                     is_error=event.get("is_error", False),
                 )
+
+        # 确保清理进度任务
+        if tool_progress_task:
+            tool_progress_task.cancel()
+            try:
+                await tool_progress_task
+            except asyncio.CancelledError:
+                pass
 
         # 保存AI回复
         await self.message_model.create_text_message(

@@ -17,6 +17,8 @@ from fastapi import WebSocket
 from .websocket_manager import ConnectionManager
 
 logger = logging.getLogger(__name__)
+_LOG_WS_PAYLOAD = bool(int(__import__("os").getenv("WS_LOG_PAYLOAD", "0")))
+_LOG_WS_SUMMARY = bool(int(__import__("os").getenv("WS_LOG_SUMMARY", "0")))
 
 
 @dataclass
@@ -43,6 +45,7 @@ class MessageType:
     TEXT_CHUNK = "text_chunk"  # 流式文本内容
     TOOL_USE = "tool_use"  # 工具调用开始
     TOOL_RESULT = "tool_result"  # 工具执行结果
+    TOOL_PROGRESS = "tool_progress"  # 工具执行进度（新增：让用户看到长时间运行工具的进度）
     TASK_START = "task_start"  # 任务开始
     TASK_PROGRESS = "task_progress"  # 任务进度
     BRIEFING_CREATED = "briefing_created"  # 简报创建
@@ -142,7 +145,27 @@ class WebSocketWriter:
         # 发送消息
         message = WSMessage(type=MessageType.TEXT_CHUNK, content=content)
         try:
-            await self.websocket.send_json(message.to_dict())
+            if _LOG_WS_SUMMARY:
+                logger.info(
+                    "WS send text_chunk: conversation=%s user=%s len=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    len(content),
+                )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send text_chunk: conversation=%s user=%s len=%s%s",
+                    self.conversation_id,
+                    self.user_id,
+                    len(content),
+                    f" content={content!r}" if _LOG_WS_PAYLOAD else "",
+                )
+            # 通过 ConnectionManager 发送，便于统一处理断连/状态
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
             self._flush_count += 1
             self._last_flush_time = time.time()
         except Exception as e:
@@ -182,7 +205,27 @@ class WebSocketWriter:
             },
         )
         try:
-            await self.websocket.send_json(message.to_dict())
+            if _LOG_WS_SUMMARY:
+                logger.info(
+                    "WS send tool_use: conversation=%s user=%s tool_name=%s tool_id=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    tool_name,
+                    tool_id,
+                )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send tool_use: conversation=%s user=%s tool_name=%s tool_id=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    tool_name,
+                    tool_id,
+                )
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
         except Exception as e:
             logger.error(f"Failed to send tool_use: {e}")
             raise
@@ -203,10 +246,81 @@ class WebSocketWriter:
             },
         )
         try:
-            await self.websocket.send_json(message.to_dict())
+            if _LOG_WS_SUMMARY:
+                logger.info(
+                    "WS send tool_result: conversation=%s user=%s tool_id=%s is_error=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    tool_id,
+                    is_error,
+                )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send tool_result: conversation=%s user=%s tool_id=%s is_error=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    tool_id,
+                    is_error,
+                )
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
         except Exception as e:
             logger.error(f"Failed to send tool_result: {e}")
             raise
+
+    async def write_tool_progress(
+        self,
+        tool_name: str,
+        tool_id: str,
+        progress: float,  # 0.0 - 1.0
+        status: str = "executing",  # executing, writing, completed
+        message_text: Optional[str] = None,
+        file_path: Optional[str] = None,  # 对于 Write 工具，显示文件路径
+    ) -> None:
+        """写入工具执行进度消息（新增：让用户看到长时间运行工具的进度）
+
+        参考 claudecodeui 的设计，在工具执行期间向前端推送进度更新。
+
+        Args:
+            tool_name: 工具名称（如 Write, Bash）
+            tool_id: 工具调用 ID
+            progress: 进度 0.0-1.0
+            status: 状态描述
+            message_text: 可选的消息文本
+            file_path: 对于文件操作，显示文件路径
+        """
+        message = WSMessage(
+            type=MessageType.TOOL_PROGRESS,
+            content=message_text,
+            metadata={
+                "tool_name": tool_name,
+                "tool_id": tool_id,
+                "progress": progress,
+                "status": status,
+                "file_path": file_path,
+            },
+        )
+        try:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send tool_progress: conversation=%s user=%s tool=%s progress=%.0f%%",
+                    self.conversation_id,
+                    self.user_id,
+                    tool_name,
+                    progress * 100,
+                )
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
+        except Exception as e:
+            logger.error(f"Failed to send tool_progress: {e}")
+            # 进度消息失败不应中断执行
+            pass
 
     async def write_task_start(
         self,
@@ -222,7 +336,19 @@ class WebSocketWriter:
             },
         )
         try:
-            await self.websocket.send_json(message.to_dict())
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send task_start: conversation=%s user=%s task_type=%s task_id=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    task_type,
+                    task_id,
+                )
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
         except Exception as e:
             logger.error(f"Failed to send task_start: {e}")
             raise
@@ -239,7 +365,19 @@ class WebSocketWriter:
             metadata={"progress": progress},
         )
         try:
-            await self.websocket.send_json(message.to_dict())
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send task_progress: conversation=%s user=%s progress=%s%s",
+                    self.conversation_id,
+                    self.user_id,
+                    progress,
+                    f" msg={message_text!r}" if (_LOG_WS_PAYLOAD and message_text) else "",
+                )
+            ok = await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
+            if not ok:
+                raise RuntimeError("WebSocket not connected")
         except Exception as e:
             logger.error(f"Failed to send task_progress: {e}")
             raise
@@ -248,10 +386,28 @@ class WebSocketWriter:
         """写入错误消息"""
         message = WSMessage(type=MessageType.ERROR, content=error_message)
         try:
-            await self.websocket.send_json(message.to_dict())
+            if _LOG_WS_SUMMARY:
+                logger.info(
+                    "WS send error: conversation=%s user=%s len=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    len(error_message),
+                )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send error: conversation=%s user=%s len=%s%s",
+                    self.conversation_id,
+                    self.user_id,
+                    len(error_message),
+                    f" error={error_message!r}" if _LOG_WS_PAYLOAD else "",
+                )
+            # 错误消息尽力发送：如果连接已关闭，避免再次抛异常刷屏
+            await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
         except Exception as e:
             logger.error(f"Failed to send error: {e}")
-            raise
+            return
 
     async def write_done(self, message_id: Optional[str] = None) -> None:
         """写入完成消息"""
@@ -264,10 +420,27 @@ class WebSocketWriter:
             metadata={"message_id": message_id} if message_id else None,
         )
         try:
-            await self.websocket.send_json(message.to_dict())
+            if _LOG_WS_SUMMARY:
+                logger.info(
+                    "WS send done: conversation=%s user=%s message_id=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    message_id,
+                )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    "WS send done: conversation=%s user=%s message_id=%s",
+                    self.conversation_id,
+                    self.user_id,
+                    message_id,
+                )
+            # done 也是尽力发送：连接关闭时不应抛异常
+            await self.manager.send_json(
+                self.conversation_id, self.user_id, message.to_dict()
+            )
         except Exception as e:
             logger.error(f"Failed to send done: {e}")
-            raise
+            return
 
     async def finalize(self) -> str:
         """最终化：刷新所有缓冲并返回累积内容"""
