@@ -124,7 +124,10 @@ class CoverImageService:
 
     async def _call_gemini_imagen(self, prompt: str) -> Optional[bytes]:
         """
-        调用Gemini Imagen API生成图片
+        调用Gemini图片生成API
+
+        使用 Gemini 3 Pro Image Preview 模型生成图片
+        API文档: https://ai.google.dev/gemini-api/docs/image-generation
 
         Args:
             prompt: 图片生成提示词
@@ -132,65 +135,58 @@ class CoverImageService:
         Returns:
             图片字节数据（PNG格式），失败返回None
         """
-        # TODO: 用户需要提供实际的Gemini Imagen API调用方式
-        # 这里提供两种可能的实现方案作为示例
-
-        # 方案A: 使用Google AI Studio API (假设)
-        # url = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateImages"
-        # headers = {"Content-Type": "application/json"}
-        # data = {
-        #     "instances": [{"prompt": prompt}],
-        #     "parameters": {
-        #         "sampleCount": 1,
-        #         "aspectRatio": "16:9",
-        #         "negativePrompt": "text, watermark, logo",
-        #     }
-        # }
-
-        # 方案B: 使用Vertex AI API (假设)
-        url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1/publishers/google/models/imagen-3.0-generate-001:predict"
+        # Gemini 3 Pro Image Preview API endpoint
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent"
 
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
+            "X-goog-api-key": self.api_key,
         }
 
         data = {
-            "instances": [
+            "contents": [
                 {
-                    "prompt": prompt,
+                    "parts": [
+                        {"text": f"Generate an image: {prompt}"}
+                    ]
                 }
             ],
-            "parameters": {
-                "sampleCount": 1,
-                "aspectRatio": "16:9",
-                "negativePrompt": "text overlay, watermark, logo, words",
+            "generationConfig": {
+                "responseModalities": ["TEXT", "IMAGE"]
             }
         }
 
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(url, json=data, headers=headers)
                 response.raise_for_status()
-
                 result = response.json()
 
-                # 解析返回的图片（假设返回base64编码的图片）
-                # 实际返回格式需要根据真实API文档调整
-                predictions = result.get("predictions", [])
-                if predictions and len(predictions) > 0:
-                    image_base64 = predictions[0].get("bytesBase64Encoded")
-                    if image_base64:
-                        return base64.b64decode(image_base64)
+                # 解析返回的图片数据
+                # 响应格式：candidates[0].content.parts[].inlineData.data (base64)
+                candidates = result.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    for part in parts:
+                        if "inlineData" in part:
+                            inline_data = part["inlineData"]
+                            image_base64 = inline_data.get("data")
+                            mime_type = inline_data.get("mimeType", "image/png")
+                            if image_base64:
+                                logger.info(f"Successfully generated image with mime type: {mime_type}")
+                                return base64.b64decode(image_base64)
 
-                logger.warning("No image data in Gemini Imagen response")
+                logger.warning("No image data in Gemini response")
                 return None
 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error calling Gemini API: {e.response.status_code} - {e.response.text}")
+            return None
         except httpx.HTTPError as e:
-            logger.error(f"HTTP error calling Gemini Imagen: {e}")
+            logger.error(f"HTTP error calling Gemini API: {e}")
             return None
         except Exception as e:
-            logger.error(f"Error calling Gemini Imagen: {e}", exc_info=True)
+            logger.error(f"Error calling Gemini API: {e}", exc_info=True)
             return None
 
     async def upload_to_storage(
