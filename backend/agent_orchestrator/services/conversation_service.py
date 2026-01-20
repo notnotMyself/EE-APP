@@ -520,9 +520,10 @@ class ConversationService:
     def _build_context_with_briefings(
         self, conversation: Dict[str, Any], messages: List[Dict[str, Any]]
     ) -> str:
-        """构建包含简报的上下文（核心改进）
+        """构建包含简报的上下文（核心改进 - 增强版）
 
         将简报卡片和文本消息组合成结构化提示词，供AI理解对话背景。
+        增强：包含 metrics、findings 等结构化数据，使AI能更好地回答追问。
 
         Args:
             conversation: 对话记录
@@ -536,7 +537,7 @@ class ConversationService:
 
         for msg in messages:
             if msg["content_type"] == "briefing_card":
-                # 简报卡片展示为结构化信息
+                # 简报卡片展示为结构化信息（增强版）
                 try:
                     briefing = json.loads(msg["content"])
                     prompt += f"[简报 {briefing.get('created_at', 'N/A')}]\n"
@@ -545,6 +546,50 @@ class ConversationService:
                     prompt += f"优先级：{briefing.get('priority', 'N/A')}\n"
                     if briefing.get("impact"):
                         prompt += f"影响：{briefing['impact']}\n"
+
+                    # 增强：添加关键指标（如果有）
+                    metrics = briefing.get("metrics", {})
+                    if metrics:
+                        prompt += "关键指标：\n"
+                        for key, value in list(metrics.items())[:5]:
+                            # 格式化指标名称
+                            label = self._format_metric_label(key)
+                            prompt += f"  - {label}: {value}\n"
+
+                    # 增强：添加主要发现（如果有）
+                    findings = briefing.get("findings", [])
+                    if findings:
+                        prompt += "主要发现：\n"
+                        for finding in findings[:3]:
+                            if isinstance(finding, dict):
+                                title = finding.get("title", finding.get("finding", str(finding)))
+                                severity = finding.get("severity", "")
+                                severity_label = f"[{severity}] " if severity else ""
+                                prompt += f"  - {severity_label}{title}\n"
+                            else:
+                                prompt += f"  - {finding}\n"
+
+                    # 增强：添加关键数据摘要（如果有）
+                    key_data = briefing.get("key_data", {})
+                    if key_data:
+                        # 疑似借单Story
+                        suspicious = key_data.get("suspicious_stories", [])
+                        if suspicious:
+                            prompt += f"疑似借单Story: {len(suspicious)}个\n"
+                            for s in suspicious[:2]:
+                                issue_id = s.get("issue_id", "N/A")
+                                change_count = s.get("change_id_count", s.get("change_count", "N/A"))
+                                prompt += f"  - Story #{issue_id}: {change_count}个change\n"
+
+                        # 工作分散人员
+                        scattered = key_data.get("scattered_people", [])
+                        if scattered:
+                            prompt += f"工作分散人员: {len(scattered)}人\n"
+                            for p in scattered[:2]:
+                                name = p.get("name", "N/A")
+                                branch_count = p.get("branch_count", "N/A")
+                                prompt += f"  - {name}: {branch_count}个分支\n"
+
                     prompt += "\n"
                 except json.JSONDecodeError:
                     # 如果JSON解析失败，跳过这条简报
@@ -561,6 +606,29 @@ class ConversationService:
                 prompt += f"{role_label}: {msg['content']}\n\n"
 
         return prompt
+
+    def _format_metric_label(self, key: str) -> str:
+        """格式化指标名称为中文标签
+
+        Args:
+            key: 指标key（如 one_shot_rate）
+
+        Returns:
+            中文标签（如 一次性通过率）
+        """
+        label_map = {
+            "total_changes": "总提交数",
+            "one_shot_rate": "一次性通过率",
+            "total_rework": "总返工次数",
+            "avg_branches_per_person": "人均分支数",
+            "ideal_story_rate": "理想Story率",
+            "contributors": "参与人数",
+            "total_contributors": "总参与人数",
+            "p50_minutes": "P50构建时间",
+            "p95_minutes": "P95构建时间",
+            "merge_rate": "合并率",
+        }
+        return label_map.get(key, key.replace("_", " ").title())
 
     async def get_conversation_by_agent(
         self, user_id: str, agent_id: str
