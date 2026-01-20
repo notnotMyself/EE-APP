@@ -1,8 +1,15 @@
 """
 简报服务 - 简报生成、过滤和管理
+
+优化说明:
+- 优先使用 skills 返回的结构化数据(metrics, findings, key_data, full_report)
+- 支持确定性UI Schema生成（基于结构化数据，无需LLM调用）
+- 支持AI生成封面图片
 """
 
+import json
 import logging
+import re
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -22,12 +29,14 @@ class BriefingService:
         conversation_service: Any = None,
         push_notification_service: Any = None,
         ui_schema_generator: Any = None,
+        cover_image_service: Any = None,
     ):
         self.supabase = supabase_client
         self.evaluator = importance_evaluator or ImportanceEvaluator()
         self.conversation_service = conversation_service
         self.push_notification_service = push_notification_service
         self.ui_schema_generator = ui_schema_generator
+        self.cover_image_service = cover_image_service
 
     async def evaluate_importance(self, analysis_result: Dict[str, Any]) -> float:
         """评估分析结果的重要性分数"""
@@ -64,7 +73,7 @@ class BriefingService:
         report_artifact_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """创建简报记录"""
-        # 从分析结果中提取简报信息
+        # 从分析结果中提取简报信息（优先使用结构化数据）
         briefing_data = self._extract_briefing_data(analysis_result)
 
         # 构建简报记录
@@ -79,35 +88,83 @@ class BriefingService:
             "impact": briefing_data.get("impact"),
             "actions": briefing_data.get("actions", []),
             "report_artifact_id": report_artifact_id,
-            "context_data": {"analysis_result": analysis_result, "job_id": job_id},
+            "context_data": {
+                "analysis_result": analysis_result,
+                "job_id": job_id,
+                # 保存结构化数据以便前端和对话使用
+                "metrics": briefing_data.get("metrics", {}),
+                "findings": briefing_data.get("findings", []),
+                "key_data": briefing_data.get("key_data", {}),
+            },
             "importance_score": importance_score,
             "status": "new",
             "created_at": datetime.utcnow().isoformat(),
         }
 
-        # Generate UI Schema if generator is available
+        # Generate UI Schema - 优先使用确定性生成（基于结构化数据）
         if self.ui_schema_generator:
             try:
-                ui_schema = self.ui_schema_generator.generate_from_analysis(
-                    analysis_result=analysis_result.get("response", ""),
-                    data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
-                    agent_role=agent_id
-                )
-
-                if ui_schema:
-                    briefing["ui_schema"] = ui_schema
-                    briefing["ui_schema_version"] = "1.0"
-                    logger.info(f"Generated UI schema for briefing {briefing['id']}")
+                # 如果有结构化数据，使用确定性生成
+                if briefing_data.get("metrics") or briefing_data.get("findings"):
+                    ui_schema = self.ui_schema_generator.generate_from_structured_data({
+                        "metrics": briefing_data.get("metrics", {}),
+                        "findings": briefing_data.get("findings", []),
+                        "key_data": briefing_data.get("key_data", {}),
+                    })
+                    if ui_schema:
+                        briefing["ui_schema"] = ui_schema
+                        briefing["ui_schema_version"] = "1.0"
+                        logger.info(f"Generated deterministic UI schema for briefing {briefing['id']}")
+                    else:
+                        # Fallback to LLM-based generation
+                        ui_schema = self.ui_schema_generator.generate_from_analysis(
+                            analysis_result=analysis_result.get("response", ""),
+                            data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
+                            agent_role=agent_id
+                        )
+                        if ui_schema:
+                            briefing["ui_schema"] = ui_schema
+                            briefing["ui_schema_version"] = "1.0"
                 else:
-                    # Fallback to markdown schema
-                    briefing["ui_schema"] = self.ui_schema_generator.create_fallback_markdown_schema(
-                        briefing_data["summary"]
+                    # 没有结构化数据，使用LLM生成
+                    ui_schema = self.ui_schema_generator.generate_from_analysis(
+                        analysis_result=analysis_result.get("response", ""),
+                        data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
+                        agent_role=agent_id
                     )
-                    briefing["ui_schema_version"] = "1.0"
-                    logger.debug(f"Using fallback markdown schema for briefing {briefing['id']}")
+                    if ui_schema:
+                        briefing["ui_schema"] = ui_schema
+                        briefing["ui_schema_version"] = "1.0"
+                    else:
+                        # Fallback to markdown schema
+                        briefing["ui_schema"] = self.ui_schema_generator.create_fallback_markdown_schema(
+                            briefing_data["summary"]
+                        )
+                        briefing["ui_schema_version"] = "1.0"
             except Exception as e:
                 logger.error(f"Error generating UI schema: {e}")
-                # Continue without UI schema
+
+        # Generate cover image if service is available
+        if self.cover_image_service:
+            try:
+                cover_result = await self.cover_image_service.generate_cover_image(
+                    briefing_type=briefing_data["type"],
+                    title=briefing_data["title"],
+                    summary=briefing_data["summary"],
+                    priority=briefing_data["priority"],
+                )
+                if cover_result and cover_result.get("image_data"):
+                    cover_url = await self.cover_image_service.upload_to_storage(
+                        image_data=cover_result["image_data"],
+                        briefing_id=briefing["id"],
+                        supabase_client=self.supabase,
+                    )
+                    if cover_url:
+                        briefing["cover_image_url"] = cover_url
+                        briefing["cover_image_metadata"] = cover_result.get("metadata", {})
+                        logger.info(f"Generated cover image for briefing {briefing['id']}")
+            except Exception as e:
+                logger.warning(f"Cover image generation failed (non-critical): {e}")
 
         if not self.supabase:
             logger.warning("Supabase not configured, briefing not saved")
@@ -119,6 +176,7 @@ class BriefingService:
             logger.info(f"Created briefing {briefing['id']} for user {user_id}")
 
             # Send push notification if push service is configured
+            priority = briefing_data["priority"]
             if self.push_notification_service and importance_score >= 0.7 and priority in ["P0", "P1"]:
                 try:
                     # Get agent name from the registry or context
@@ -145,9 +203,136 @@ class BriefingService:
             raise
 
     def _extract_briefing_data(self, analysis_result: Dict[str, Any]) -> Dict[str, Any]:
-        """从分析结果中提取简报数据"""
-        response = analysis_result.get("response", "")
+        """
+        从分析结果中提取简报数据
 
+        优先级:
+        1. 直接使用 structured_data 字段（如果存在）
+        2. 尝试从 response 中解析 JSON
+        3. 回退到文本提取（旧逻辑）
+        """
+        # 1. 优先检查 structured_data 字段
+        structured = analysis_result.get("structured_data")
+        if structured and isinstance(structured, dict) and structured.get("title"):
+            logger.info("Using structured_data for briefing extraction")
+            return self._extract_from_structured(structured)
+
+        # 2. 尝试从 response 中解析 JSON
+        response = analysis_result.get("response", "")
+        parsed = self._try_parse_json_from_response(response)
+        if parsed and isinstance(parsed, dict) and parsed.get("title"):
+            logger.info("Parsed JSON from response for briefing extraction")
+            return self._extract_from_structured(parsed)
+
+        # 3. 回退到文本提取
+        logger.info("Using text extraction for briefing (no structured data found)")
+        return self._extract_from_text(response)
+
+    def _extract_from_structured(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """从结构化数据提取简报信息"""
+        findings = data.get("findings", [])
+        severity = self._determine_severity_from_findings(findings)
+
+        # 确定类型和优先级
+        briefing_type = data.get("briefing_type", "insight")
+        if briefing_type == "dev_efficiency":
+            briefing_type = "insight"  # 标准化类型
+
+        priority = data.get("priority", "P2")
+        if not priority.startswith("P"):
+            # 根据 severity 推断 priority
+            if severity == "high":
+                priority = "P1"
+            elif severity == "critical":
+                priority = "P0"
+            else:
+                priority = "P2"
+
+        # 构建操作按钮
+        actions = self._build_actions_from_findings(findings)
+
+        return {
+            "type": briefing_type,
+            "priority": priority,
+            "title": data.get("title", "分析报告"),
+            "summary": data.get("summary", ""),
+            "impact": data.get("impact"),
+            "actions": actions,
+            "metrics": data.get("metrics", {}),
+            "findings": findings,
+            "key_data": data.get("key_data", {}),
+            "full_report": data.get("full_report"),
+        }
+
+    def _determine_severity_from_findings(self, findings: List[Dict]) -> str:
+        """从发现列表中确定整体严重程度"""
+        if not findings:
+            return "low"
+
+        severities = [f.get("severity", "low") for f in findings]
+        if "critical" in severities:
+            return "critical"
+        if "high" in severities:
+            return "high"
+        if "medium" in severities:
+            return "medium"
+        return "low"
+
+    def _build_actions_from_findings(self, findings: List[Dict]) -> List[Dict]:
+        """根据发现构建操作按钮"""
+        actions = [
+            {"label": "查看详情", "action": "view_report", "data": {}},
+            {
+                "label": "继续对话",
+                "action": "start_conversation",
+                "data": {"prompt": "请详细解释这个问题"},
+            },
+            {"label": "已知悉", "action": "dismiss", "data": {}},
+        ]
+
+        # 如果有高优先级发现，可以添加特定操作
+        if findings:
+            first_finding = findings[0]
+            finding_type = first_finding.get("type", "")
+            if "借单" in finding_type:
+                actions[1]["data"]["prompt"] = f"请详细分析{first_finding.get('title', '借单问题')}的原因"
+            elif "返工" in finding_type:
+                actions[1]["data"]["prompt"] = "如何降低返工率？有哪些具体建议？"
+            elif "分散" in finding_type:
+                actions[1]["data"]["prompt"] = "工作分散的问题应该如何改善？"
+
+        return actions
+
+    def _try_parse_json_from_response(self, response: str) -> Optional[Dict]:
+        """尝试从响应文本中解析JSON"""
+        if not response:
+            return None
+
+        # 尝试找到JSON代码块
+        json_patterns = [
+            r'```json\s*([\s\S]*?)\s*```',  # Markdown JSON代码块
+            r'```\s*([\s\S]*?)\s*```',       # 普通代码块
+            r'\{[\s\S]*\}',                   # 直接的JSON对象
+        ]
+
+        for pattern in json_patterns:
+            matches = re.findall(pattern, response)
+            for match in matches:
+                try:
+                    if isinstance(match, str):
+                        # 清理可能的前后空白
+                        cleaned = match.strip()
+                        if cleaned.startswith('{'):
+                            parsed = json.loads(cleaned)
+                            if isinstance(parsed, dict) and ("title" in parsed or "summary" in parsed):
+                                return parsed
+                except json.JSONDecodeError:
+                    continue
+
+        return None
+
+    def _extract_from_text(self, response: str) -> Dict[str, Any]:
+        """从文本响应中提取简报数据（旧逻辑，作为回退）"""
         # 检查是否有异常
         has_anomalies = "异常" in response or "超过阈值" in response
         has_critical = "严重" in response or "紧急" in response
@@ -187,6 +372,9 @@ class BriefingService:
             "summary": summary,
             "impact": self._extract_impact(response),
             "actions": actions,
+            "metrics": {},
+            "findings": [],
+            "key_data": {},
         }
 
     def _extract_title(self, response: str) -> str:
