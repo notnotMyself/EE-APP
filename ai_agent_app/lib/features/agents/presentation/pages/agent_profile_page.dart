@@ -67,8 +67,14 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 获取键盘高度，用于判断键盘是否弹起
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+    
     return Scaffold(
       backgroundColor: AgentProfileTheme.backgroundColor,
+      // 确保键盘弹起时页面自动调整
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
           children: [
@@ -96,9 +102,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
                     const SizedBox(height: 59),
                     
                     // 输入框和快捷功能区域
-                    _buildInteractionSection(),
+                    _buildInteractionSection(isKeyboardVisible),
                     
-                    const SizedBox(height: 32),
+                    // 底部间距
+                    SizedBox(height: isKeyboardVisible ? 16 : 32),
                   ],
                 ),
               ),
@@ -203,21 +210,23 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           style: AgentProfileTheme.agentNameStyle,
         ),
         
-        // 描述
-        SizedBox(
-          width: 209,
-          child: Text(
-            widget.agent.description,
-            textAlign: TextAlign.center,
-            style: AgentProfileTheme.agentDescriptionStyle,
-          ),
+        const SizedBox(height: 4),
+        
+        // 描述 - 单行显示，不限制宽度
+        Text(
+          widget.agent.description,
+          textAlign: TextAlign.center,
+          style: AgentProfileTheme.agentDescriptionStyle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
   }
 
   /// 构建交互区域（输入框 + 快捷功能）
-  Widget _buildInteractionSection() {
+  /// [isKeyboardVisible] 键盘是否可见，用于控制快捷按钮显示
+  Widget _buildInteractionSection(bool isKeyboardVisible) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -233,13 +242,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           onVoiceTap: _onVoiceTap,
         ),
         
-        const SizedBox(height: 19),
-        
-        // 快捷功能按钮
-        QuickActionRow(
-          actions: QuickActions.defaults,
-          onActionTap: _onQuickActionTap,
-        ),
+        // 键盘弹起时隐藏快捷功能按钮，避免遮挡
+        if (!isKeyboardVisible) ...[
+          const SizedBox(height: 19),
+          
+          // 快捷功能按钮
+          QuickActionRow(
+            actions: QuickActions.defaults,
+            onActionTap: _onQuickActionTap,
+          ),
+        ],
       ],
     );
   }

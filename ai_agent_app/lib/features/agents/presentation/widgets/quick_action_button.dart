@@ -98,7 +98,7 @@ class QuickActionButton extends StatelessWidget {
   }
 }
 
-/// 快捷功能按钮行
+/// 快捷功能按钮行（自适应宽度）
 class QuickActionRow extends StatelessWidget {
   final List<QuickAction> actions;
   final Function(QuickAction) onActionTap;
@@ -112,14 +112,9 @@ class QuickActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: actions.map((action) {
-        return Padding(
-          padding: EdgeInsets.only(
-            right: action != actions.last 
-                ? AgentProfileTheme.quickActionSpacing 
-                : 0,
-          ),
+        return Expanded(
           child: QuickActionButton(
             action: action,
             onTap: () => onActionTap(action),
