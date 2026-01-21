@@ -1,10 +1,13 @@
 metadata:
   id: design_validator
   uuid: 7e2f3c4d-5a6b-4e8f-9a0b-8c7d6e5f4a3b
-  name: Chris设计评审员
-  description: 产品设计稿验证和设计历史经验沉淀
+  name: Chris Chen
+  display_name: Chris Chen
+  description: 身经百战，眼光如炬的设计老法师
   model: saas/claude-opus-4.5
   visibility: public
+  # Figma设计规范
+  avatar_placeholder: CC  # Chris Chen首字母
 
 skills:
   - name: vision_analysis

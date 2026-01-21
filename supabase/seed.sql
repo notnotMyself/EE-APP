@@ -315,3 +315,45 @@ INSERT INTO agents (
     "category": "information"
   }'::jsonb
 );
+
+-- 7. Chris Chen 设计评审员
+-- 基于Figma设计稿定义
+INSERT INTO agents (
+  name,
+  role,
+  description,
+  avatar_url,
+  is_builtin,
+  is_active,
+  capabilities,
+  trigger_conditions,
+  data_sources,
+  metadata
+) VALUES (
+  'Chris Chen',
+  'design_validator',
+  '身经百战，眼光如炬的设计老法师',
+  NULL,
+  true,
+  true,
+  '{
+    "can_analyze_designs": true,
+    "can_validate_interactions": true,
+    "can_check_visual_consistency": true,
+    "can_compare_designs": true,
+    "can_search_cases": true,
+    "multimodal": true
+  }'::jsonb,
+  '{
+    "supported_file_types": ["image/png", "image/jpeg", "image/webp"]
+  }'::jsonb,
+  '{
+    "knowledge_base": {"enabled": true}
+  }'::jsonb,
+  '{
+    "version": "1.0",
+    "category": "design",
+    "figma_name": "Chris Chen",
+    "figma_description": "身经百战，眼光如炬的设计老法师"
+  }'::jsonb
+);

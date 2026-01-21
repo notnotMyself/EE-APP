@@ -23,12 +23,12 @@ class ChatAttachment {
 /// 基于 Figma 设计稿实现，支持：
 /// - 图片/附件预览
 /// - 文字输入
-/// - 操作工具栏（拍照、相册、模式选择）
+/// - 操作工具栏（附件、图片、模式选择）
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onSubmit;
-  final VoidCallback? onCameraTap;
-  final VoidCallback? onGalleryTap;
+  final VoidCallback? onAttachmentTap;  // 添加附件
+  final VoidCallback? onImageTap;       // 添加图片
   final VoidCallback? onModeTap;
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
@@ -38,8 +38,8 @@ class ExpandedChatInput extends StatefulWidget {
     super.key,
     this.hintText = '简单描述下方案背景与目标',
     required this.onSubmit,
-    this.onCameraTap,
-    this.onGalleryTap,
+    this.onAttachmentTap,
+    this.onImageTap,
     this.onModeTap,
     this.attachments = const [],
     this.onAttachmentRemove,
@@ -295,22 +295,23 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 操作工具栏
+  /// 按照Figma设计: 附件按钮 + 图片按钮 + "默认"模式按钮 + 发送按钮
   Widget _buildToolbar() {
     return Row(
       children: [
-        // 拍照按钮
+        // 附件按钮
         _buildToolButton(
-          icon: Icons.camera_alt_outlined,
-          onTap: widget.onCameraTap,
+          icon: Icons.attach_file_rounded,
+          onTap: widget.onAttachmentTap,
         ),
-        const SizedBox(width: 3),
+        const SizedBox(width: 3.12),
         
-        // 相册按钮
+        // 图片按钮
         _buildToolButton(
-          icon: Icons.photo_library_outlined,
-          onTap: widget.onGalleryTap,
+          icon: Icons.image_outlined,
+          onTap: widget.onImageTap,
         ),
-        const SizedBox(width: 3),
+        const SizedBox(width: 3.12),
         
         // 模式选择按钮
         _buildModeButton(),
@@ -324,6 +325,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 工具按钮
+  /// Figma规范: 32x32, 圆角112, 图标约19px
   Widget _buildToolButton({
     required IconData icon,
     VoidCallback? onTap,
@@ -333,45 +335,54 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
       child: Container(
         width: 32,
         height: 32,
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
+        decoration: ShapeDecoration(
           color: Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(112),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(112),
+          ),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: AgentProfileTheme.titleColor,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 19,
+            color: AgentProfileTheme.titleColor,
+          ),
         ),
       ),
     );
   }
 
   /// 模式选择按钮
+  /// Figma规范: 宽68, 高32, 圆角21.33
   Widget _buildModeButton() {
     return GestureDetector(
       onTap: widget.onModeTap,
       child: Container(
+        width: 68,
         height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(21),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(21.33),
+          ),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.tune,
               size: 18,
               color: AgentProfileTheme.titleColor,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3.56),
             Text(
               '默认',
               style: TextStyle(
                 color: Colors.black.withOpacity(0.9),
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
+                height: 1.67,
               ),
             ),
           ],

@@ -219,8 +219,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           onSubmit: _onInputSubmit,
           attachments: _attachments,
           onAttachmentRemove: _onAttachmentRemove,
-          onCameraTap: _onCameraTap,
-          onGalleryTap: _onGalleryTap,
+          onAttachmentTap: _onAttachmentTap,
+          onImageTap: _onImageTap,
           onModeTap: _onModeTap,
         ),
         
@@ -242,16 +242,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     });
   }
 
-  /// 拍照
-  void _onCameraTap() {
-    // TODO: 实现拍照功能
-    _showFeatureNotReady('拍照');
+  /// 添加附件（文件）
+  void _onAttachmentTap() {
+    // TODO: 实现文件选择功能
+    _showFeatureNotReady('添加附件');
   }
 
-  /// 打开相册
-  void _onGalleryTap() {
-    // TODO: 实现相册选择功能
-    _showFeatureNotReady('相册');
+  /// 添加图片
+  void _onImageTap() {
+    // TODO: 实现图片选择功能
+    _showFeatureNotReady('添加图片');
   }
 
   /// 模式选择
