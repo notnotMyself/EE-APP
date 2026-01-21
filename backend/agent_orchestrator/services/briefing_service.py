@@ -144,10 +144,8 @@ class BriefingService:
         if self.cover_image_service:
             try:
                 cover_result = await self.cover_image_service.generate_cover_image(
-                    briefing_type=briefing_data["type"],
                     title=briefing_data["title"],
                     summary=briefing_data["summary"],
-                    priority=briefing_data["priority"],
                 )
                 if cover_result and cover_result.get("image_data"):
                     cover_url = await self.cover_image_service.upload_to_storage(
@@ -374,41 +372,165 @@ class BriefingService:
             "key_data": {},
         }
 
-    def _extract_title(self, response: str) -> str:
-        """提取标题"""
-        lines = response.strip().split("\n")
+    # Agent 思考过程的典型开头（需要过滤）
+    THINKING_PATTERNS = [
+        "我将", "让我", "首先", "接下来", "现在", "好的", "看起来",
+        "需要先", "我需要", "我来", "我会", "我要", "正在", "开始",
+        "执行", "分析", "获取", "查询", "连接", "尝试", "检查",
+        "确认", "找到", "数据", "脚本", "目录", "位置"
+    ]
 
-        # 尝试找到标题行（以#开头或第一个非空行）
+    def _is_thinking_line(self, line: str) -> bool:
+        """判断是否是 Agent 思考过程的行"""
+        line = line.strip().lstrip("#").strip()
+        if not line:
+            return True
+        # 检查是否以思考模式开头
+        for pattern in self.THINKING_PATTERNS:
+            if line.startswith(pattern):
+                return True
+        return False
+
+    def _extract_title(self, response: str) -> str:
+        """提取标题（过滤 Agent 思考过程，优先提取 # 标题或 ** 粗体核心发现）"""
+        lines = response.strip().split("\n")
+        
+        # 第一轮：查找 ## 核心发现 下的 **粗体** 内容
+        in_core_section = False
         for line in lines:
             line = line.strip()
-            if line:
-                # 移除markdown标题符号
-                title = line.lstrip("#").strip()
-                # 限制长度
-                if len(title) > 50:
-                    title = title[:47] + "..."
+            if "核心发现" in line or "关键发现" in line:
+                in_core_section = True
+                continue
+            if in_core_section and line.startswith("**") and "**" in line[2:]:
+                # 提取粗体内容
+                end_idx = line.find("**", 2)
+                if end_idx > 2:
+                    title = line[2:end_idx].strip()
+                    # 移除序号
+                    if title and title[0].isdigit() and "." in title[:3]:
+                        title = title.split(".", 1)[1].strip()
+                    if len(title) > 10:  # 确保标题有足够信息量
+                        if len(title) > 50:
+                            title = title[:47] + "..."
+                        return title
+            if in_core_section and line.startswith("##"):
+                break  # 进入下一节
+        
+        # 第二轮：查找 # 开头的标题行（跳过思考和通用标题）
+        skip_titles = ["研发效能洞察", "核心发现", "关键发现", "详细分析", "建议行动", "关键指标"]
+        for line in lines:
+            line = line.strip()
+            if not line.startswith("#"):
+                continue
+            title = line.lstrip("#").strip()
+            if not title or len(title) < 5:
+                continue
+            # 跳过通用标题
+            if any(skip in title for skip in skip_titles):
+                continue
+            # 跳过思考过程
+            if self._is_thinking_line(title):
+                continue
+            if len(title) > 50:
+                title = title[:47] + "..."
+            return title
+        
+        # 第三轮：尝试从正文找有价值的句子
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if self._is_thinking_line(line):
+                continue
+            # 跳过 markdown 格式标记
+            if line.startswith(("#", "|", "-", "```", "**")):
+                continue
+            # 找包含数据或问题的句子
+            value_keywords = ["耗时", "恶化", "下降", "上升", "问题", "异常", "风险", "超过", "%"]
+            if any(kw in line for kw in value_keywords):
+                title = line[:50] if len(line) > 50 else line
                 return title
 
         return "研发效能分析结果"
 
     def _extract_summary(self, response: str, max_sentences: int = 3) -> str:
-        """提取摘要"""
-        # 简单的句子分割
-        sentences = []
+        """提取摘要（过滤 Agent 思考过程，优先从核心发现部分提取）"""
+        lines = response.strip().split("\n")
+        
+        # 第一轮：从 ## 核心发现 部分提取
+        in_core_section = False
+        core_content = []
+        for line in lines:
+            line = line.strip()
+            if "核心发现" in line or "关键发现" in line:
+                in_core_section = True
+                continue
+            if in_core_section:
+                if line.startswith("##"):  # 进入下一节
+                    break
+                if line and not line.startswith("#"):
+                    # 清理 markdown 格式
+                    cleaned = line.lstrip("-*").strip()
+                    if cleaned and len(cleaned) > 10:
+                        core_content.append(cleaned)
+        
+        if core_content:
+            summary = " ".join(core_content[:3])
+            if len(summary) > 200:
+                summary = summary[:197] + "..."
+            return summary
+        
+        # 第二轮：查找包含关键数据的句子
+        value_sentences = []
         temp = response
-
-        for delimiter in ["。", "！", "？"]:
+        for delimiter in ["。", "！", "？", "\n"]:
             temp = temp.replace(delimiter, delimiter + "|||")
-
+        
         parts = temp.split("|||")
+        value_keywords = ["耗时", "恶化", "下降", "上升", "%", "问题", "异常", "风险", "超过", "落后", "P95", "P99"]
+        
+        for part in parts:
+            part = part.strip().lstrip("-*#").strip()
+            if not part or len(part) < 15:
+                continue
+            # 跳过思考过程
+            if self._is_thinking_line(part):
+                continue
+            # 跳过表格行
+            if "|" in part and part.count("|") > 2:
+                continue
+            # 包含关键词的句子
+            if any(kw in part for kw in value_keywords):
+                value_sentences.append(part)
+                if len(value_sentences) >= max_sentences:
+                    break
+        
+        if value_sentences:
+            summary = " ".join(value_sentences)
+            if len(summary) > 200:
+                summary = summary[:197] + "..."
+            return summary
+        
+        # 第三轮：回退到普通句子提取
+        sentences = []
         for part in parts:
             part = part.strip()
-            if part and len(part) > 10:  # 忽略太短的句子
-                sentences.append(part)
-                if len(sentences) >= max_sentences:
-                    break
-
-        return "".join(sentences) if sentences else response[:200]
+            if not part or len(part) < 15:
+                continue
+            if self._is_thinking_line(part):
+                continue
+            sentences.append(part)
+            if len(sentences) >= max_sentences:
+                break
+        
+        if sentences:
+            summary = "".join(sentences)
+            if len(summary) > 200:
+                summary = summary[:197] + "..."
+            return summary
+        
+        return "暂无有效分析数据，请检查数据源连接。"
 
     def _extract_impact(self, response: str) -> Optional[str]:
         """提取影响说明"""

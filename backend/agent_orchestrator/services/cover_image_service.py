@@ -6,6 +6,7 @@ import logging
 import os
 import httpx
 import base64
+import random
 from typing import Optional, Dict, Any
 from datetime import datetime
 
@@ -13,15 +14,27 @@ logger = logging.getLogger(__name__)
 
 
 class CoverImageService:
-    """封面图片生成服务（使用Gemini Imagen API）"""
+    """封面图片生成服务（使用 Gemini 3 Pro Image Preview）"""
 
-    # 提示词模板（根据简报类型）
-    PROMPT_TEMPLATES = {
-        "alert": "urgent red gradient background with warning icons, modern minimalist style, professional corporate design, 16:9 aspect ratio",
-        "insight": "analytical blue gradient background with data visualization elements, modern minimalist style, professional corporate design, 16:9 aspect ratio",
-        "summary": "calm green gradient background with summary icons, modern minimalist style, professional corporate design, 16:9 aspect ratio",
-        "action": "energetic orange gradient background with action icons, modern minimalist style, professional corporate design, 16:9 aspect ratio",
-    }
+    # 风格化提示词模板（多样化风格，随机选择）
+    STYLE_TEMPLATES = [
+        # 3D 等轴风格
+        "isometric 3D illustration of a modern workspace with floating holographic data charts and AI assistant robot, soft pastel colors, clean geometric shapes, tech startup aesthetic, 16:9 aspect ratio",
+        # 抽象科技风
+        "abstract digital art with flowing data streams and neural network patterns, deep blue and cyan color scheme, futuristic tech aesthetic, soft glow effects, 16:9 aspect ratio",
+        # 低多边形风格
+        "low poly geometric landscape with mountains and sunrise, vibrant gradient colors from purple to orange, modern digital art style, clean and minimal, 16:9 aspect ratio",
+        # 赛博朋克风
+        "cyberpunk cityscape with neon lights and holographic billboards, rain reflections on streets, purple and pink color palette, atmospheric and moody, 16:9 aspect ratio",
+        # 扁平插画风
+        "flat illustration of a person working with floating screens and data visualizations, warm sunset color palette, modern vector art style, clean lines, 16:9 aspect ratio",
+        # 玻璃拟态风
+        "glassmorphism UI design with frosted glass cards floating in space, soft gradients and blur effects, modern minimal aesthetic, light and airy, 16:9 aspect ratio",
+        # 渐变抽象风
+        "abstract fluid art with smooth gradient blobs, vibrant colors mixing together, modern digital aesthetic, dreamy and ethereal, 16:9 aspect ratio",
+        # 宇宙科幻风
+        "cosmic space scene with nebula clouds and distant planets, starfield background, deep purple and blue tones, epic and inspiring, 16:9 aspect ratio",
+    ]
 
     def __init__(self, gemini_api_key: Optional[str] = None):
         """
@@ -36,19 +49,17 @@ class CoverImageService:
 
     async def generate_cover_image(
         self,
-        briefing_type: str,
         title: str,
         summary: str,
-        priority: str = "P2",
+        **kwargs,  # 忽略其他参数（如 briefing_type, priority）
     ) -> Optional[Dict[str, Any]]:
         """
         生成简报封面图片
 
         Args:
-            briefing_type: 简报类型 (alert, insight, summary, action)
             title: 简报标题
             summary: 简报摘要
-            priority: 优先级 (P0, P1, P2)
+            **kwargs: 其他参数（忽略）
 
         Returns:
             包含图片数据的字典 {"image_data": bytes, "metadata": dict}
@@ -58,75 +69,77 @@ class CoverImageService:
             logger.warning("GEMINI_API_KEY not configured, skipping cover image generation")
             return None
 
-        # 根据类型获取基础提示词
-        base_prompt = self.PROMPT_TEMPLATES.get(briefing_type, self.PROMPT_TEMPLATES["summary"])
+        # 随机选择一个风格模板
+        style_prompt = random.choice(self.STYLE_TEMPLATES)
 
-        # 增强提示词（融入标题关键词）
-        enhanced_prompt = self._enhance_prompt(base_prompt, title, summary)
+        # 基于标题内容微调提示词
+        enhanced_prompt = self._enhance_prompt(style_prompt, title, summary)
 
         logger.info(f"Generating cover image with prompt: {enhanced_prompt[:100]}...")
 
         try:
-            # 调用Gemini Imagen API
+            # 调用 Gemini 3 Pro Image Preview API
             image_data = await self._call_gemini_imagen(enhanced_prompt)
 
             if image_data:
                 metadata = {
-                    "model": "gemini-imagen",
+                    "model": "gemini-3-pro-image-preview",
                     "prompt": enhanced_prompt,
-                    "briefing_type": briefing_type,
-                    "priority": priority,
                     "generated_at": datetime.utcnow().isoformat(),
                 }
                 return {"image_data": image_data, "metadata": metadata}
             else:
-                logger.warning("Gemini Imagen returned no image data")
+                logger.warning("Gemini returned no image data")
                 return None
 
         except Exception as e:
             logger.error(f"Failed to generate cover image: {e}", exc_info=True)
             return None
 
-    def _enhance_prompt(self, base_prompt: str, title: str, summary: str) -> str:
+    def _enhance_prompt(self, style_prompt: str, title: str, summary: str) -> str:
         """
-        增强提示词（融入标题关键词）
+        基于标题内容微调提示词
 
         Args:
-            base_prompt: 基础提示词
+            style_prompt: 风格提示词
             title: 标题
             summary: 摘要
 
         Returns:
             增强后的提示词
         """
-        # 提取关键词（简单实现：取标题中的关键名词）
-        keywords = []
+        # 检测内容主题，添加相关元素
+        theme_hints = []
 
-        # 常见关键词
-        tech_keywords = ["Review", "构建", "测试", "部署", "代码", "效率", "性能", "AI", "资讯"]
-        for keyword in tech_keywords:
-            if keyword in title or keyword in summary:
-                keywords.append(keyword)
+        # 检测技术相关
+        if any(kw in title + summary for kw in ["代码", "Review", "Git", "构建", "部署", "测试"]):
+            theme_hints.append("code editor elements")
 
-        # 如果找到关键词，添加到提示词中
-        if keywords:
-            keyword_hint = f"with subtle text '{' '.join(keywords[:2])}' integrated into design, "
-            # 在base_prompt的第一个逗号后插入
-            parts = base_prompt.split(",", 1)
-            if len(parts) == 2:
-                enhanced = f"{parts[0]}, {keyword_hint}{parts[1]}"
-            else:
-                enhanced = f"{base_prompt}, {keyword_hint}"
+        # 检测数据分析相关
+        if any(kw in title + summary for kw in ["分析", "数据", "指标", "效率", "统计"]):
+            theme_hints.append("data analytics dashboard")
+
+        # 检测 AI 相关
+        if any(kw in title + summary for kw in ["AI", "智能", "机器学习", "模型"]):
+            theme_hints.append("AI brain neural network")
+
+        # 检测资讯相关
+        if any(kw in title + summary for kw in ["资讯", "新闻", "文章", "博客"]):
+            theme_hints.append("news feed interface")
+
+        # 如果有主题提示，融入到风格提示词中
+        if theme_hints:
+            hint_text = ", ".join(theme_hints[:2])
+            enhanced = f"{style_prompt}, incorporating {hint_text}"
         else:
-            enhanced = base_prompt
+            enhanced = style_prompt
 
         return enhanced
 
     async def _call_gemini_imagen(self, prompt: str) -> Optional[bytes]:
         """
-        调用Gemini图片生成API
+        调用 Gemini 3 Pro Image Preview API
 
-        使用 Gemini 3 Pro Image Preview 模型生成图片
         API文档: https://ai.google.dev/gemini-api/docs/image-generation
 
         Args:
@@ -136,7 +149,7 @@ class CoverImageService:
             图片字节数据（PNG格式），失败返回None
         """
         # Gemini 3 Pro Image Preview API endpoint
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent"
 
         headers = {
             "Content-Type": "application/json",
