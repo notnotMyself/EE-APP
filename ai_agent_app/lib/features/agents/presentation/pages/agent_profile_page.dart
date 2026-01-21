@@ -222,6 +222,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           onAttachmentTap: _onAttachmentTap,
           onImageTap: _onImageTap,
           onModeTap: _onModeTap,
+          onVoiceTap: _onVoiceTap,
         ),
         
         const SizedBox(height: 19),
@@ -252,6 +253,12 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   void _onImageTap() {
     // TODO: 实现图片选择功能
     _showFeatureNotReady('添加图片');
+  }
+
+  /// 语音输入
+  void _onVoiceTap() {
+    // TODO: 实现语音输入功能
+    _showFeatureNotReady('语音输入');
   }
 
   /// 模式选择

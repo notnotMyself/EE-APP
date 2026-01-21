@@ -24,12 +24,14 @@ class ChatAttachment {
 /// - 图片/附件预览
 /// - 文字输入
 /// - 操作工具栏（附件、图片、模式选择）
+/// - 语音输入（麦克风按钮）
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onSubmit;
   final VoidCallback? onAttachmentTap;  // 添加附件
   final VoidCallback? onImageTap;       // 添加图片
-  final VoidCallback? onModeTap;
+  final VoidCallback? onModeTap;        // 模式选择
+  final VoidCallback? onVoiceTap;       // 语音输入
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
   final bool enabled;
@@ -41,6 +43,7 @@ class ExpandedChatInput extends StatefulWidget {
     this.onAttachmentTap,
     this.onImageTap,
     this.onModeTap,
+    this.onVoiceTap,
     this.attachments = const [],
     this.onAttachmentRemove,
     this.enabled = true,
@@ -117,6 +120,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 收起状态的简单输入框
+  /// Figma规范: 麦克风按钮(36x36) + 发送按钮(32x32)
   Widget _buildCollapsedInput() {
     return GestureDetector(
       onTap: () {
@@ -138,8 +142,51 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
                 ),
               ),
             ),
-            _buildSendButton(enabled: false),
+            // 麦克风按钮
+            _buildMicrophoneButton(),
+            // 发送按钮
+            _buildCollapsedSendButton(),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 麦克风按钮 (收起状态)
+  /// Figma规范: 36x36, 透明背景
+  Widget _buildMicrophoneButton() {
+    return GestureDetector(
+      onTap: widget.onVoiceTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        child: Icon(
+          Icons.mic_none_outlined,
+          size: 24,
+          color: AgentProfileTheme.labelColor,
+        ),
+      ),
+    );
+  }
+
+  /// 发送按钮 (收起状态)
+  /// Figma规范: 32x32, 90%黑色背景, 圆角88.89
+  Widget _buildCollapsedSendButton() {
+    return GestureDetector(
+      onTap: null, // 收起状态不可点击
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: ShapeDecoration(
+          color: Colors.black.withOpacity(0.9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(88.89),
+          ),
+        ),
+        child: const Icon(
+          Icons.arrow_upward_rounded,
+          size: 16,
+          color: Colors.white,
         ),
       ),
     );
