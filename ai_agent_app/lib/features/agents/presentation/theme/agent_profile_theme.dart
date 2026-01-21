@@ -35,6 +35,9 @@ class AgentProfileTheme {
   /// 头像占位背景色
   static const Color avatarPlaceholder = Color(0xFFD9D9D9);
   
+  /// Chris Chen 头像资源路径
+  static const String chrisChenAvatar = 'assets/images/chris_chen_avatar.jpeg';
+  
   /// 强调色（蓝色）
   static const Color accentBlue = Color(0xFF378AFF);
   
@@ -94,8 +97,11 @@ class AgentProfileTheme {
   // 尺寸定义
   // ============================================
   
-  /// 头像尺寸
-  static const double avatarSize = 130.0;
+  /// 头像尺寸 (Figma: 154.13 x 158.15)
+  static const double avatarWidth = 154.0;
+  static const double avatarHeight = 158.0;
+  /// 兼容旧代码
+  static const double avatarSize = 154.0;
   
   /// 快捷按钮尺寸
   static const double quickActionSize = 72.0;

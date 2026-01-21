@@ -182,11 +182,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 构建AI员工信息区域
   Widget _buildAgentInfoSection() {
+    // 判断是否为 Chris Chen 设计评审员
+    final isChrisChen = widget.agent.role == 'design_validator' ||
+        widget.agent.name.contains('Chris');
+    
     return Column(
       children: [
         // 头像
         AgentAvatar(
           avatarUrl: widget.agent.avatarUrl,
+          assetPath: isChrisChen ? AgentProfileTheme.chrisChenAvatar : null,
           fallbackText: widget.agent.name,
         ),
         
