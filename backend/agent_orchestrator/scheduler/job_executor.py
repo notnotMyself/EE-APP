@@ -373,10 +373,10 @@ class JobExecutor:
         # 获取订阅该Agent的所有用户
         try:
             result = (
-                self.supabase.table("user_agents")
+                self.supabase.table("user_agent_subscriptions")
                 .select("user_id")
                 .eq("agent_id", agent_id)
-                .eq("is_subscribed", True)
+                .eq("is_active", True)
                 .execute()
             )
             return [row["user_id"] for row in result.data]

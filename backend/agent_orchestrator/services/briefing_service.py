@@ -104,6 +104,7 @@ class BriefingService:
         # Generate UI Schema - 优先使用确定性生成（基于结构化数据）
         if self.ui_schema_generator:
             try:
+                ui_schema = None
                 # 如果有结构化数据，使用确定性生成
                 if briefing_data.get("metrics") or briefing_data.get("findings"):
                     ui_schema = self.ui_schema_generator.generate_from_structured_data({
@@ -112,8 +113,6 @@ class BriefingService:
                         "key_data": briefing_data.get("key_data", {}),
                     })
                     if ui_schema:
-                        briefing["ui_schema"] = ui_schema
-                        briefing["ui_schema_version"] = "1.0"
                         logger.info(f"Generated deterministic UI schema for briefing {briefing['id']}")
                     else:
                         # Fallback to LLM-based generation
@@ -122,9 +121,6 @@ class BriefingService:
                             data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
                             agent_role=agent_id
                         )
-                        if ui_schema:
-                            briefing["ui_schema"] = ui_schema
-                            briefing["ui_schema_version"] = "1.0"
                 else:
                     # 没有结构化数据，使用LLM生成
                     ui_schema = self.ui_schema_generator.generate_from_analysis(
@@ -132,15 +128,15 @@ class BriefingService:
                         data_context={"agent_id": agent_id, "priority": briefing_data["priority"]},
                         agent_role=agent_id
                     )
-                    if ui_schema:
-                        briefing["ui_schema"] = ui_schema
-                        briefing["ui_schema_version"] = "1.0"
-                    else:
+                    if not ui_schema:
                         # Fallback to markdown schema
-                        briefing["ui_schema"] = self.ui_schema_generator.create_fallback_markdown_schema(
+                        ui_schema = self.ui_schema_generator.create_fallback_markdown_schema(
                             briefing_data["summary"]
                         )
-                        briefing["ui_schema_version"] = "1.0"
+
+                # Store ui_schema in context_data (not as separate column)
+                if ui_schema:
+                    briefing["context_data"]["ui_schema"] = ui_schema
             except Exception as e:
                 logger.error(f"Error generating UI schema: {e}")
 
@@ -160,8 +156,9 @@ class BriefingService:
                         supabase_client=self.supabase,
                     )
                     if cover_url:
-                        briefing["cover_image_url"] = cover_url
-                        briefing["cover_image_metadata"] = cover_result.get("metadata", {})
+                        # Store cover image info in context_data (not as separate columns)
+                        briefing["context_data"]["cover_image_url"] = cover_url
+                        briefing["context_data"]["cover_image_metadata"] = cover_result.get("metadata", {})
                         logger.info(f"Generated cover image for briefing {briefing['id']}")
             except Exception as e:
                 logger.warning(f"Cover image generation failed (non-critical): {e}")
