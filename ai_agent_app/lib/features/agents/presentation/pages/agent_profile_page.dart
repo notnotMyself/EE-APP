@@ -6,7 +6,7 @@ import '../../domain/models/agent.dart';
 import '../../../conversations/presentation/pages/conversation_page.dart';
 import '../theme/agent_profile_theme.dart';
 import '../widgets/agent_avatar.dart';
-import '../widgets/agent_chat_input.dart';
+import '../widgets/expanded_chat_input.dart';
 import '../widgets/quick_action_button.dart';
 
 /// AI员工详情页面
@@ -25,7 +25,9 @@ class AgentProfilePage extends ConsumerStatefulWidget {
 }
 
 class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
-  
+  /// 附件列表（用于演示）
+  final List<ChatAttachment> _attachments = [];
+
   /// 获取问候语
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -211,10 +213,15 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 输入框
-        AgentChatInput(
+        // 展开式输入框
+        ExpandedChatInput(
           hintText: '简单描述下方案背景与目标',
           onSubmit: _onInputSubmit,
+          attachments: _attachments,
+          onAttachmentRemove: _onAttachmentRemove,
+          onCameraTap: _onCameraTap,
+          onGalleryTap: _onGalleryTap,
+          onModeTap: _onModeTap,
         ),
         
         const SizedBox(height: 19),
@@ -225,6 +232,96 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           onActionTap: _onQuickActionTap,
         ),
       ],
+    );
+  }
+
+  /// 移除附件
+  void _onAttachmentRemove(ChatAttachment attachment) {
+    setState(() {
+      _attachments.removeWhere((a) => a.id == attachment.id);
+    });
+  }
+
+  /// 拍照
+  void _onCameraTap() {
+    // TODO: 实现拍照功能
+    _showFeatureNotReady('拍照');
+  }
+
+  /// 打开相册
+  void _onGalleryTap() {
+    // TODO: 实现相册选择功能
+    _showFeatureNotReady('相册');
+  }
+
+  /// 模式选择
+  void _onModeTap() {
+    // TODO: 实现模式选择功能
+    _showModeSelector();
+  }
+
+  /// 显示功能未就绪提示
+  void _showFeatureNotReady(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature功能开发中...'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  /// 显示模式选择器
+  void _showModeSelector() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '选择对话模式',
+              style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            _buildModeOption('默认', '自动选择最佳回复方式', Icons.auto_awesome, true),
+            _buildModeOption('深度分析', '详细分析设计方案', Icons.analytics_outlined, false),
+            _buildModeOption('快速评审', '快速给出关键意见', Icons.flash_on_outlined, false),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建模式选项
+  Widget _buildModeOption(String title, String subtitle, IconData icon, bool isSelected) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color(0xFF0066FF).withOpacity(0.1)
+              : Colors.black.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? const Color(0xFF0066FF) : AgentProfileTheme.labelColor,
+        ),
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle, color: Color(0xFF0066FF))
+          : null,
+      onTap: () => Navigator.pop(context),
     );
   }
 }
