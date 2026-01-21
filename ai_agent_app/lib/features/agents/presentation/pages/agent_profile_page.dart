@@ -223,7 +223,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           attachments: _attachments,
           onAttachmentRemove: _onAttachmentRemove,
           onAttachmentTap: _onAttachmentTap,
-          onImageTap: _onImageTap,
+          onBackgroundDescTap: _onBackgroundDescTap,
           onModeTap: _onModeTap,
           onVoiceTap: _onVoiceTap,
         ),
@@ -258,75 +258,97 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     }
   }
 
-  /// 添加图片
-  Future<void> _onImageTap() async {
-    // 显示选择方式
-    final result = await showModalBottomSheet<String>(
+  /// 背景描述
+  void _onBackgroundDescTap() {
+    _showBackgroundDescriptionSheet();
+  }
+
+  /// 显示背景描述输入面板
+  void _showBackgroundDescriptionSheet() {
+    final controller = TextEditingController();
+    
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '方案背景',
+                  style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             Text(
-              '添加图片',
-              style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
+              '描述你的设计方案背景和目标，帮助AI更好地理解需求',
+              style: AgentProfileTheme.agentDescriptionStyle,
             ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0066FF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+            TextField(
+              controller: controller,
+              maxLines: 5,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '例如：这是一个电商APP的商品详情页改版方案，目标是提升转化率...',
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.4),
+                  fontSize: 14,
                 ),
-                child: const Icon(Icons.photo_library_outlined, color: Color(0xFF0066FF)),
-              ),
-              title: const Text('从相册选择'),
-              subtitle: const Text('选择已有的图片'),
-              onTap: () => Navigator.pop(context, 'gallery'),
-            ),
-            ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0066FF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                filled: true,
+                fillColor: Colors.black.withOpacity(0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-                child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF0066FF)),
               ),
-              title: const Text('拍照'),
-              subtitle: const Text('使用相机拍摄新照片'),
-              onTap: () => Navigator.pop(context, 'camera'),
             ),
             const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  final text = controller.text.trim();
+                  Navigator.pop(context);
+                  if (text.isNotEmpty) {
+                    // 将背景描述作为初始消息开始对话
+                    _startConversation('【方案背景】\n$text');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0066FF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('开始评审'),
+              ),
+            ),
           ],
         ),
       ),
     );
-
-    if (result == null) return;
-
-    final attachmentService = ref.read(attachmentServiceProvider);
-    ChatAttachment? attachment;
-
-    if (result == 'gallery') {
-      attachment = await attachmentService.pickImageFromGallery();
-    } else if (result == 'camera') {
-      attachment = await attachmentService.takePhoto();
-    }
-
-    if (attachment != null) {
-      setState(() {
-        _attachments.add(attachment!);
-      });
-    }
   }
 
   /// 语音输入

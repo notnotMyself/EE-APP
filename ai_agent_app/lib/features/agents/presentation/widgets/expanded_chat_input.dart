@@ -23,15 +23,15 @@ class ChatAttachment {
 /// 基于 Figma 设计稿实现，支持：
 /// - 图片/附件预览
 /// - 文字输入
-/// - 操作工具栏（附件、图片、模式选择）
+/// - 操作工具栏（附件、背景描述、模式选择）
 /// - 语音输入（麦克风按钮）
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onSubmit;
-  final VoidCallback? onAttachmentTap;  // 添加附件
-  final VoidCallback? onImageTap;       // 添加图片
-  final VoidCallback? onModeTap;        // 模式选择
-  final VoidCallback? onVoiceTap;       // 语音输入
+  final VoidCallback? onAttachmentTap;           // 添加附件
+  final VoidCallback? onBackgroundDescTap;       // 背景描述
+  final VoidCallback? onModeTap;                 // 模式选择
+  final VoidCallback? onVoiceTap;                // 语音输入
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
   final bool enabled;
@@ -41,7 +41,7 @@ class ExpandedChatInput extends StatefulWidget {
     this.hintText = '简单描述下方案背景与目标',
     required this.onSubmit,
     this.onAttachmentTap,
-    this.onImageTap,
+    this.onBackgroundDescTap,
     this.onModeTap,
     this.onVoiceTap,
     this.attachments = const [],
@@ -342,7 +342,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 操作工具栏
-  /// 按照Figma设计: 附件按钮 + 图片按钮 + "默认"模式按钮 + 发送按钮
+  /// 按照Figma设计: 附件按钮 + 背景描述按钮 + "默认"模式按钮 + 发送按钮
   Widget _buildToolbar() {
     return Row(
       children: [
@@ -353,10 +353,10 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         ),
         const SizedBox(width: 3.12),
         
-        // 图片按钮
+        // 背景描述按钮
         _buildToolButton(
-          icon: Icons.image_outlined,
-          onTap: widget.onImageTap,
+          icon: Icons.article_outlined,
+          onTap: widget.onBackgroundDescTap,
         ),
         const SizedBox(width: 3.12),
         
