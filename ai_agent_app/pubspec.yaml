@@ -50,6 +50,14 @@ dependencies:
   shared_preferences: ^2.2.2
   connectivity_plus: ^5.0.2
 
+  # 文件和媒体选择
+  image_picker: ^1.0.7
+  file_picker: ^6.1.1
+  
+  # 语音输入
+  speech_to_text: ^6.6.0
+  permission_handler: ^11.3.0
+
   # JSON序列化
   json_annotation: ^4.8.1
   freezed_annotation: ^2.4.1

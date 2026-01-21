@@ -4,10 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../domain/models/agent.dart';
 import '../../../conversations/presentation/pages/conversation_page.dart';
+import '../services/attachment_service.dart';
+import '../services/voice_input_service.dart';
 import '../theme/agent_profile_theme.dart';
 import '../widgets/agent_avatar.dart';
 import '../widgets/expanded_chat_input.dart';
 import '../widgets/quick_action_button.dart';
+import '../widgets/voice_input_dialog.dart';
 
 /// AI员工详情页面
 /// 
@@ -244,21 +247,99 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   }
 
   /// 添加附件（文件）
-  void _onAttachmentTap() {
-    // TODO: 实现文件选择功能
-    _showFeatureNotReady('添加附件');
+  Future<void> _onAttachmentTap() async {
+    final attachmentService = ref.read(attachmentServiceProvider);
+    final attachment = await attachmentService.pickFile();
+    
+    if (attachment != null) {
+      setState(() {
+        _attachments.add(attachment);
+      });
+    }
   }
 
   /// 添加图片
-  void _onImageTap() {
-    // TODO: 实现图片选择功能
-    _showFeatureNotReady('添加图片');
+  Future<void> _onImageTap() async {
+    // 显示选择方式
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '添加图片',
+              style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0066FF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.photo_library_outlined, color: Color(0xFF0066FF)),
+              ),
+              title: const Text('从相册选择'),
+              subtitle: const Text('选择已有的图片'),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0066FF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF0066FF)),
+              ),
+              title: const Text('拍照'),
+              subtitle: const Text('使用相机拍摄新照片'),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    final attachmentService = ref.read(attachmentServiceProvider);
+    ChatAttachment? attachment;
+
+    if (result == 'gallery') {
+      attachment = await attachmentService.pickImageFromGallery();
+    } else if (result == 'camera') {
+      attachment = await attachmentService.takePhoto();
+    }
+
+    if (attachment != null) {
+      setState(() {
+        _attachments.add(attachment!);
+      });
+    }
   }
 
   /// 语音输入
   void _onVoiceTap() {
-    // TODO: 实现语音输入功能
-    _showFeatureNotReady('语音输入');
+    showVoiceInputDialog(
+      context,
+      onResult: (text) {
+        if (text.isNotEmpty) {
+          // 直接发起对话
+          _startConversation(text);
+        }
+      },
+    );
   }
 
   /// 模式选择
