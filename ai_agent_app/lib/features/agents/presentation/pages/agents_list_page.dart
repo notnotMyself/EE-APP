@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../controllers/agent_controller.dart';
 import '../../domain/models/agent.dart';
 import '../../../conversations/presentation/pages/conversation_page.dart';
+import 'agent_profile_page.dart';
 
 class AgentsListPage extends ConsumerWidget {
   const AgentsListPage({super.key});
@@ -212,21 +213,40 @@ class AgentCard extends ConsumerWidget {
               ),
             ],
 
-            // Start Conversation Button
+            // Action Buttons
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ConversationPage(agent: agent),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.chat_outlined),
-                label: const Text('开始对话'),
-              ),
+            Row(
+              children: [
+                // 查看详情按钮
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => AgentProfilePage(agent: agent),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.person_outline),
+                    label: const Text('查看详情'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // 开始对话按钮
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ConversationPage(agent: agent),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.chat_outlined),
+                    label: const Text('对话'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
