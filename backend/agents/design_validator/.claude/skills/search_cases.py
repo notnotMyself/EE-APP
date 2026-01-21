@@ -1,160 +1,171 @@
 #!/usr/bin/env python3
 """
-历史案例检索技能 - 使用Grep搜索Markdown文件
+知识库索引 - 告诉 Agent 去哪里找参考资料
+
+这个 skill 提供知识库的目录结构和搜索建议。
+Agent 使用自己的 Read/Grep 能力查阅具体内容。
 """
 
 import sys
 import json
-import subprocess
 from pathlib import Path
-import yaml
 
 
-KNOWLEDGE_BASE = Path(__file__).parent.parent / "knowledge_base"
+# 知识库根目录
+KNOWLEDGE_BASE = Path(__file__).parent.parent.parent / "knowledge_base"
 
 
-def search_cases(query, category=None):
-    """搜索历史案例"""
-    matched_files = []
+def get_knowledge_index() -> dict:
+    """获取知识库索引"""
+    
+    index = {
+        "knowledge_base_path": str(KNOWLEDGE_BASE),
+        "structure": {},
+        "search_tips": []
+    }
+    
+    # 扫描知识库目录结构
+    directories = {
+        "design_guidelines": "设计规范（交互规范、视觉规范）",
+        "design_decisions": "历史设计决策（ADR 格式）",
+        "case_studies": "成功案例和问题案例",
+        "user_feedback": "用户反馈汇总"
+    }
+    
+    for dir_name, description in directories.items():
+        dir_path = KNOWLEDGE_BASE / dir_name
+        files = []
+        
+        if dir_path.exists():
+            for f in dir_path.glob("*.md"):
+                files.append(f.name)
+        
+        index["structure"][dir_name] = {
+            "description": description,
+            "path": str(dir_path),
+            "files": files
+        }
+    
+    # 搜索建议
+    index["search_tips"] = [
+        "使用 Read 工具直接读取规范文件，如: knowledge_base/design_guidelines/interaction-guidelines.md",
+        "使用 Grep 搜索关键词，如: grep -r '登录' knowledge_base/design_decisions/",
+        "查看 INDEX.md 获取知识库概览: knowledge_base/INDEX.md",
+        "设计决策文件命名格式: XXX-功能名-决策要点.md"
+    ]
+    
+    return index
 
-    # 确定搜索目录
-    if category:
-        search_dirs = [KNOWLEDGE_BASE / category]
+
+def get_search_prompt(query: str, category: str = None) -> str:
+    """生成搜索建议 prompt"""
+    
+    index = get_knowledge_index()
+    
+    if category and category in index["structure"]:
+        search_path = index["structure"][category]["path"]
+        search_scope = f"`{search_path}/`"
     else:
-        search_dirs = [
-            KNOWLEDGE_BASE / "design_decisions",
-            KNOWLEDGE_BASE / "case_studies"
-        ]
+        search_scope = "`knowledge_base/`"
+    
+    prompt = f"""# 知识库搜索任务
 
-    # 使用grep搜索
-    for search_dir in search_dirs:
-        if not search_dir.exists():
-            continue
+## 搜索关键词
+`{query}`
 
-        try:
-            result = subprocess.run(
-                ["grep", "-r", "-l", "-i", query, str(search_dir)],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+## 搜索范围
+{search_scope}
 
-            if result.returncode == 0 and result.stdout:
-                matched_files.extend(result.stdout.strip().split("\n"))
-        except Exception:
-            pass
+## 知识库结构
 
-    # 读取匹配的文件（前5个）
-    cases = []
-    for file_path in matched_files[:5]:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+"""
+    
+    for dir_name, info in index["structure"].items():
+        files_list = ", ".join(info["files"][:5]) if info["files"] else "（暂无文件）"
+        if len(info["files"]) > 5:
+            files_list += f" 等 {len(info['files'])} 个文件"
+        prompt += f"""### {dir_name}/
+- **说明**: {info["description"]}
+- **文件**: {files_list}
 
-            # 解析Markdown frontmatter
-            metadata = {}
-            body = content
+"""
+    
+    prompt += f"""## 搜索建议
 
-            if content.startswith("---"):
-                parts = content.split("---", 2)
-                if len(parts) >= 3:
-                    try:
-                        metadata = yaml.safe_load(parts[1])
-                        body = parts[2].strip()
-                    except Exception:
-                        pass
+1. 使用 Grep 搜索包含关键词的文件:
+   ```bash
+   grep -r -l "{query}" {search_scope}
+   ```
 
-            cases.append({
-                "file": Path(file_path).name,
-                "title": metadata.get("title", "未命名"),
-                "category": metadata.get("category", "unknown"),
-                "tags": metadata.get("tags", []),
-                "date": metadata.get("date", ""),
-                "excerpt": body[:300] + "..." if len(body) > 300 else body,
-                "full_path": file_path
-            })
-        except Exception:
-            pass
+2. 读取相关文件获取详细内容
 
-    return {
-        "action": "search",
-        "success": True,
-        "data": {
-            "cases": cases,
-            "total": len(matched_files),
-            "query": query
-        },
-        "message": f"找到 {len(cases)} 个相关案例"
-    }
+3. 如果是查找设计规范，直接读取:
+   - `knowledge_base/design_guidelines/interaction-guidelines.md`
+   - `knowledge_base/design_guidelines/visual-guidelines.md`
 
+## 开始搜索
 
-def get_guidelines(guideline_type="all"):
-    """获取设计规范"""
-    guidelines_dir = KNOWLEDGE_BASE / "design_guidelines"
-    guidelines = {}
-
-    type_mapping = {
-        "interaction": "interaction-guidelines.md",
-        "visual": "visual-guidelines.md",
-        "brand": "brand-guidelines.md"
-    }
-
-    if guideline_type == "all":
-        types_to_load = type_mapping.keys()
-    else:
-        types_to_load = [guideline_type] if guideline_type in type_mapping else []
-
-    for gtype in types_to_load:
-        file_path = guidelines_dir / type_mapping[gtype]
-        if file_path.exists():
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    guidelines[gtype] = f.read()
-            except Exception:
-                pass
-
-    return {
-        "action": "get_guidelines",
-        "success": True,
-        "data": {"guidelines": guidelines},
-        "message": f"获取了 {len(guidelines)} 个设计规范"
-    }
+请使用 Grep 和 Read 工具查找与「{query}」相关的案例和规范。
+"""
+    
+    return prompt
 
 
 def main():
-    # 从stdin读取参数
-    input_data = sys.stdin.read()
-    params = json.loads(input_data)
-
-    action = params.get("action", "search")
-
-    if action == "search":
-        query = params.get("query")
-        category = params.get("category")
-
-        if not query:
-            result = {
-                "action": "search",
-                "success": False,
-                "code": "MISSING_PARAMETER",
-                "message": "缺少query参数"
-            }
-        else:
-            result = search_cases(query, category)
-
-    elif action == "get_guidelines":
-        guideline_type = params.get("type", "all")
-        result = get_guidelines(guideline_type)
-
-    else:
+    input_data = sys.stdin.read().strip()
+    
+    if not input_data:
+        # 无输入时返回知识库索引
+        index = get_knowledge_index()
         result = {
-            "action": action,
-            "success": False,
-            "code": "UNKNOWN_ACTION",
-            "message": f"未知操作: {action}"
+            "success": True,
+            "action": "index",
+            "data": index,
+            "message": "知识库索引获取成功，请使用 Read/Grep 查阅具体内容"
         }
-
-    print(json.dumps(result, ensure_ascii=False))
+    else:
+        try:
+            params = json.loads(input_data)
+            action = params.get("action", "search")
+            
+            if action == "index":
+                # 获取索引
+                index = get_knowledge_index()
+                result = {
+                    "success": True,
+                    "action": "index",
+                    "data": index
+                }
+            elif action == "search":
+                # 生成搜索 prompt
+                query = params.get("query", "")
+                category = params.get("category")
+                
+                if not query:
+                    result = {
+                        "success": False,
+                        "error": "缺少 query 参数"
+                    }
+                else:
+                    result = {
+                        "success": True,
+                        "action": "search",
+                        "prompt": get_search_prompt(query, category),
+                        "params": params
+                    }
+            else:
+                result = {
+                    "success": False,
+                    "error": f"未知操作: {action}"
+                }
+                
+        except json.JSONDecodeError as e:
+            result = {
+                "success": False,
+                "error": f"JSON 解析错误: {str(e)}"
+            }
+    
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
