@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/agent_profile_theme.dart';
 import 'app_selector_popup.dart';
+import 'attachment_menu_popup.dart';
 
 /// 附件上传状态
 enum AttachmentStatus {
@@ -71,7 +72,9 @@ class ChatAttachment {
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onSubmit;
-  final VoidCallback? onAttachmentTap;           // 添加附件
+  final VoidCallback? onImageTap;                // 添加图片
+  final VoidCallback? onFileTap;                 // 添加文件
+  final VoidCallback? onFigmaTap;                // 添加 Figma 链接
   final VoidCallback? onVoiceTap;                // 语音输入
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
@@ -83,7 +86,9 @@ class ExpandedChatInput extends StatefulWidget {
     super.key,
     this.hintText = '简单描述下方案背景与目标',
     required this.onSubmit,
-    this.onAttachmentTap,
+    this.onImageTap,
+    this.onFileTap,
+    this.onFigmaTap,
     this.onVoiceTap,
     this.attachments = const [],
     this.onAttachmentRemove,
@@ -384,16 +389,16 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
     );
   }
 
+  /// 附件按钮的 GlobalKey
+  final GlobalKey _attachmentKey = GlobalKey();
+
   /// 操作工具栏
   /// 按照Figma设计: 附件按钮 + 应用选择按钮 + 发送按钮
   Widget _buildToolbar() {
     return Row(
       children: [
         // 附件按钮
-        _buildToolButton(
-          icon: Icons.attach_file_rounded,
-          onTap: widget.onAttachmentTap,
-        ),
+        _buildAttachmentButton(),
         const SizedBox(width: 3.12),
         
         // 应用选择按钮
@@ -405,6 +410,70 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         _buildSendButton(enabled: _hasText || widget.attachments.isNotEmpty),
       ],
     );
+  }
+
+  /// 附件按钮
+  Widget _buildAttachmentButton() {
+    return GestureDetector(
+      key: _attachmentKey,
+      onTap: _showAttachmentMenu,
+      child: Container(
+        width: 32,
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
+        decoration: ShapeDecoration(
+          color: Colors.black.withOpacity(0.04),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(112),
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.attach_file_rounded,
+            size: 19,
+            color: AgentProfileTheme.titleColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 显示附件菜单弹窗
+  void _showAttachmentMenu() async {
+    final RenderBox button =
+        _attachmentKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+
+    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final buttonSize = button.size;
+
+    // 计算弹窗位置（在按钮上方）
+    final position = RelativeRect.fromLTRB(
+      buttonPosition.dx,
+      buttonPosition.dy - 140, // 弹窗高度约128 + 间距
+      overlay.size.width - buttonPosition.dx - buttonSize.width,
+      overlay.size.height - buttonPosition.dy,
+    );
+
+    final attachmentType = await showAttachmentMenuPopup(
+      context,
+      position: position,
+    );
+
+    if (attachmentType != null) {
+      switch (attachmentType) {
+        case AttachmentType.image:
+          widget.onImageTap?.call();
+          break;
+        case AttachmentType.file:
+          widget.onFileTap?.call();
+          break;
+        case AttachmentType.figma:
+          widget.onFigmaTap?.call();
+          break;
+      }
+    }
   }
 
   /// 应用选择按钮

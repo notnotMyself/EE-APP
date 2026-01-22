@@ -633,7 +633,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onSubmit: _onInputSubmit,
             attachments: _attachments,
             onAttachmentRemove: _onAttachmentRemove,
-            onAttachmentTap: _onAttachmentTap,
+            onImageTap: _onImageTap,
+            onFileTap: _onFileTap,
+            onFigmaTap: _onFigmaTap,
             onVoiceTap: _onVoiceTap,
             enabled: !isStreaming && !_isInitializing,
             selectedApp: _selectedApp,
@@ -660,82 +662,67 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     });
   }
 
-  /// 添加附件 - 弹出选择菜单
-  Future<void> _onAttachmentTap() async {
-    showModalBottomSheet(
+  /// 添加图片
+  void _onImageTap() async {
+    await _pickImageFromGallery();
+  }
+
+  /// 添加文件
+  void _onFileTap() async {
+    await _pickFile();
+  }
+
+  /// 添加 Figma 链接
+  void _onFigmaTap() {
+    _showFigmaLinkDialog();
+  }
+
+  /// 显示 Figma 链接输入对话框
+  void _showFigmaLinkDialog() {
+    final controller = TextEditingController();
+
+    showDialog(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => AlertDialog(
+        title: const Text('添加 Figma 链接'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: '粘贴 Figma 链接...',
+            hintStyle: TextStyle(color: Colors.black.withOpacity(0.4)),
+            filled: true,
+            fillColor: Colors.black.withOpacity(0.04),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.photo_library_rounded, color: Colors.blue),
-              ),
-              title: const Text('从相册选择图片'),
-              subtitle: const Text('支持 JPG、PNG、GIF、WebP'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _pickImageFromGallery();
-              },
-            ),
-            ListTile(
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.camera_alt_rounded, color: Colors.orange),
-              ),
-              title: const Text('拍照'),
-              subtitle: const Text('使用相机拍摄照片'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _takePhoto();
-              },
-            ),
-            ListTile(
-              leading: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.insert_drive_file_rounded, color: Colors.green),
-              ),
-              title: const Text('选择文件'),
-              subtitle: const Text('支持 PDF、Word、Excel 等'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _pickFile();
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final link = controller.text.trim();
+              Navigator.pop(context);
+              if (link.isNotEmpty && link.contains('figma.com')) {
+                // 将 Figma 链接作为消息发送
+                _sendMessageWithAttachments(
+                  '请分析这个 Figma 设计：\n$link',
+                  List.from(_attachments),
+                );
+              } else if (link.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请输入有效的 Figma 链接')),
+                );
+              }
+            },
+            child: const Text('确定'),
+          ),
+        ],
       ),
     );
   }
