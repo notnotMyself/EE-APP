@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -63,6 +65,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   Personality _selectedPersonality = PersonalityList.defaultPersonality;
 
   @override
+  void initState() {
+    super.initState();
+
+    // ⚡ 立即预创建会话,消除延迟
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _precreateConversation();
+    });
+  }
+
+  @override
   void dispose() {
     // 释放 conversation notifier
     if (_conversationId != null) {
@@ -70,6 +82,62 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     }
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 预创建会话(后台静默,不阻塞UI)
+  ///
+  /// 在页面加载时立即创建会话并建立WebSocket连接,
+  /// 这样用户点击发送时无需等待,立即响应
+  Future<void> _precreateConversation() async {
+    // 检查是否已经有会话ID
+    if (_conversationId != null) return;
+
+    // 检查用户登录状态
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      // 用户未登录,静默失败
+      debugPrint('⚠️ 预创建会话失败: 用户未登录');
+      return;
+    }
+
+    try {
+      debugPrint('⚡ 开始预创建会话...');
+      final startTime = DateTime.now();
+
+      // 1. 创建会话
+      final conversation = await ref
+          .read(conversationControllerProvider.notifier)
+          .createConversation(widget.agent.id);
+
+      if (conversation == null) {
+        debugPrint('⚠️ 会话创建失败(将在发送时重试)');
+        return;
+      }
+
+      final createDuration = DateTime.now().difference(startTime);
+      debugPrint('✅ 会话创建完成: ${conversation.id} (耗时: ${createDuration.inMilliseconds}ms)');
+
+      if (!mounted) return;
+
+      setState(() => _conversationId = conversation.id);
+
+      // 2. 并行初始化WebSocket(不等待完成,避免阻塞)
+      unawaited(
+        ref.read(conversationNotifierProvider(conversation.id).notifier)
+            .initialize()
+            .then((_) {
+              final totalDuration = DateTime.now().difference(startTime);
+              debugPrint('🔌 WebSocket连接完成 (总耗时: ${totalDuration.inMilliseconds}ms)');
+            })
+            .catchError((e) {
+              debugPrint('⚠️ WebSocket连接失败: $e');
+            }),
+      );
+    } catch (e, stack) {
+      debugPrint('❌ 预创建会话异常: $e');
+      // 静默失败,不显示错误给用户
+      // 发送消息时会触发 _ensureConversation() 重试
+    }
   }
 
   /// 获取问候语
