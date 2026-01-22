@@ -186,10 +186,11 @@ async def conversation_websocket(
                 elif msg_type == "message":
                     # 处理用户消息
                     content = message.get("content", "").strip()
-                    if content:
+                    attachments = message.get("attachments")  # 附件列表
+                    if content or attachments:
                         logger.info(
                             f"WS received user message: conversation={conversation_id}, user={user_id}, "
-                            f"len={len(content)}"
+                            f"len={len(content)}, attachments={len(attachments) if attachments else 0}"
                         )
                         await handle_user_message(
                             websocket=websocket,
@@ -197,6 +198,7 @@ async def conversation_websocket(
                             conversation_id=conversation_id,
                             user_id=user_id,
                             content=content,
+                            attachments=attachments,
                         )
 
                 else:
@@ -225,8 +227,18 @@ async def handle_user_message(
     conversation_id: str,
     user_id: str,
     content: str,
+    attachments: Optional[list] = None,
 ) -> None:
-    """处理用户消息并流式返回响应"""
+    """处理用户消息并流式返回响应
+
+    Args:
+        websocket: WebSocket连接
+        manager: 连接管理器
+        conversation_id: 对话ID
+        user_id: 用户ID
+        content: 消息内容
+        attachments: 附件列表，格式 [{id, url, mime_type, filename}]
+    """
     if not conversation_service:
         await websocket.send_json({
             "type": "error",
@@ -249,6 +261,7 @@ async def handle_user_message(
             user_message=content,
             user_id=user_id,
             ws_writer=writer,
+            attachments=attachments,
         )
 
         # 发送完成消息

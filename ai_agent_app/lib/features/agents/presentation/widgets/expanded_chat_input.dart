@@ -1,21 +1,63 @@
 import 'package:flutter/material.dart';
 import '../theme/agent_profile_theme.dart';
 
+/// 附件上传状态
+enum AttachmentStatus {
+  pending,   // 待上传
+  uploading, // 上传中
+  uploaded,  // 已上传
+  error,     // 上传失败
+}
+
 /// 图片附件数据模型
 class ChatAttachment {
   final String id;
   final String? localPath;
   final String? networkUrl;
   final String? thumbnailUrl;
+  final String? mimeType;
+  final String? filename;
+  final AttachmentStatus status;
 
   const ChatAttachment({
     required this.id,
     this.localPath,
     this.networkUrl,
     this.thumbnailUrl,
+    this.mimeType,
+    this.filename,
+    this.status = AttachmentStatus.pending,
   });
 
   String? get displayUrl => thumbnailUrl ?? networkUrl ?? localPath;
+
+  /// 创建带有新状态的副本
+  ChatAttachment copyWith({
+    String? networkUrl,
+    String? thumbnailUrl,
+    AttachmentStatus? status,
+  }) {
+    return ChatAttachment(
+      id: id,
+      localPath: localPath,
+      networkUrl: networkUrl ?? this.networkUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      mimeType: mimeType,
+      filename: filename,
+      status: status ?? this.status,
+    );
+  }
+
+  /// 转换为 JSON（用于发送给后端）
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'url': networkUrl,
+    'mime_type': mimeType,
+    'filename': filename,
+  };
+
+  /// 判断是否已上传
+  bool get isUploaded => networkUrl != null && status == AttachmentStatus.uploaded;
 }
 
 /// 展开式聊天输入卡片

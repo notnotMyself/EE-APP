@@ -32,7 +32,8 @@ class MessageModel:
         self.supabase = supabase_client
 
     async def create_text_message(
-        self, conversation_id: str, role: str, content: str
+        self, conversation_id: str, role: str, content: str,
+        attachments: List[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """创建文本消息
 
@@ -40,6 +41,7 @@ class MessageModel:
             conversation_id: 对话UUID
             role: 消息角色 ('user', 'assistant', 'system')
             content: 消息内容文本
+            attachments: 附件列表（可选），格式 [{id, url, mime_type, filename}]
 
         Returns:
             创建的消息记录
@@ -62,6 +64,10 @@ class MessageModel:
                 "content": content,
                 "created_at": datetime.utcnow().isoformat(),
             }
+
+            # 添加附件数据（如果有）
+            if attachments:
+                message_data["attachments"] = json.dumps(attachments, ensure_ascii=False)
 
             result = (
                 self.supabase.table("messages").insert(message_data).execute()

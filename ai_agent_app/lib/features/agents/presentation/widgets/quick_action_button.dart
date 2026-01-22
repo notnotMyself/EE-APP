@@ -7,12 +7,14 @@ class QuickAction {
   final String label;
   final IconData icon;
   final String? initialMessage;
+  final String? modeId; // 映射到后端 skill/评审模式
 
   const QuickAction({
     required this.id,
     required this.label,
     required this.icon,
     this.initialMessage,
+    this.modeId,
   });
 }
 
@@ -29,21 +31,24 @@ class QuickActions {
     id: 'interaction',
     label: '交互验证',
     icon: Icons.touch_app_outlined,
-    initialMessage: '帮我验证一下这个交互设计',
+    initialMessage: '请对这个设计进行交互可用性评审',
+    modeId: 'interaction_check',
   );
 
   static const visual = QuickAction(
     id: 'visual',
     label: '视觉讨论',
     icon: Icons.palette_outlined,
-    initialMessage: '我想讨论一下视觉设计',
+    initialMessage: '请检查这个设计的视觉一致性',
+    modeId: 'visual_consistency',
   );
 
   static const compare = QuickAction(
     id: 'compare',
     label: '方案选择',
     icon: Icons.compare_outlined,
-    initialMessage: '帮我对比一下这几个方案',
+    initialMessage: '请帮我对比这几个设计方案',
+    modeId: 'compare_designs',
   );
 
   /// 默认快捷功能列表

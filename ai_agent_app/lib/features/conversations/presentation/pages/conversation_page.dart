@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/conversation_controller.dart';
 import '../../../agents/domain/models/agent.dart';
+import '../../../agents/presentation/widgets/expanded_chat_input.dart';
+import '../../../agents/presentation/services/image_upload_service.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../state/conversation_notifier.dart';
 import '../state/conversation_state.dart';
@@ -17,11 +19,13 @@ class ConversationPage extends ConsumerStatefulWidget {
     required this.agent,
     this.conversationId,
     this.initialMessage,
+    this.initialAttachments,
   });
 
   final Agent agent;
   final String? conversationId;
   final String? initialMessage;
+  final List<ChatAttachment>? initialAttachments;
 
   @override
   ConsumerState<ConversationPage> createState() => _ConversationPageState();
@@ -71,11 +75,12 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
         _isInitializing = false;
       });
 
-      // 发送初始消息
+      // 发送初始消息（带附件）
       final initial = widget.initialMessage?.trim();
-      if (!_initialMessageSent && initial != null && initial.isNotEmpty) {
+      final attachments = widget.initialAttachments;
+      if (!_initialMessageSent && (initial != null && initial.isNotEmpty || attachments != null && attachments.isNotEmpty)) {
         _initialMessageSent = true;
-        await _sendMessageText(initial);
+        await _sendMessageWithAttachments(initial ?? '', attachments ?? []);
       }
     }
   }
@@ -118,6 +123,11 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
 
   Future<void> _sendMessageText(String text) async {
     if (text.trim().isEmpty || _currentConversationId == null) return;
+    await _sendMessageWithAttachments(text.trim(), []);
+  }
+
+  Future<void> _sendMessageWithAttachments(String text, List<ChatAttachment> attachments) async {
+    if ((text.trim().isEmpty && attachments.isEmpty) || _currentConversationId == null) return;
 
     // 检查网络连接
     final connectivityResult = await Connectivity().checkConnectivity();
@@ -135,9 +145,20 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
     }
 
     try {
+      // 上传附件
+      List<Map<String, dynamic>>? uploadedAttachments;
+      if (attachments.isNotEmpty) {
+        final uploadService = ref.read(imageUploadServiceProvider);
+        final uploaded = await uploadService.uploadAttachments(attachments);
+        uploadedAttachments = uploaded
+            .where((a) => a.isUploaded)
+            .map((a) => a.toJson())
+            .toList();
+      }
+
       await ref
           .read(conversationNotifierProvider(_currentConversationId!).notifier)
-          .sendMessage(text.trim());
+          .sendMessageWithAttachments(text.trim(), uploadedAttachments);
 
       _scrollToBottom();
     } catch (e) {
@@ -150,7 +171,7 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
             action: SnackBarAction(
               label: '重试',
               textColor: Colors.white,
-              onPressed: () => _sendMessageText(text),
+              onPressed: () => _sendMessageWithAttachments(text, attachments),
             ),
           ),
         );

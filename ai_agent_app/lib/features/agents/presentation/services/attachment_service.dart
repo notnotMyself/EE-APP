@@ -23,14 +23,16 @@ class AttachmentService {
         maxHeight: 1920,
         imageQuality: 85,
       );
-      
+
       if (image == null) return null;
-      
+
       return ChatAttachment(
         id: _uuid.v4(),
         localPath: image.path,
         networkUrl: null,
         thumbnailUrl: null,
+        mimeType: _getMimeType(image.path),
+        filename: image.name,
       );
     } catch (e) {
       debugPrint('选择图片失败: $e');
@@ -47,14 +49,16 @@ class AttachmentService {
         maxHeight: 1920,
         imageQuality: 85,
       );
-      
+
       if (photo == null) return null;
-      
+
       return ChatAttachment(
         id: _uuid.v4(),
         localPath: photo.path,
         networkUrl: null,
         thumbnailUrl: null,
+        mimeType: _getMimeType(photo.path),
+        filename: photo.name,
       );
     } catch (e) {
       debugPrint('拍照失败: $e');
@@ -70,15 +74,17 @@ class AttachmentService {
         maxHeight: 1920,
         imageQuality: 85,
       );
-      
+
       // 限制最大数量
       final limitedImages = images.take(maxImages).toList();
-      
+
       return limitedImages.map((image) => ChatAttachment(
         id: _uuid.v4(),
         localPath: image.path,
         networkUrl: null,
         thumbnailUrl: null,
+        mimeType: _getMimeType(image.path),
+        filename: image.name,
       )).toList();
     } catch (e) {
       debugPrint('选择多张图片失败: $e');
@@ -91,19 +97,21 @@ class AttachmentService {
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'],
+        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
         allowMultiple: false,
       );
-      
+
       if (result == null || result.files.isEmpty) return null;
-      
+
       final file = result.files.first;
-      
+
       return ChatAttachment(
         id: _uuid.v4(),
         localPath: file.path,
         networkUrl: null,
         thumbnailUrl: null,
+        mimeType: _getMimeType(file.path ?? ''),
+        filename: file.name,
       );
     } catch (e) {
       debugPrint('选择文件失败: $e');
@@ -116,25 +124,50 @@ class AttachmentService {
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'],
+        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
         allowMultiple: true,
       );
-      
+
       if (result == null || result.files.isEmpty) return [];
-      
+
       // 限制最大数量
       final limitedFiles = result.files.take(maxFiles).toList();
-      
+
       return limitedFiles.map((file) => ChatAttachment(
         id: _uuid.v4(),
         localPath: file.path,
         networkUrl: null,
         thumbnailUrl: null,
+        mimeType: _getMimeType(file.path ?? ''),
+        filename: file.name,
       )).toList();
     } catch (e) {
       debugPrint('选择多个文件失败: $e');
       return [];
     }
+  }
+
+  /// 获取MIME类型
+  String _getMimeType(String path) {
+    final ext = path.toLowerCase().split('.').last;
+    const mimeTypes = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'txt': 'text/plain',
+      'zip': 'application/zip',
+      'rar': 'application/x-rar-compressed',
+    };
+    return mimeTypes[ext] ?? 'application/octet-stream';
   }
 
   /// 获取文件大小（格式化）

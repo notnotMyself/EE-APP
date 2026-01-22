@@ -10,7 +10,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
 
 from claude_agent_sdk import (
     AgentDefinition,
@@ -183,6 +183,7 @@ class AgentSDKService:
         prompt: str,
         agent_role: str,
         mcp_servers: Optional[List[Any]] = None,
+        image_blocks: Optional[List[Dict[str, Any]]] = None,
         on_text_chunk: Optional[Callable[[str], Any]] = None,
         on_tool_use: Optional[Callable[[str, Dict], Any]] = None,
         on_tool_result: Optional[Callable[[str, Any], Any]] = None,
@@ -194,6 +195,8 @@ class AgentSDKService:
             prompt: 用户提示词
             agent_role: Agent 角色
             mcp_servers: MCP 服务器列表
+            image_blocks: 图片内容块列表（用于多模态分析）
+                         格式: [{"type": "image", "source": {"type": "base64", "media_type": "...", "data": "..."}}]
             on_text_chunk: 文本块回调
             on_tool_use: 工具调用回调
             on_tool_result: 工具结果回调
@@ -203,8 +206,17 @@ class AgentSDKService:
         """
         options = self._get_agent_options(agent_role, mcp_servers)
 
+        # 构建多模态内容（如果有图片）
+        if image_blocks:
+            # 多模态内容：先是图片，然后是文本提示
+            multimodal_content = image_blocks + [{"type": "text", "text": prompt}]
+            query_prompt = multimodal_content
+            logger.info(f"Executing multimodal query with {len(image_blocks)} images")
+        else:
+            query_prompt = prompt
+
         try:
-            async for message in query(prompt=prompt, options=options):
+            async for message in query(prompt=query_prompt, options=options):
                 # 处理 StreamEvent：细粒度流式输出（token 级别）
                 if isinstance(message, StreamEvent):
                     event = message.event

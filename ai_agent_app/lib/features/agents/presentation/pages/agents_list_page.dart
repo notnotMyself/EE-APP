@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../controllers/agent_controller.dart';
 import '../../domain/models/agent.dart';
-import '../../../conversations/presentation/pages/conversation_page.dart';
 import 'agent_profile_page.dart';
 
 class AgentsListPage extends ConsumerWidget {
@@ -213,40 +211,21 @@ class AgentCard extends ConsumerWidget {
               ),
             ],
 
-            // Action Buttons
+            // 开始对话按钮 - 统一入口
             const SizedBox(height: 12),
-            Row(
-              children: [
-                // 查看详情按钮
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => AgentProfilePage(agent: agent),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.person_outline),
-                    label: const Text('查看详情'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 开始对话按钮
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ConversationPage(agent: agent),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.chat_outlined),
-                    label: const Text('对话'),
-                  ),
-                ),
-              ],
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AgentProfilePage(agent: agent),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat_outlined),
+                label: const Text('开始对话'),
+              ),
             ),
           ],
         ),
