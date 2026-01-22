@@ -20,6 +20,7 @@ import '../widgets/expanded_chat_input.dart';
 import '../widgets/personality_selector.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/agent_profile_card.dart';
+import '../widgets/conversation_selector.dart';
 
 /// AI员工详情页面（整合对话功能）
 ///
@@ -454,9 +455,22 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
                 case 'new_conversation':
                   _startNewConversation();
                   break;
+                case 'conversation_history':
+                  _showConversationSelector();
+                  break;
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'conversation_history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history, size: 20),
+                    SizedBox(width: 12),
+                    Text('会话历史'),
+                  ],
+                ),
+              ),
               const PopupMenuItem<String>(
                 value: 'new_conversation',
                 child: Row(
@@ -499,6 +513,89 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// 显示会话选择器
+  void _showConversationSelector() async {
+    // 获取该Agent的所有会话
+    final conversations = await ref
+        .read(conversationControllerProvider.notifier)
+        .getAgentConversations(widget.agent.id);
+
+    if (!mounted) return;
+
+    ConversationSelector.show(
+      context,
+      agentId: widget.agent.id,
+      currentConversationId: _conversationId,
+      conversations: conversations,
+      onNewConversation: _startNewConversation,
+      onSelectConversation: _switchToConversation,
+      onRenameConversation: _renameConversation,
+    );
+  }
+
+  /// 切换到指定会话
+  void _switchToConversation(String conversationId) {
+    // 清除当前对话状态
+    if (_conversationId != null) {
+      ref.invalidate(conversationNotifierProvider(_conversationId!));
+    }
+
+    // 切换会话
+    setState(() {
+      _conversationId = conversationId;
+      _attachments.clear();
+      _pendingMessageContent = null;
+      _pendingAttachments = null;
+      _isSendingInitialMessage = false;
+    });
+
+    // 初始化新会话的WebSocket连接
+    ref
+        .read(conversationNotifierProvider(conversationId).notifier)
+        .initialize()
+        .then((_) {
+      debugPrint('✅ 切换到会话: $conversationId');
+    }).catchError((e) {
+      debugPrint('⚠️ 切换会话失败: $e');
+    });
+
+    // 显示提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已切换会话'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  /// 重命名会话
+  void _renameConversation(String conversationId, String newTitle) async {
+    final result = await ref
+        .read(conversationControllerProvider.notifier)
+        .updateConversationTitle(
+          conversationId: conversationId,
+          title: newTitle,
+        );
+
+    if (mounted) {
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('会话标题已更新'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('更新失败，请重试'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// 紧凑的 Agent 信息（对话模式使用）

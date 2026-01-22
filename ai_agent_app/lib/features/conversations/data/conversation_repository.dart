@@ -77,6 +77,71 @@ class ConversationRepository {
     }
   }
 
+  /// 获取用户与特定Agent的所有会话（多会话模式）
+  ///
+  /// 调用后端API获取会话列表，支持状态过滤
+  Future<List<Conversation>> getAgentConversations({
+    required String agentId,
+    int limit = 20,
+    String? status,
+  }) async {
+    try {
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
+
+      final queryParameters = <String, dynamic>{
+        'limit': limit,
+        if (status != null) 'status': status,
+      };
+
+      final response = await dio.get(
+        '${AppConfig.apiUrl}/conversations/agents/$agentId/conversations',
+        queryParameters: queryParameters,
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        final conversations = response.data as List? ?? [];
+        return conversations
+            .map((json) => Conversation.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('获取会话列表失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('获取会话列表失败: ${e.message}');
+    } catch (e) {
+      throw Exception('获取会话列表失败: $e');
+    }
+  }
+
+  /// 更新会话标题
+  Future<Conversation> updateConversationTitle({
+    required String conversationId,
+    required String title,
+  }) async {
+    try {
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
+
+      final response = await dio.put(
+        '${AppConfig.apiUrl}/conversations/$conversationId/title',
+        data: {'title': title},
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        throw Exception('更新会话标题失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('更新会话标题失败: ${e.message}');
+    } catch (e) {
+      throw Exception('更新会话标题失败: $e');
+    }
+  }
+
   /// 获取对话详情
   Future<Conversation> getConversation(String conversationId) async {
     try {

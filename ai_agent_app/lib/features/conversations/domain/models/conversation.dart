@@ -11,6 +11,7 @@ class Conversation with _$Conversation {
     @JsonKey(name: 'agent_id') required String agentId,
     @JsonKey(name: 'started_at') required DateTime startedAt,
     @JsonKey(name: 'last_message_at') DateTime? lastMessageAt,
+    String? title,
     String? status,
     Map<String, dynamic>? context,
   }) = _Conversation;

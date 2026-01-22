@@ -34,6 +34,17 @@ final userConversationsProvider = FutureProvider<List<Conversation>>((ref) async
   return repository.getUserConversations(currentUser.id);
 });
 
+/// 特定Agent的对话列表Provider（多会话模式）
+final agentConversationsProvider =
+    FutureProvider.family<List<Conversation>, String>((ref, agentId) async {
+  final repository = ref.watch(conversationRepositoryProvider);
+  return repository.getAgentConversations(
+    agentId: agentId,
+    limit: 50,
+    status: 'active',
+  );
+});
+
 /// Conversation Controller
 class ConversationController extends StateNotifier<AsyncValue<void>> {
   ConversationController(this.ref) : super(const AsyncValue.data(null));
@@ -116,6 +127,47 @@ class ConversationController extends StateNotifier<AsyncValue<void>> {
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       return null;
+    }
+  }
+
+  /// 更新会话标题
+  Future<Conversation?> updateConversationTitle({
+    required String conversationId,
+    required String title,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final repository = ref.read(conversationRepositoryProvider);
+      final conversation = await repository.updateConversationTitle(
+        conversationId: conversationId,
+        title: title,
+      );
+
+      state = const AsyncValue.data(null);
+
+      // 刷新对话相关的所有providers
+      ref.invalidate(conversationProvider(conversationId));
+      ref.invalidate(userConversationsProvider);
+
+      return conversation;
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+      return null;
+    }
+  }
+
+  /// 获取特定Agent的所有对话
+  Future<List<Conversation>> getAgentConversations(String agentId) async {
+    try {
+      final repository = ref.read(conversationRepositoryProvider);
+      return await repository.getAgentConversations(
+        agentId: agentId,
+        limit: 50,
+        status: 'active',
+      );
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      return [];
     }
   }
 }
