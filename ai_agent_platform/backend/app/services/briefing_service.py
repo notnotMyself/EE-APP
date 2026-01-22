@@ -3,12 +3,14 @@ Briefing Service - 简报生成核心服务
 
 负责：
 1. 调用 Agent 执行分析任务
-2. 让 AI 判断是否值得推送简报
-3. 生成简报并存入数据库
+2. 从 Agent 原始输出中提取分析报告（过滤思考过程）
+3. 让 AI 判断是否值得推送简报
+4. 生成简报并存入数据库
 """
 import json
 import logging
-from typing import Dict, List, Optional, Any
+import re
+from typing import Dict, List, Optional, Any, Tuple
 from uuid import UUID
 from datetime import datetime, date
 from decimal import Decimal
@@ -17,45 +19,288 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.claude_service import claude_service
 from app.services.agent_sdk_client import execute_agent_task
+from app.services.cover_image_service import cover_image_service
 from app.crud.crud_briefing import briefing as briefing_crud, scheduled_job as scheduled_job_crud
 from app.crud.crud_agent import agent as agent_crud
 from app.schemas.briefing import (
     BriefingCreate, BriefingType, BriefingPriority, BriefingAction
 )
 from app.db.supabase import get_supabase_admin_client
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# 分析报告提取器 - 从 Agent 原始输出中提取有效内容
+# =============================================================================
+
+class AnalysisReportExtractor:
+    """
+    从 Agent SDK 的原始输出中提取分析报告
+    
+    Agent 输出通常包含：
+    1. 思考过程（"我将执行...", "让我先...", "看起来..."）
+    2. 工具调用记录（[tool_use], bash 命令输出等）
+    3. 最终的分析报告（Markdown 格式）
+    
+    我们只需要第3部分。
+    """
+    
+    # 思考过程的典型开头模式
+    THINKING_PATTERNS = [
+        r'^我将',
+        r'^让我',
+        r'^首先',
+        r'^接下来',
+        r'^现在',
+        r'^好的',
+        r'^看起来',
+        r'^需要先',
+        r'^我需要',
+        r'^我来',
+        r'^我会',
+        r'^我要',
+        r'^正在',
+        r'^开始',
+        r'^执行',
+        r'^分析',
+        r'^获取',
+        r'^查询',
+        r'^连接',
+        r'^尝试',
+        r'^检查',
+    ]
+    
+    # 工具调用相关的模式
+    TOOL_PATTERNS = [
+        r'\[tool_use\]',
+        r'\[tool_result\]',
+        r'TextBlock\(',
+        r'ToolUseBlock\(',
+        r'ToolResultBlock\(',
+        r'ContentBlock\(',
+        r'bash\s*\(',
+        r'echo\s+[\'"]?\{',
+        r'python\s+\w+\.py',
+        r'cd\s+\.claude',
+        r'pip\s+install',
+    ]
+    
+    # 有效报告的标志
+    REPORT_MARKERS = [
+        r'^#+\s+.+',           # Markdown 标题
+        r'^\|.+\|.+\|',        # Markdown 表格
+        r'^-\s+\*\*.+\*\*',    # 带粗体的列表项
+        r'^##\s*📊',           # 带 emoji 的标题
+        r'^##\s*🔍',
+        r'^##\s*💡',
+        r'^##\s*⚠️',
+        r'^##\s*🚨',
+        r'^##\s*核心指标',
+        r'^##\s*异常发现',
+        r'^##\s*改进建议',
+        r'^##\s*分析结果',
+        r'研发效能',
+        r'Review.*耗时',
+        r'返工率',
+        r'代码变更',
+    ]
+    
+    @classmethod
+    def extract(cls, raw_output: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        从原始输出中提取分析报告
+        
+        Args:
+            raw_output: Agent SDK 的原始输出
+            
+        Returns:
+            Tuple[str, Dict]: (提取后的报告, 提取元数据)
+        """
+        if not raw_output or not raw_output.strip():
+            return "", {"status": "empty_input"}
+        
+        metadata = {
+            "original_length": len(raw_output),
+            "extraction_method": None,
+            "filtered_lines": 0,
+            "kept_lines": 0,
+        }
+        
+        # 方法1: 尝试找到 Markdown 报告块
+        report = cls._extract_markdown_report(raw_output)
+        if report and len(report) > 200:
+            metadata["extraction_method"] = "markdown_block"
+            metadata["extracted_length"] = len(report)
+            return report, metadata
+        
+        # 方法2: 按行过滤，移除思考过程和工具调用
+        report, line_stats = cls._filter_by_lines(raw_output)
+        metadata.update(line_stats)
+        
+        if report and len(report) > 100:
+            metadata["extraction_method"] = "line_filter"
+            metadata["extracted_length"] = len(report)
+            return report, metadata
+        
+        # 方法3: 如果上述方法都失败，返回清理后的原文
+        cleaned = cls._basic_cleanup(raw_output)
+        metadata["extraction_method"] = "basic_cleanup"
+        metadata["extracted_length"] = len(cleaned)
+        
+        return cleaned, metadata
+    
+    @classmethod
+    def _extract_markdown_report(cls, text: str) -> Optional[str]:
+        """
+        尝试提取完整的 Markdown 报告块
+        
+        查找以 # 开头的报告标题，一直到文末或下一个明显的分隔
+        """
+        lines = text.split('\n')
+        report_start = -1
+        report_lines = []
+        
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            
+            # 查找报告开始标志
+            if report_start < 0:
+                # 匹配 # 研发效能, # 分析报告, # 每日分析 等
+                if re.match(r'^#+\s*(研发效能|分析报告|效能分析|每日分析|日报|周报)', stripped):
+                    report_start = i
+                    report_lines.append(line)
+                # 或者匹配 --- 分隔符后的 # 标题
+                elif stripped == '---' and i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if re.match(r'^#+\s+', next_line):
+                        report_start = i
+                        report_lines.append(line)
+            else:
+                # 已经在报告中，检查是否结束
+                # 遇到工具调用或思考过程则停止
+                is_tool_line = any(re.search(p, stripped, re.IGNORECASE) for p in cls.TOOL_PATTERNS)
+                is_thinking = any(re.match(p, stripped) for p in cls.THINKING_PATTERNS[:10])
+                
+                if is_tool_line or (is_thinking and len(report_lines) > 5):
+                    break
+                
+                report_lines.append(line)
+        
+        if report_lines:
+            return '\n'.join(report_lines).strip()
+        
+        return None
+    
+    @classmethod
+    def _filter_by_lines(cls, text: str) -> Tuple[str, Dict[str, int]]:
+        """
+        按行过滤，移除思考过程和工具调用
+        """
+        lines = text.split('\n')
+        kept_lines = []
+        filtered_count = 0
+        in_code_block = False
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            # 跟踪代码块状态
+            if stripped.startswith('```'):
+                in_code_block = not in_code_block
+                # 保留 Markdown 代码块（但不是工具输出的代码块）
+                if not any(re.search(p, stripped) for p in cls.TOOL_PATTERNS):
+                    kept_lines.append(line)
+                continue
+            
+            # 在代码块内，检查是否是工具输出
+            if in_code_block:
+                # 跳过明显的工具输出
+                if any(re.search(p, stripped, re.IGNORECASE) for p in cls.TOOL_PATTERNS):
+                    filtered_count += 1
+                    continue
+                kept_lines.append(line)
+                continue
+            
+            # 空行保留（用于格式）
+            if not stripped:
+                kept_lines.append(line)
+                continue
+            
+            # 检查是否是思考过程
+            is_thinking = any(re.match(p, stripped) for p in cls.THINKING_PATTERNS)
+            
+            # 检查是否是工具相关
+            is_tool = any(re.search(p, stripped, re.IGNORECASE) for p in cls.TOOL_PATTERNS)
+            
+            # 检查是否是有效报告内容
+            is_report = any(re.search(p, stripped, re.IGNORECASE) for p in cls.REPORT_MARKERS)
+            
+            # 决定是否保留
+            if is_tool:
+                filtered_count += 1
+            elif is_thinking and not is_report:
+                # 如果是思考过程但包含报告关键词，还是保留
+                filtered_count += 1
+            else:
+                kept_lines.append(line)
+        
+        # 清理连续的空行
+        result = '\n'.join(kept_lines)
+        result = re.sub(r'\n{3,}', '\n\n', result)
+        
+        return result.strip(), {
+            "filtered_lines": filtered_count,
+            "kept_lines": len(kept_lines)
+        }
+    
+    @classmethod
+    def _basic_cleanup(cls, text: str) -> str:
+        """
+        基本清理：移除明显的噪音
+        """
+        # 移除 TextBlock, ToolUseBlock 等 SDK 输出格式
+        text = re.sub(r'TextBlock\(text=[\'"]', '', text)
+        text = re.sub(r'ToolUseBlock\([^)]+\)', '', text)
+        text = re.sub(r'ToolResultBlock\([^)]+\)', '', text)
+        text = re.sub(r'ContentBlock\([^)]+\)', '', text)
+        text = re.sub(r'[\'"],?\s*type=[\'"]text[\'"]', '', text)
+        text = re.sub(r'\)\s*$', '', text, flags=re.MULTILINE)
+        
+        # 清理连续空行
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        return text.strip()
 
 
 class BriefingService:
     """简报生成服务"""
 
     # =========================================================================
-    # 简报判断 Prompt - 核心中的核心
+    # 简报判断 Prompt - 核心中的核心（V2 优化版）
     # =========================================================================
     BRIEFING_DECISION_PROMPT = """
-你刚刚完成了数据分析任务。现在请判断是否需要向用户推送简报。
+你是一个研发效能分析专家。请根据以下分析结果，判断是否值得向用户推送简报。
 
 ## 信息流铁律
 
-在判断前，请牢记这三条铁律：
 1. **一天最多3条** - 不要用无价值信息打扰用户
 2. **宁可不发** - 如果不确定是否值得发，就不发
 3. **能接上对话** - 用户看完会想问"为什么"或"怎么办"
 
 ## 判断标准
 
-只有满足以下条件之一才推送：
-
 | 推送 | 场景示例 |
 |------|----------|
-| ✅ 推送 | 发现异常：Review积压超过阈值、指标突然恶化 |
-| ✅ 推送 | 重要趋势：返工率连续3周上升、效率下降超过20% |
-| ✅ 推送 | 可操作机会：发现明确的改进点、建议具体行动 |
-| ❌ 不推送 | 数据正常，没有异常 |
-| ❌ 不推送 | 变化在正常波动范围内（±10%） |
-| ❌ 不推送 | 信息用户已知或无法操作 |
-| ❌ 不推送 | 纯粹的"刷存在感"汇总 |
+| ✅ 推送 | 一次性通过率<50%，返工成本高 |
+| ✅ 推送 | 人均活跃分支>15个，工作过于分散 |
+| ✅ 推送 | 发现借单异常（1个Story对应>10个change_id） |
+| ✅ 推送 | 同分支多次提交异常（反复提交-放弃） |
+| ✅ 推送 | 效率趋势恶化超过20% |
+| ❌ 不推送 | 各项指标正常，无异常发现 |
+| ❌ 不推送 | 数据库连接失败，无有效数据 |
+| ❌ 不推送 | 纯粹的数字罗列，没有洞察 |
 
 ## 分析结果
 
@@ -63,48 +308,62 @@ class BriefingService:
 
 ## 输出要求
 
-请以JSON格式返回你的判断。
+请以JSON格式返回，**必须严格按照以下格式**：
 
-**如果值得推送**，返回：
+**如果值得推送**：
 ```json
 {{
   "should_push": true,
   "briefing": {{
-    "type": "alert|insight|summary|action",
-    "priority": "P0|P1|P2",
-    "title": "一句话标题（动词开头，≤30字，像新闻标题）",
-    "summary": "问题+影响+行动建议（≤100字）",
-    "impact": "对业务的具体影响（≤50字）",
+    "type": "insight",
+    "priority": "P1",
+    "title": "一次性通过率仅33.9%，团队返工成本较高",
+    "summary": "最近7天分析显示，代码一次性通过率仅33.9%，总返工次数达45126次。人均活跃分支25.9个，工作分散度较高。建议：1）加强代码自测，提高一次性通过率；2）减少分支切换，聚焦核心任务。",
+    "impact": "返工导致约30%的开发时间浪费",
     "actions": [
-      {{"label": "深入分析", "action": "start_conversation", "prompt": "请帮我分析..."}},
-      {{"label": "查看详情", "action": "view_report"}}
+      {{"label": "为什么会这样？", "action": "start_conversation", "prompt": "请详细分析返工率高的原因，哪些模块或人员返工最多？"}},
+      {{"label": "给我详细分析", "action": "start_conversation", "prompt": "请给我完整的时间效率损耗分析报告"}},
+      {{"label": "如何改进？", "action": "start_conversation", "prompt": "针对当前的效率问题，请给出具体的改进建议和优先级"}}
     ],
-    "importance_score": 0.0到1.0之间的数字
+    "importance_score": 0.85
   }}
 }}
 ```
 
-**如果不值得推送**，返回：
+**如果不值得推送**：
 ```json
 {{
   "should_push": false,
-  "reason": "简要说明为什么不推送"
+  "reason": "各项指标正常，无需推送"
 }}
 ```
 
-## 标题写作指南
+## 标题写作指南（非常重要！）
 
-好的标题：
-- "Review积压严重，5个PR等待超48小时" ✅
-- "返工率连续上升，已达18%" ✅
-- "platform模块效率下降30%，建议关注" ✅
+**好的标题**（说清核心发现，有数字支撑）：
+- "一次性通过率仅33.9%，团队返工成本较高" ✅
+- "人均活跃分支25.9个，工作过于分散" ✅
+- "发现412个疑似借单Story，需要关注" ✅
+- "系统开发部返工率下降15%，效率提升" ✅
 
-差的标题：
-- "本周研发效能周报" ❌（太模板化）
-- "代码审查数据分析结果" ❌（没有信息量）
-- "系统正常运行" ❌（不值得推送）
+**差的标题**（绝对不要这样写）：
+- "本周研发效能周报" ❌
+- "我将执行每日研发效能分析" ❌
+- "代码审查数据分析结果" ❌
+- "未知" ❌
 
-请直接返回JSON，不要添加其他说明。
+## Summary 写作指南（非常重要！）
+
+Summary 必须包含三要素：**发现 + 影响 + 建议**
+
+**好的 Summary 示例**：
+"最近7天分析显示，代码一次性通过率仅33.9%，总返工次数达45126次。人均活跃分支25.9个，工作分散度较高。建议：1）加强代码自测，提高一次性通过率；2）减少分支切换，聚焦核心任务。"
+
+**差的 Summary**（绝对不要这样写）：
+- "我将执行每日研发效能分析，按照流程获取数据并分析关键指标" ❌
+- "看来需要先了解数据库中实际存在的表结构" ❌
+
+请直接返回JSON，不要添加任何其他说明文字。
 """
 
     async def execute_and_generate_briefing(
@@ -147,14 +406,30 @@ class BriefingService:
             agent = agent_result.data[0]
 
             # 2. 执行 Agent 分析任务
-            analysis_result = await self._execute_agent_analysis(
+            raw_analysis_result = await self._execute_agent_analysis(
                 agent_name=agent['name'],
                 agent_role=agent['role'],
                 agent_description=agent.get('description', ''),
                 task_prompt=task_prompt
             )
 
-            logger.info(f"Analysis completed, length: {len(analysis_result)}")
+            logger.info(f"Raw analysis completed, length: {len(raw_analysis_result)}")
+
+            # 2.5 【关键步骤】从原始输出中提取分析报告
+            # Agent SDK 返回的内容包含思考过程、工具调用等噪音
+            # 这里提取出真正的分析报告
+            analysis_result, extraction_meta = AnalysisReportExtractor.extract(raw_analysis_result)
+            
+            logger.info(
+                f"Report extracted: method={extraction_meta.get('extraction_method')}, "
+                f"original={extraction_meta.get('original_length')}, "
+                f"extracted={extraction_meta.get('extracted_length')}"
+            )
+            
+            # 如果提取后的内容太短，可能提取失败
+            if len(analysis_result) < 50:
+                logger.warning(f"Extracted report too short ({len(analysis_result)} chars), using raw output")
+                analysis_result = raw_analysis_result[:4000]  # 限制长度
 
             # 3. 让 AI 判断是否需要生成简报
             min_importance = briefing_config.get('min_importance_score', 0.6)
@@ -170,7 +445,8 @@ class BriefingService:
                     "briefing_generated": False,
                     "briefing_count": 0,
                     "reason": briefing_decision.get('reason', 'Not important enough'),
-                    "analysis_result": analysis_result[:500]  # 保留部分分析结果用于调试
+                    "analysis_result": analysis_result[:500],  # 提取后的分析报告（用于调试）
+                    "extraction_meta": extraction_meta
                 }
 
             # 4. 检查今日简报配额 (使用 Supabase)
@@ -212,7 +488,9 @@ class BriefingService:
                     user_id=UUID(user['user_id']),
                     briefing_data=briefing_data,
                     context_data={
-                        'analysis_result': analysis_result,
+                        'analysis_result': analysis_result,  # 提取后的报告
+                        'raw_output_preview': raw_analysis_result[:1000] if len(raw_analysis_result) > 1000 else raw_analysis_result,  # 原始输出预览
+                        'extraction_meta': extraction_meta,
                         'task_prompt': task_prompt,
                         'generated_at': datetime.utcnow().isoformat()
                     }
@@ -417,15 +695,33 @@ class BriefingService:
         context_data: Dict[str, Any]
     ) -> UUID:
         """为用户创建简报 (使用 Supabase)"""
-        import uuid
+        import uuid as uuid_module
 
         # 获取重要性分数
         importance_score = briefing_data.get('importance_score', 0.5)
         if isinstance(importance_score, str):
             importance_score = float(importance_score)
 
+        # ✨ 生成 AI 封面图（如果启用）
+        cover_image_url = None
+        enable_cover = getattr(settings, 'ENABLE_AI_COVER_GENERATION', False)
+        
+        if enable_cover:
+            try:
+                cover_image_url = await cover_image_service.generate_cover_image(
+                    briefing_type=briefing_data.get('type', 'insight'),
+                    title=briefing_data.get('title', ''),
+                    summary=briefing_data.get('summary', ''),
+                    priority=briefing_data.get('priority', 'P2')
+                )
+                if cover_image_url:
+                    logger.info(f"Generated cover image: {cover_image_url[:50]}...")
+            except Exception as e:
+                logger.warning(f"Failed to generate cover image, using fallback: {e}")
+                # 降级到前端渐变背景
+
         briefing_record = {
-            'id': str(uuid.uuid4()),
+            'id': str(uuid_module.uuid4()),
             'agent_id': str(agent_id),
             'user_id': str(user_id),
             'briefing_type': briefing_data.get('type', 'insight'),
@@ -434,7 +730,10 @@ class BriefingService:
             'summary': briefing_data.get('summary', ''),
             'impact': briefing_data.get('impact'),
             'actions': briefing_data.get('actions', []),
-            'context_data': context_data,
+            'context_data': {
+                **context_data,
+                'cover_image_url': cover_image_url  # ✨ 封面图 URL
+            },
             'importance_score': importance_score,
             'status': 'new'
         }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -6,6 +7,22 @@ import '../controllers/briefing_controller.dart';
 import '../../../conversations/presentation/pages/conversation_page.dart';
 import '../../../agents/data/agent_repository.dart';
 import '../../data/briefing_repository.dart';
+import '../widgets/dynamic_briefing_renderer.dart';
+
+/// 报告章节数据类
+class ReportSection {
+  final String title;
+  final String icon;
+  final String content;
+  final int level;
+  
+  const ReportSection({
+    required this.title,
+    required this.icon,
+    required this.content,
+    this.level = 2,
+  });
+}
 
 /// 简报详情页（全屏）
 class BriefingDetailPage extends ConsumerStatefulWidget {
@@ -42,6 +59,313 @@ class _BriefingDetailPageState extends ConsumerState<BriefingDetailPage> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // ========================================
+  // 报告内容解析和展示
+  // ========================================
+  
+  /// 解析报告为结构化章节
+  List<ReportSection> _parseReportSections() {
+    final contextData = widget.briefing.contextData;
+    String rawContent = widget.briefing.summary;
+    
+    // 尝试获取完整报告
+    if (contextData != null) {
+      final analysisResult = contextData['analysis_result'];
+      if (analysisResult is Map<String, dynamic>) {
+        final response = analysisResult['response'] as String?;
+        if (response != null && response.isNotEmpty) {
+          rawContent = response;
+        }
+      }
+    }
+    
+    // 清理思考过程（开头的探索性内容）
+    rawContent = _cleanThinkingProcess(rawContent);
+    
+    // 解析 Markdown 章节
+    return _parseMarkdownSections(rawContent);
+  }
+  
+  /// 清理 Agent 思考过程
+  String _cleanThinkingProcess(String content) {
+    final lines = content.split('\n');
+    final cleanedLines = <String>[];
+    bool foundRealContent = false;
+    
+    for (final line in lines) {
+      final trimmed = line.trim();
+      
+      // 跳过开头的思考过程
+      if (!foundRealContent) {
+        // 找到第一个 ## 标题开始算正式内容
+        if (trimmed.startsWith('## ') || trimmed.startsWith('# 研发效能')) {
+          foundRealContent = true;
+        } else if (_isThinkingLine(trimmed)) {
+          continue; // 跳过思考行
+        }
+      }
+      
+      if (foundRealContent || trimmed.startsWith('#')) {
+        cleanedLines.add(line);
+      }
+    }
+    
+    return cleanedLines.join('\n').trim();
+  }
+  
+  bool _isThinkingLine(String line) {
+    final patterns = [
+      '我来', '让我', '首先', '接下来', '现在', '好的', '看起来',
+      '需要先', '我需要', '执行', '脚本', '位置', '数据显示', '尝试'
+    ];
+    for (final p in patterns) {
+      if (line.startsWith(p)) return true;
+    }
+    return false;
+  }
+  
+  /// 解析 Markdown 为章节列表
+  List<ReportSection> _parseMarkdownSections(String content) {
+    final sections = <ReportSection>[];
+    final lines = content.split('\n');
+    
+    String? currentTitle;
+    String? currentIcon;
+    final currentContent = StringBuffer();
+    int sectionLevel = 0;
+    
+    for (final line in lines) {
+      final trimmed = line.trim();
+      
+      // 检测 H2 标题（主章节）
+      if (trimmed.startsWith('## ')) {
+        // 保存上一个章节
+        if (currentTitle != null) {
+          sections.add(ReportSection(
+            title: currentTitle,
+            icon: currentIcon ?? '📌',
+            content: currentContent.toString().trim(),
+            level: sectionLevel,
+          ));
+        }
+        
+        // 开始新章节
+        final titleText = trimmed.substring(3).trim();
+        currentIcon = _extractEmoji(titleText);
+        currentTitle = _removeEmoji(titleText);
+        currentContent.clear();
+        sectionLevel = 2;
+      }
+      // H3 标题作为子内容
+      else if (trimmed.startsWith('### ')) {
+        currentContent.writeln(line);
+      }
+      // 普通内容
+      else {
+        currentContent.writeln(line);
+      }
+    }
+    
+    // 保存最后一个章节
+    if (currentTitle != null) {
+      sections.add(ReportSection(
+        title: currentTitle,
+        icon: currentIcon ?? '📌',
+        content: currentContent.toString().trim(),
+        level: sectionLevel,
+      ));
+    }
+    
+    return sections;
+  }
+  
+  String? _extractEmoji(String text) {
+    final emojiRegex = RegExp(r'^[\p{Emoji}]+', unicode: true);
+    final match = emojiRegex.firstMatch(text);
+    return match?.group(0);
+  }
+  
+  String _removeEmoji(String text) {
+    return text.replaceFirst(RegExp(r'^[\p{Emoji}]+\s*', unicode: true), '').trim();
+  }
+  
+  /// 判断章节是否默认展开
+  bool _isDefaultExpanded(String title) {
+    final expandedKeywords = ['核心发现', '关键发现', '关键指标', '建议行动', '建议'];
+    return expandedKeywords.any((k) => title.contains(k));
+  }
+  
+  /// 构建报告内容区域（优先使用 A2UI Schema）
+  Widget _buildReportSections(BuildContext context, ThemeData theme) {
+    final contextData = widget.briefing.contextData;
+
+    // 1. 优先检查是否有 ui_schema，使用 A2UI 渲染
+    if (contextData != null) {
+      final uiSchema = contextData['ui_schema'];
+      if (uiSchema is Map<String, dynamic>) {
+        final content = uiSchema['content'];
+        if (content is Map<String, dynamic>) {
+          final sections = content['sections'];
+          if (sections is List && sections.isNotEmpty) {
+            return _buildA2UIContent(context, theme, sections, contextData);
+          }
+        }
+      }
+    }
+
+    // 2. 回退到 Markdown 分章节展示
+    final sections = _parseReportSections();
+
+    // 如果没有解析到章节，显示原始 summary
+    if (sections.isEmpty) {
+      return MarkdownBody(
+        data: widget.briefing.summary,
+        selectable: true,
+        styleSheet: _getMarkdownStyle(theme),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 章节列表
+        for (int i = 0; i < sections.length; i++) ...[
+          _buildSectionCard(context, theme, sections[i]),
+          if (i < sections.length - 1) const SizedBox(height: 16),
+        ],
+
+        // 查看完整报告按钮
+        const SizedBox(height: 24),
+        Center(
+          child: TextButton.icon(
+            icon: Icon(Icons.article_outlined, size: 18, color: Colors.grey.shade600),
+            label: Text(
+              '查看原始报告',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            onPressed: () => _showFullReport(context),
+          ),
+        ),
+
+        // 底部留白
+        const SizedBox(height: 120),
+      ],
+    );
+  }
+
+  /// 构建 A2UI 内容（指标卡片、图表、表格等）
+  Widget _buildA2UIContent(
+    BuildContext context,
+    ThemeData theme,
+    List<dynamic> sections,
+    Map<String, dynamic> contextData,
+  ) {
+    final renderer = DynamicBriefingRenderer();
+    final uiSchemas = sections
+        .whereType<Map<String, dynamic>>()
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // A2UI 动态组件渲染
+        renderer.renderComponents(uiSchemas),
+
+        const SizedBox(height: 24),
+
+        // 详细分析（如果有 full_report）
+        _buildDetailedAnalysis(context, theme, contextData),
+
+        // 查看完整报告按钮
+        const SizedBox(height: 24),
+        Center(
+          child: TextButton.icon(
+            icon: Icon(Icons.article_outlined, size: 18, color: Colors.grey.shade600),
+            label: Text(
+              '查看原始报告',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            onPressed: () => _showFullReport(context),
+          ),
+        ),
+
+        // 底部留白
+        const SizedBox(height: 120),
+      ],
+    );
+  }
+
+  /// 构建详细分析区域（从 findings 生成）
+  Widget _buildDetailedAnalysis(
+    BuildContext context,
+    ThemeData theme,
+    Map<String, dynamic> contextData,
+  ) {
+    // 尝试获取 findings
+    final findings = contextData['findings'] as List<dynamic>?;
+    if (findings == null || findings.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return _ExpandableSection(
+      title: '详细发现',
+      icon: '🔍',
+      content: findings.map((f) {
+        if (f is Map<String, dynamic>) {
+          final title = f['title'] ?? f['finding'] ?? '';
+          final detail = f['detail'] ?? '';
+          final severity = f['severity'] ?? 'medium';
+          final severityIcon = severity == 'high' ? '🔴' : (severity == 'medium' ? '🟡' : '🟢');
+          return '- $severityIcon **$title**\n  $detail';
+        }
+        return '- $f';
+      }).join('\n\n'),
+      initiallyExpanded: true,
+      theme: theme,
+    );
+  }
+  
+  /// 构建单个章节卡片
+  Widget _buildSectionCard(BuildContext context, ThemeData theme, ReportSection section) {
+    final isExpanded = _isDefaultExpanded(section.title);
+    
+    return _ExpandableSection(
+      title: section.title,
+      icon: section.icon,
+      content: section.content,
+      initiallyExpanded: isExpanded,
+      theme: theme,
+    );
+  }
+  
+  /// 获取 Markdown 样式
+  MarkdownStyleSheet _getMarkdownStyle(ThemeData theme) {
+    return MarkdownStyleSheet(
+      p: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
+      h1: theme.textTheme.headlineSmall,
+      h2: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      h3: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      listBullet: theme.textTheme.bodyLarge,
+      tableHead: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+      tableBody: theme.textTheme.bodyMedium,
+      tableBorder: TableBorder.all(color: Colors.grey.shade300, width: 1),
+      tableColumnWidth: const IntrinsicColumnWidth(),
+      tableCellsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      code: theme.textTheme.bodyMedium?.copyWith(
+        fontFamily: 'monospace',
+        backgroundColor: Colors.grey.shade100,
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(left: BorderSide(color: theme.primaryColor, width: 4)),
+      ),
+      blockquotePadding: const EdgeInsets.only(left: 16),
+    );
   }
 
   @override
@@ -90,39 +414,8 @@ class _BriefingDetailPageState extends ConsumerState<BriefingDetailPage> {
                         const SizedBox(height: 24),
                       ],
 
-                      // 完整摘要（Markdown渲染）
-                      MarkdownBody(
-                        data: widget.briefing.summary,
-                        selectable: true,
-                        styleSheet: MarkdownStyleSheet(
-                          p: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
-                          h1: theme.textTheme.headlineSmall,
-                          h2: theme.textTheme.titleLarge,
-                          h3: theme.textTheme.titleMedium,
-                          listBullet: theme.textTheme.bodyLarge,
-                          code: theme.textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'monospace',
-                            backgroundColor: Colors.grey.shade200,
-                          ),
-                          codeblockDecoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-
-                      // 查看完整报告按钮
-                      if (widget.briefing.reportArtifactId != null) ...[
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.article_outlined),
-                            label: const Text('查看完整报告'),
-                            onPressed: () => _showFullReport(context),
-                          ),
-                        ),
-                      ],
+                      // 分层展示报告内容
+                      _buildReportSections(context, theme),
 
                       // 底部留白（为输入框留空间）
                       const SizedBox(height: 140),
@@ -534,48 +827,84 @@ class _BriefingDetailPageState extends ConsumerState<BriefingDetailPage> {
 
   /// 显示完整报告
   Future<void> _showFullReport(BuildContext context) async {
-    final theme = Theme.of(context);
+    // 按优先级获取完整报告内容
+    String content = widget.briefing.summary;
+    String? reportSource;
+    final contextData = widget.briefing.contextData;
 
-    // 显示加载对话框
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      final repository = BriefingRepository();
-      final report = await repository.getBriefingReport(widget.briefing.id);
-
-      if (!mounted) return;
-      Navigator.of(context).pop(); // 关闭加载对话框
-
-      if (report == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('报告内容不可用')),
-        );
-        return;
+    if (contextData != null) {
+      // 优先级1: structured_data.full_report（技能返回的完整报告）
+      final structuredData = contextData['structured_data'];
+      if (structuredData is Map<String, dynamic>) {
+        final fullReport = structuredData['full_report'] as String?;
+        if (fullReport != null && fullReport.isNotEmpty) {
+          content = fullReport;
+          reportSource = '技能生成报告';
+        }
       }
 
-      // 显示全屏报告页面
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => _FullReportPage(
-            title: report['title'] ?? '分析报告',
-            content: report['content'] ?? '',
-          ),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop(); // 关闭加载对话框
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('获取报告失败: $e')),
-        );
+      // 优先级2: key_data.full_report
+      if (reportSource == null) {
+        final keyData = contextData['key_data'];
+        if (keyData is Map<String, dynamic>) {
+          final fullReport = keyData['full_report'] as String?;
+          if (fullReport != null && fullReport.isNotEmpty) {
+            content = fullReport;
+            reportSource = '分析报告';
+          }
+        }
+      }
+
+      // 优先级3: analysis_result.response（AI原始响应）
+      if (reportSource == null) {
+        final analysisResult = contextData['analysis_result'];
+        if (analysisResult is Map<String, dynamic>) {
+          final response = analysisResult['response'] as String?;
+          if (response != null && response.isNotEmpty) {
+            content = response;
+            reportSource = 'AI分析响应';
+          }
+        }
       }
     }
+
+    // 如果有 reportArtifactId，尝试从服务器获取（优先级最高）
+    if (widget.briefing.reportArtifactId != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        final repository = BriefingRepository();
+        final report = await repository.getBriefingReport(widget.briefing.id);
+
+        if (!mounted) return;
+        Navigator.of(context).pop();
+
+        if (report != null && report['content'] != null) {
+          content = report['content'];
+          reportSource = '存档报告';
+        }
+      } catch (e) {
+        if (mounted) Navigator.of(context).pop();
+      }
+    }
+
+    if (!mounted) return;
+
+    // 显示全屏报告页面
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _FullReportPage(
+          title: widget.briefing.title,
+          content: content,
+          reportSource: reportSource,
+          createdAt: widget.briefing.createdAt,
+        ),
+      ),
+    );
   }
 
   // Helper methods
@@ -676,10 +1005,20 @@ class _FullReportPage extends StatelessWidget {
   const _FullReportPage({
     required this.title,
     required this.content,
+    this.reportSource,
+    this.createdAt,
   });
 
   final String title;
   final String content;
+  final String? reportSource;
+  final DateTime? createdAt;
+
+  String _formatDateTime(DateTime? time) {
+    if (time == null) return '';
+    return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} '
+           '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -687,7 +1026,22 @@ class _FullReportPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium),
+            if (reportSource != null || createdAt != null)
+              Text(
+                [
+                  if (reportSource != null) reportSource!,
+                  if (createdAt != null) _formatDateTime(createdAt),
+                ].join(' · '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
@@ -749,6 +1103,146 @@ class _FullReportPage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 可展开/收起的章节组件
+class _ExpandableSection extends StatefulWidget {
+  final String title;
+  final String icon;
+  final String content;
+  final bool initiallyExpanded;
+  final ThemeData theme;
+
+  const _ExpandableSection({
+    required this.title,
+    required this.icon,
+    required this.content,
+    required this.initiallyExpanded,
+    required this.theme,
+  });
+
+  @override
+  State<_ExpandableSection> createState() => _ExpandableSectionState();
+}
+
+class _ExpandableSectionState extends State<_ExpandableSection> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.initiallyExpanded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: widget.theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题栏（可点击展开/收起）
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Text(
+                    widget.icon,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: widget.theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // 内容区域（展开时显示）
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(height: 1, color: Colors.grey.shade200),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: MarkdownBody(
+                    data: widget.content,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      p: widget.theme.textTheme.bodyMedium?.copyWith(height: 1.6),
+                      h3: widget.theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: widget.theme.primaryColor,
+                      ),
+                      listBullet: widget.theme.textTheme.bodyMedium,
+                      tableHead: widget.theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      tableBody: widget.theme.textTheme.bodySmall,
+                      tableBorder: TableBorder.all(
+                        color: Colors.grey.shade300,
+                        width: 1,
+                      ),
+                      tableColumnWidth: const IntrinsicColumnWidth(),
+                      tableCellsPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      code: widget.theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            crossFadeState: _isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
       ),
     );
   }

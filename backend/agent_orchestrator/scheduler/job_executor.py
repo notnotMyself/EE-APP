@@ -265,18 +265,29 @@ class JobExecutor:
         """
         创建报告artifact，返回artifact_id
 
-        优先检查Agent工作目录下的reports/目录是否有新生成的md文件，
-        如果没有，则使用analysis_result.response作为报告内容。
+        优先级：
+        1. structured_data.full_report（技能返回的完整报告）
+        2. Agent工作目录下的reports/目录中的最新md文件
+        3. analysis_result.response（AI响应文本）
         """
         if not self.supabase:
             logger.warning("Supabase not configured, artifact not created")
             return None
 
-        report_content = analysis_result.get("response", "")
+        report_content = ""
         report_title = "分析报告"
 
-        # 尝试从Agent工作目录读取最新的报告文件
-        if agent_role:
+        # 优先级1: 使用 structured_data 中的 full_report
+        structured_data = analysis_result.get("structured_data", {})
+        if structured_data and structured_data.get("full_report"):
+            report_content = structured_data["full_report"]
+            # 从 structured_data 中获取标题
+            if structured_data.get("title"):
+                report_title = structured_data["title"]
+            logger.info("Using full_report from structured_data")
+
+        # 优先级2: 尝试从Agent工作目录读取最新的报告文件
+        if not report_content and agent_role:
             reports_dir = self._get_agent_reports_dir(agent_role)
             if reports_dir and reports_dir.exists():
                 latest_report = self._find_latest_report(reports_dir)
@@ -287,6 +298,11 @@ class JobExecutor:
                         logger.info(f"Using report file: {latest_report}")
                     except Exception as e:
                         logger.warning(f"Failed to read report file: {e}")
+
+        # 优先级3: 使用 response 作为 fallback
+        if not report_content:
+            report_content = analysis_result.get("response", "")
+            logger.info("Using response as fallback for artifact content")
 
         # 从响应中提取标题
         if report_content:
@@ -357,10 +373,10 @@ class JobExecutor:
         # 获取订阅该Agent的所有用户
         try:
             result = (
-                self.supabase.table("user_agents")
+                self.supabase.table("user_agent_subscriptions")
                 .select("user_id")
                 .eq("agent_id", agent_id)
-                .eq("is_subscribed", True)
+                .eq("is_active", True)
                 .execute()
             )
             return [row["user_id"] for row in result.data]
