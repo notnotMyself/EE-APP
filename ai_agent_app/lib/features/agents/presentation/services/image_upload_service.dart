@@ -1,15 +1,18 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
+import 'package:image_picker/image_picker.dart';
 
 import '../widgets/expanded_chat_input.dart';
 
 /// 图片上传服务
 ///
 /// 负责将本地附件上传到 Supabase Storage
+/// 支持 Web 和移动端平台
 class ImageUploadService {
   final _uuid = const Uuid();
   static const String _bucketName = 'attachments';
@@ -25,10 +28,21 @@ class ImageUploadService {
     }
 
     try {
-      final file = File(attachment.localPath!);
-      if (!await file.exists()) {
-        debugPrint('文件不存在: ${attachment.localPath}');
-        return attachment.copyWith(status: AttachmentStatus.error);
+      Uint8List fileBytes;
+      
+      // Web 平台和移动端使用不同的方式读取文件
+      if (kIsWeb) {
+        // Web 平台：使用 XFile 读取字节
+        final xFile = XFile(attachment.localPath!);
+        fileBytes = await xFile.readAsBytes();
+      } else {
+        // 移动端：使用 File
+        final file = File(attachment.localPath!);
+        if (!await file.exists()) {
+          debugPrint('文件不存在: ${attachment.localPath}');
+          return attachment.copyWith(status: AttachmentStatus.error);
+        }
+        fileBytes = await file.readAsBytes();
       }
 
       // 生成唯一文件名
@@ -38,10 +52,12 @@ class ImageUploadService {
 
       final supabase = Supabase.instance.client;
 
-      // 上传到 Supabase Storage
+      // 上传到 Supabase Storage（使用字节数据）
       await supabase.storage
           .from(_bucketName)
-          .upload(storagePath, file);
+          .uploadBinary(storagePath, fileBytes, fileOptions: FileOptions(
+            contentType: getMimeType(attachment.localPath),
+          ));
 
       // 获取公开 URL
       final publicUrl = supabase.storage

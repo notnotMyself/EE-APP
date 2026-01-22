@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../../domain/models/agent.dart';
+import '../../../conversations/domain/models/conversation.dart';
 import '../../../conversations/presentation/controllers/conversation_controller.dart';
 import '../../../conversations/presentation/state/conversation_notifier.dart';
 import '../../../conversations/presentation/state/conversation_state.dart';
@@ -46,6 +47,11 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 是否正在初始化
   bool _isInitializing = false;
+
+  /// 待发送的消息（用于乐观UI）
+  String? _pendingMessageContent;
+  List<ChatAttachment>? _pendingAttachments;
+  bool _isSendingInitialMessage = false;
 
   /// 消息列表滚动控制器
   final ScrollController _scrollController = ScrollController();
@@ -136,21 +142,41 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       return;
     }
 
+    // 标记已开始对话（立即切换UI）
+    if (!_hasStartedConversation) {
+      setState(() {
+        _hasStartedConversation = true;
+        _isSendingInitialMessage = true;
+        _pendingMessageContent = message;
+        _pendingAttachments = List.from(attachments);
+        _attachments.clear(); // 立即清空输入框附件
+      });
+    }
+
     // 确保对话已创建
     await _ensureConversation();
-    if (_conversationId == null) return;
-
-    // 标记已开始对话
-    if (!_hasStartedConversation) {
-      setState(() => _hasStartedConversation = true);
+    if (_conversationId == null) {
+      // 创建失败，回滚状态
+      if (mounted) {
+        setState(() {
+          _hasStartedConversation = false;
+          _isSendingInitialMessage = false;
+          _pendingMessageContent = null;
+          _pendingAttachments = null;
+        });
+      }
+      return;
     }
 
     try {
       // 上传附件
       List<Map<String, dynamic>>? uploadedAttachments;
-      if (attachments.isNotEmpty) {
+      // 使用保存的 pending attachments，因为参数 attachments 可能被清空或不准确
+      final attachmentsToSend = _pendingAttachments ?? attachments;
+      
+      if (attachmentsToSend.isNotEmpty) {
         final uploadService = ref.read(imageUploadServiceProvider);
-        final uploaded = await uploadService.uploadAttachments(attachments);
+        final uploaded = await uploadService.uploadAttachments(attachmentsToSend);
         uploadedAttachments = uploaded
             .where((a) => a.isUploaded)
             .map((a) => a.toJson())
@@ -162,8 +188,14 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           .read(conversationNotifierProvider(_conversationId!).notifier)
           .sendMessageWithAttachments(message, uploadedAttachments);
 
-      // 清空附件
-      setState(() => _attachments.clear());
+      // 发送成功，切换到正式列表视图
+      if (mounted) {
+        setState(() {
+          _isSendingInitialMessage = false;
+          _pendingMessageContent = null;
+          _pendingAttachments = null;
+        });
+      }
 
       // 滚动到底部
       _scrollToBottom();
@@ -172,6 +204,11 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('发送消息失败: $e')),
         );
+        // 保持在对话界面，但可能需要显示重试按钮？
+        // 暂时不回滚 _hasStartedConversation，让用户停留在对话界面
+        setState(() {
+           _isSendingInitialMessage = false; // 允许切换到主视图（虽然可能没有消息）
+        });
       }
     }
   }
@@ -193,14 +230,26 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       message = '[MODE:${action.modeId}] $message';
     }
 
+    // 标记已开始对话
+    if (!_hasStartedConversation) {
+      setState(() {
+        _hasStartedConversation = true;
+        _isSendingInitialMessage = true;
+        _pendingMessageContent = message;
+        _pendingAttachments = List.from(_attachments);
+        _attachments.clear();
+      });
+    }
+
     if (message != null && message.isNotEmpty) {
-      _sendMessageWithAttachments(message, List.from(_attachments));
+      _sendMessageWithAttachments(message, _pendingAttachments ?? []);
     }
   }
 
   /// 处理输入框提交
   void _onInputSubmit(String message) {
     if (message.isNotEmpty || _attachments.isNotEmpty) {
+      // 这里的逻辑已经在 _sendMessageWithAttachments 中处理了乐观更新
       _sendMessageWithAttachments(message, List.from(_attachments));
     }
   }
@@ -453,6 +502,11 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 构建对话视图（开始对话后）
   Widget _buildConversationView() {
+    // 如果正在发送初始消息或者对话ID为空（但已开始），显示乐观UI
+    if (_isSendingInitialMessage || (_conversationId == null && _hasStartedConversation)) {
+      return _buildPendingMessageList();
+    }
+
     if (_conversationId == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -460,6 +514,90 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     return OptimizedMessageList(
       conversationId: _conversationId!,
       scrollController: _scrollController,
+    );
+  }
+
+  /// 构建待发送消息列表（乐观UI）
+  /// 
+  /// 立即显示用户消息，同时在后台处理创建对话和上传附件
+  Widget _buildPendingMessageList() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            reverse: true, // 保持与 OptimizedMessageList 一致
+            children: [
+              // AI正在思考的指示器
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildThinkingIndicator(),
+                ),
+              ),
+              // 显示用户消息（带图片）
+              if (_pendingMessageContent != null || (_pendingAttachments != null && _pendingAttachments!.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: MessageBubbleContent(
+                    message: Message(
+                      id: 'pending',
+                      conversationId: 'pending',
+                      role: 'user',
+                      content: _pendingMessageContent ?? '',
+                      createdAt: DateTime.now(),
+                      attachments: _pendingAttachments?.map((a) => {
+                        'url': a.displayUrl ?? a.localPath ?? '', // 优先使用displayUrl
+                        'type': a.mimeType ?? 'image',
+                        'filename': a.filename,
+                      }).toList(),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建AI思考中的指示器
+  Widget _buildThinkingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation(const Color(0xFF2C69FF)),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            _isInitializing ? '正在连接...' : '正在思考...',
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

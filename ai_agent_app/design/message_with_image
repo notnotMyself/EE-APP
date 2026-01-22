@@ -1,0 +1,80 @@
+Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    clipBehavior: Clip.antiAlias,
+    decoration: ShapeDecoration(
+        color: const Color(0xFF2C69FF),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+        ),
+    ),
+    child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: 10,
+        children: [
+            SizedBox(
+                width: 296,
+                child: Text(
+                    '点按手写笔机身的按键，出现的轮盘方案选择对比',
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontFamily: 'OPPO Sans 4.0',
+                        fontWeight: FontWeight.w400,
+                        height: 1.40,
+                    ),
+                ),
+            ),
+            Container(
+                width: double.infinity,
+                child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    spacing: 3,
+                    children: [
+                        Container(
+                            width: 43,
+                            height: 43,
+                            decoration: ShapeDecoration(
+                                color: Colors.black.withValues(alpha: 0.04) /* 颜色-Color-填充色-Container-couiColorContainer4 */,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            ),
+                        ),
+                        Container(
+                            width: 40,
+                            height: 33,
+                            decoration: BoxDecoration(
+                                image: DecorationImage(
+                                    image: NetworkImage("https://placehold.co/40x33"),
+                                    fit: BoxFit.fill,
+                                ),
+                            ),
+                        ),
+                        Container(
+                            width: 43,
+                            height: 43,
+                            decoration: ShapeDecoration(
+                                color: Colors.black.withValues(alpha: 0.04) /* 颜色-Color-填充色-Container-couiColorContainer4 */,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            ),
+                        ),
+                        Container(
+                            width: 40.13,
+                            height: 30.22,
+                            decoration: BoxDecoration(
+                                image: DecorationImage(
+                                    image: NetworkImage("https://placehold.co/40x30"),
+                                    fit: BoxFit.fill,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
+)

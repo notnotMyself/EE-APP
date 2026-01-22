@@ -321,6 +321,7 @@ mixin _$Message {
   String get conversationId => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
   String get content => throw _privateConstructorUsedError;
+  List<Map<String, dynamic>>? get attachments => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
 
@@ -343,6 +344,7 @@ abstract class $MessageCopyWith<$Res> {
       @JsonKey(name: 'conversation_id') String conversationId,
       String role,
       String content,
+      List<Map<String, dynamic>>? attachments,
       @JsonKey(name: 'created_at') DateTime createdAt});
 }
 
@@ -365,6 +367,7 @@ class _$MessageCopyWithImpl<$Res, $Val extends Message>
     Object? conversationId = null,
     Object? role = null,
     Object? content = null,
+    Object? attachments = freezed,
     Object? createdAt = null,
   }) {
     return _then(_value.copyWith(
@@ -384,6 +387,10 @@ class _$MessageCopyWithImpl<$Res, $Val extends Message>
           ? _value.content
           : content // ignore: cast_nullable_to_non_nullable
               as String,
+      attachments: freezed == attachments
+          ? _value.attachments
+          : attachments // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -404,6 +411,7 @@ abstract class _$$MessageImplCopyWith<$Res> implements $MessageCopyWith<$Res> {
       @JsonKey(name: 'conversation_id') String conversationId,
       String role,
       String content,
+      List<Map<String, dynamic>>? attachments,
       @JsonKey(name: 'created_at') DateTime createdAt});
 }
 
@@ -424,6 +432,7 @@ class __$$MessageImplCopyWithImpl<$Res>
     Object? conversationId = null,
     Object? role = null,
     Object? content = null,
+    Object? attachments = freezed,
     Object? createdAt = null,
   }) {
     return _then(_$MessageImpl(
@@ -443,6 +452,10 @@ class __$$MessageImplCopyWithImpl<$Res>
           ? _value.content
           : content // ignore: cast_nullable_to_non_nullable
               as String,
+      attachments: freezed == attachments
+          ? _value._attachments
+          : attachments // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>?,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -459,7 +472,9 @@ class _$MessageImpl implements _Message {
       @JsonKey(name: 'conversation_id') required this.conversationId,
       required this.role,
       required this.content,
-      @JsonKey(name: 'created_at') required this.createdAt});
+      final List<Map<String, dynamic>>? attachments,
+      @JsonKey(name: 'created_at') required this.createdAt})
+      : _attachments = attachments;
 
   factory _$MessageImpl.fromJson(Map<String, dynamic> json) =>
       _$$MessageImplFromJson(json);
@@ -473,13 +488,23 @@ class _$MessageImpl implements _Message {
   final String role;
   @override
   final String content;
+  final List<Map<String, dynamic>>? _attachments;
+  @override
+  List<Map<String, dynamic>>? get attachments {
+    final value = _attachments;
+    if (value == null) return null;
+    if (_attachments is EqualUnmodifiableListView) return _attachments;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
   @override
   String toString() {
-    return 'Message(id: $id, conversationId: $conversationId, role: $role, content: $content, createdAt: $createdAt)';
+    return 'Message(id: $id, conversationId: $conversationId, role: $role, content: $content, attachments: $attachments, createdAt: $createdAt)';
   }
 
   @override
@@ -492,14 +517,16 @@ class _$MessageImpl implements _Message {
                 other.conversationId == conversationId) &&
             (identical(other.role, role) || other.role == role) &&
             (identical(other.content, content) || other.content == content) &&
+            const DeepCollectionEquality()
+                .equals(other._attachments, _attachments) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, conversationId, role, content, createdAt);
+  int get hashCode => Object.hash(runtimeType, id, conversationId, role,
+      content, const DeepCollectionEquality().hash(_attachments), createdAt);
 
   /// Create a copy of Message
   /// with the given fields replaced by the non-null parameter values.
@@ -523,6 +550,7 @@ abstract class _Message implements Message {
       @JsonKey(name: 'conversation_id') required final String conversationId,
       required final String role,
       required final String content,
+      final List<Map<String, dynamic>>? attachments,
       @JsonKey(name: 'created_at')
       required final DateTime createdAt}) = _$MessageImpl;
 
@@ -537,6 +565,8 @@ abstract class _Message implements Message {
   String get role;
   @override
   String get content;
+  @override
+  List<Map<String, dynamic>>? get attachments;
   @override
   @JsonKey(name: 'created_at')
   DateTime get createdAt;

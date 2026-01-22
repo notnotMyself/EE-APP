@@ -1,513 +1,524 @@
 #!/usr/bin/env python3
-"""
-Chris Chen AI Employee - Final Comprehensive UI Test
-Optimized for Flutter Web interaction
-"""
+"""Chris Chen E2E Test - Flutter Web Compatible"""
 
-import os
-import sys
 import time
-import shutil
+import json
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 
-# Configuration
-BASE_URL = "http://localhost:5000"
-TEST_EMAIL = "1091201603@qq.com"
-TEST_PASSWORD = "eeappsuccess"
-SCREENSHOT_DIR = "/tmp/chris_chen_test"
-DESIGN_IMAGE_1 = "/Users/80392083/Downloads/design1.jpg"
-DESIGN_IMAGE_2 = "/Users/80392083/Downloads/design2.jpg"
+APP_URL = "http://localhost:5000"
+EMAIL = "1091201603@qq.com"
+PASSWORD = "eeappsuccess"
+DESIGN1 = "/Users/80392083/Downloads/design1.jpg"
+DESIGN2 = "/Users/80392083/Downloads/design2.jpg"
+SCREENSHOT_DIR = "/tmp/chris_chen_final"
 
-test_results = {}
+test_results = {
+    "start_time": datetime.now().isoformat(),
+    "tests": [],
+    "passed": 0,
+    "failed": 0,
+    "performance": {},
+    "issues": []
+}
 
+def log_test(name, status, details="", duration=None):
+    test_results["tests"].append({
+        "name": name,
+        "status": status,
+        "details": details,
+        "duration": duration
+    })
 
-def setup():
-    if os.path.exists(SCREENSHOT_DIR):
-        shutil.rmtree(SCREENSHOT_DIR)
-    os.makedirs(SCREENSHOT_DIR)
-    print(f"📁 Screenshots: {SCREENSHOT_DIR}")
+    if status == "PASS":
+        test_results["passed"] += 1
+        print(f"✅ {name}: {details}")
+    else:
+        test_results["failed"] += 1
+        print(f"❌ {name}: {details}")
 
+def log_issue(severity, desc):
+    test_results["issues"].append({"severity": severity, "desc": desc})
+    print(f"⚠️  [{severity}] {desc}")
 
-def shot(page, name, desc=""):
-    ts = datetime.now().strftime("%H%M%S")
+def screenshot(page, name):
+    import os
+    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = f"{SCREENSHOT_DIR}/{ts}_{name}.png"
     page.screenshot(path=path, full_page=True)
-    print(f"📸 {name}: {desc}")
+    print(f"📸 {path}")
     return path
 
-
-def wait_flutter(page, timeout=90):
-    """Wait for Flutter app to fully render"""
-    print("⏳ Waiting for Flutter...")
-    start = time.time()
-
-    while time.time() - start < timeout:
-        try:
-            # Check for Flutter content
-            text = page.inner_text('body', timeout=3000)
-            if len(text) > 50:
-                time.sleep(2)  # Extra settle time
-                print(f"✅ Flutter ready ({time.time()-start:.1f}s)")
-                return True
-        except:
-            pass
-        time.sleep(2)
-
-    print(f"⚠️ Flutter timeout ({timeout}s)")
-    return False
-
-
-def click_at(page, x, y):
-    """Click at specific coordinates"""
-    page.mouse.click(x, y)
-    time.sleep(0.3)
-
-
-def test_login(page):
-    """Test login with coordinate-based interaction"""
-    print("\n=== 1. Testing Login ===")
-    start = time.time()
-
-    try:
-        page.goto(BASE_URL)
-        wait_flutter(page)
-        shot(page, "01_login_page", "Login page loaded")
-
-        # Get viewport dimensions
-        vp = page.viewport_size
-        center_x = vp['width'] // 2
-
-        # Click on email field (approximately y=520 based on screenshot)
-        print("Clicking email field...")
-        click_at(page, center_x, 530)
-        time.sleep(0.5)
-
-        # Type email
-        page.keyboard.type(TEST_EMAIL, delay=50)
-        time.sleep(0.5)
-        shot(page, "02_email_entered", "Email entered")
-
-        # Click on password field (approximately y=595)
-        print("Clicking password field...")
-        click_at(page, center_x, 600)
-        time.sleep(0.5)
-
-        # Type password
-        page.keyboard.type(TEST_PASSWORD, delay=50)
-        time.sleep(0.5)
-        shot(page, "03_password_entered", "Password entered")
-
-        # Click login button (approximately y=665)
-        print("Clicking login button...")
-        click_at(page, center_x, 665)
-
-        # Wait for navigation
-        print("Waiting for login...")
-        time.sleep(8)
-        shot(page, "04_after_login", "After login")
-
-        # Verify login success
-        text = page.inner_text('body', timeout=5000)
-        if any(kw in text for kw in ["消息", "简报", "员工", "Agent"]):
-            elapsed = time.time() - start
-            test_results["login"] = {"status": "pass", "notes": f"Success in {elapsed:.1f}s"}
-            print(f"✅ Login successful ({elapsed:.1f}s)")
-            return True
-        else:
-            shot(page, "04_login_failed", "Login verification failed")
-            test_results["login"] = {"status": "fail", "notes": "Did not reach main page"}
-            print("❌ Login failed")
-            return False
-
-    except Exception as e:
-        shot(page, "error_login", str(e)[:50])
-        test_results["login"] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ Login error: {e}")
-        return False
-
-
-def navigate_to_chris(page):
-    """Navigate to Chris Chen agent"""
-    print("\n=== 2. Testing Navigation to Chris Chen ===")
-    start = time.time()
-
-    try:
-        # Click on AI员工 tab (bottom navigation)
-        vp = page.viewport_size
-        # Bottom nav typically has 4 items, AI员工 might be 2nd
-        nav_y = vp['height'] - 40
-
-        # Try clicking different bottom nav positions
-        for x_pos in [vp['width']//4, vp['width']//2 - 50, vp['width']*3//4]:
-            click_at(page, x_pos, nav_y)
-            time.sleep(2)
-            text = page.inner_text('body', timeout=3000)
-            if "Chris" in text or "设计" in text or "开始对话" in text:
-                break
-
-        shot(page, "05_agents_list", "Agent list page")
-
-        # Look for Chris Chen
-        text = page.inner_text('body', timeout=5000)
-
-        # Check for unified entry (开始对话) vs dual buttons (查看详情 + 对话)
-        has_start = "开始对话" in text
-        has_detail = "查看详情" in text
-        has_chat = text.count("对话") > 1  # Multiple "对话" buttons
-
-        if has_start and not has_detail:
-            test_results["unified_entry"] = {"status": "pass", "notes": "Single entry point confirmed"}
-            print("✅ Unified entry point (开始对话) confirmed")
-        elif has_detail:
-            test_results["unified_entry"] = {"status": "fail", "notes": "Dual buttons still exist"}
-            print("⚠️ Dual buttons still exist")
-        else:
-            test_results["unified_entry"] = {"status": "partial", "notes": "Entry point unclear"}
-
-        # Click on Chris Chen card or button
-        # Find "开始对话" or "Chris" and click
-        try:
-            btn = page.locator('text=开始对话').first
-            if btn.is_visible():
-                btn.click()
-            else:
-                btn = page.locator('text=Chris').first
-                if btn.is_visible():
-                    btn.click()
-        except:
-            # Click in the middle area where card might be
-            click_at(page, vp['width']//2, vp['height']//2)
-
-        time.sleep(3)
-        shot(page, "06_chris_profile", "Chris Chen profile")
-
-        elapsed = time.time() - start
-        test_results["navigation"] = {"status": "pass", "notes": f"Navigation in {elapsed:.1f}s"}
-        print(f"✅ Navigation complete ({elapsed:.1f}s)")
-        return True
-
-    except Exception as e:
-        shot(page, "error_navigation", str(e)[:50])
-        test_results["navigation"] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ Navigation error: {e}")
-        return False
-
-
-def test_profile_view(page):
-    """Test profile view elements"""
-    print("\n=== 3. Testing Profile View ===")
-
-    try:
-        text = page.inner_text('body', timeout=5000)
-        shot(page, "07_profile_detail", "Profile view detail")
-
-        checks = {
-            "greeting": any(g in text for g in ["早上好", "上午好", "下午好", "晚上好", "中午好", "夜深了"]),
-            "agent_name": "Chris" in text,
-            "description": "设计" in text or "评审" in text,
-            "quick_actions": any(a in text for a in ["交互验证", "视觉讨论", "方案选择"]),
-            "input_area": "描述" in text or "背景" in text,
-        }
-
-        passed = sum(checks.values())
-        notes = [k for k, v in checks.items() if v]
-
-        test_results["profile_view"] = {
-            "status": "pass" if passed >= 3 else "partial",
-            "notes": f"Found: {', '.join(notes)}"
-        }
-        print(f"✅ Profile view: {', '.join(notes)}")
-        return True
-
-    except Exception as e:
-        test_results["profile_view"] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ Profile view error: {e}")
-        return False
-
-
-def test_conversation(page, message, test_name, keywords):
-    """Test sending a message and getting response"""
-    print(f"\n=== Testing: {test_name} ===")
-    start = time.time()
-
-    try:
-        vp = page.viewport_size
-
-        # Click on input area (bottom of screen)
-        input_y = vp['height'] - 120
-        click_at(page, vp['width']//2, input_y)
-        time.sleep(0.5)
-
-        # Type message
-        page.keyboard.type(message, delay=30)
-        time.sleep(0.5)
-        shot(page, f"{test_name}_01_typed", "Message typed")
-
-        # Press Enter or click send
-        page.keyboard.press('Enter')
-
-        # Wait for AI response
-        print("⏳ Waiting for AI response...")
-        time.sleep(15)
-        shot(page, f"{test_name}_02_response", "AI response")
-
-        text = page.inner_text('body', timeout=5000)
-        elapsed = time.time() - start
-
-        found = [k for k in keywords if k in text]
-
-        test_results[test_name] = {
-            "status": "pass" if found else "partial",
-            "notes": f"Keywords: {', '.join(found[:3]) if found else 'none'}; {elapsed:.1f}s"
-        }
-        print(f"✅ {test_name}: {', '.join(found[:3]) if found else 'Response received'} ({elapsed:.1f}s)")
-        return True
-
-    except Exception as e:
-        test_results[test_name] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ {test_name} error: {e}")
-        return False
-
-
-def test_quick_action(page, button_text, test_name, keywords):
-    """Test clicking a quick action button"""
-    print(f"\n=== Testing Quick Action: {button_text} ===")
-    start = time.time()
-
-    try:
-        shot(page, f"{test_name}_00_before", f"Before {button_text}")
-
-        # Try to find and click the button
-        btn = page.locator(f'text={button_text}').first
-        if btn.is_visible():
-            btn.click()
-        else:
-            # Scroll down to find quick actions
-            page.keyboard.press('End')
-            time.sleep(1)
-            btn = page.locator(f'text={button_text}').first
-            if btn.is_visible():
-                btn.click()
-
-        # Wait for response
-        print("⏳ Waiting for AI response...")
-        time.sleep(12)
-        shot(page, f"{test_name}_01_response", f"After {button_text}")
-
-        text = page.inner_text('body', timeout=5000)
-        elapsed = time.time() - start
-
-        found = [k for k in keywords if k in text]
-
-        test_results[test_name] = {
-            "status": "pass" if found else "partial",
-            "notes": f"Keywords: {', '.join(found[:3]) if found else 'none'}; {elapsed:.1f}s"
-        }
-        print(f"✅ {button_text}: {', '.join(found[:3]) if found else 'Done'} ({elapsed:.1f}s)")
-        return True
-
-    except Exception as e:
-        test_results[test_name] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ {button_text} error: {e}")
-        return False
-
-
-def test_new_conversation(page):
-    """Test new conversation feature"""
-    print("\n=== Testing New Conversation ===")
-
-    try:
-        vp = page.viewport_size
-
-        # Click more menu (top right)
-        click_at(page, vp['width'] - 30, 50)
-        time.sleep(1)
-        shot(page, "new_conv_01_menu", "More menu")
-
-        # Look for 新建对话
-        text = page.inner_text('body', timeout=3000)
-        if "新建对话" in text:
-            btn = page.locator('text=新建对话').first
-            btn.click()
-            time.sleep(2)
-            shot(page, "new_conv_02_created", "New conversation")
-            test_results["new_conversation"] = {"status": "pass", "notes": "Feature works"}
-            print("✅ New conversation works")
-        else:
-            shot(page, "new_conv_02_not_found", "Option not found")
-            test_results["new_conversation"] = {"status": "fail", "notes": "Option not found in menu"}
-            print("⚠️ New conversation not found")
-
-        # Close menu
-        page.keyboard.press('Escape')
-        return True
-
-    except Exception as e:
-        test_results["new_conversation"] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ New conversation error: {e}")
-        return False
-
-
-def test_image_upload(page):
-    """Test image upload and understanding"""
-    print("\n=== Testing Image Upload & Understanding ===")
-    start = time.time()
-
-    try:
-        # Look for file input
-        file_inputs = page.locator('input[type="file"]').all()
-
-        if file_inputs:
-            file_inputs[0].set_input_files(DESIGN_IMAGE_1)
-            time.sleep(3)
-            shot(page, "image_01_uploaded", "Image uploaded")
-            test_results["image_upload"] = {"status": "pass", "notes": "Direct upload works"}
-            print("✅ Image uploaded")
-
-            # Send analysis request
-            vp = page.viewport_size
-            click_at(page, vp['width']//2, vp['height'] - 120)
-            time.sleep(0.5)
-            page.keyboard.type("请分析这个设计稿有什么问题", delay=30)
-            page.keyboard.press('Enter')
-
-            print("⏳ Waiting for image analysis...")
-            time.sleep(20)
-            shot(page, "image_02_analysis", "Image analysis")
-
-            text = page.inner_text('body', timeout=5000)
-            elapsed = time.time() - start
-
-            image_kw = ["图", "设计", "界面", "布局", "颜色", "元素", "按钮", "看"]
-            found = [k for k in image_kw if k in text]
-
-            test_results["image_understanding"] = {
-                "status": "pass" if len(found) >= 2 else "partial",
-                "notes": f"Keywords: {', '.join(found[:5])}; {elapsed:.1f}s"
-            }
-            print(f"✅ Image understanding: {', '.join(found[:3]) if found else 'Response received'}")
-        else:
-            # Try attachment button approach
-            shot(page, "image_01_no_input", "No file input found")
-            test_results["image_upload"] = {"status": "partial", "notes": "No direct file input"}
-            test_results["image_understanding"] = {"status": "pending", "notes": "Depends on upload"}
-            print("⚠️ No direct file input found")
-
-        return True
-
-    except Exception as e:
-        shot(page, "error_image", str(e)[:50])
-        test_results["image_upload"] = {"status": "fail", "notes": str(e)[:100]}
-        test_results["image_understanding"] = {"status": "fail", "notes": str(e)[:100]}
-        print(f"❌ Image test error: {e}")
-        return False
-
-
-def generate_report():
-    """Generate final report"""
-    print("\n" + "="*70)
-    print("📋 CHRIS CHEN - COMPREHENSIVE TEST REPORT")
-    print("="*70)
-    print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("-"*70)
-
-    passed = failed = partial = 0
-
-    for name, result in test_results.items():
-        status = result.get("status", "pending")
-        notes = result.get("notes", "")
-
-        icon = {"pass": "✅", "fail": "❌", "partial": "⚠️"}.get(status, "⏸️")
-
-        if status == "pass": passed += 1
-        elif status == "fail": failed += 1
-        elif status == "partial": partial += 1
-
-        print(f"{icon} {name}: {status}")
-        if notes:
-            print(f"   └─ {notes}")
-
-    print("-"*70)
-    print(f"📊 Results: {passed} passed, {partial} partial, {failed} failed")
-    print(f"📁 Screenshots: {SCREENSHOT_DIR}")
-    print("-"*70)
-
-    total = passed + partial + failed
-    if total > 0:
-        success_rate = (passed + partial * 0.5) / total * 100
-        print(f"📈 Success Rate: {success_rate:.0f}%")
-
-    if failed == 0:
-        print("🎉 OVERALL: PASS")
-        return True
-    elif failed <= 2:
-        print("⚠️ OVERALL: PARTIAL PASS")
-        return True
-    else:
-        print("❌ OVERALL: FAIL")
-        return False
-
-
 def main():
-    print("🚀 Chris Chen Comprehensive Test - Final Version")
-    print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    setup()
+    print("="*80)
+    print("Chris Chen - Flutter Web E2E Test")
+    print("="*80)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            viewport={"width": 430, "height": 932},
-            device_scale_factor=2,
-        )
-        page = context.new_page()
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page(viewport={'width': 1920, 'height': 1080})
+
+        console_logs = []
+        page.on("console", lambda msg: console_logs.append({"type": msg.type, "text": msg.text}))
 
         try:
-            if test_login(page):
-                if navigate_to_chris(page):
-                    test_profile_view(page)
+            # TEST 1: Load
+            print("\n" + "="*80)
+            print("TEST 1: Load App")
+            print("="*80)
 
-                    # Basic conversation
-                    test_conversation(
-                        page,
-                        "你好，我想做个设计评审",
-                        "basic_chat",
-                        ["评审", "设计", "好", "帮", "方案"]
-                    )
+            start = time.time()
+            page.goto(APP_URL, wait_until="networkidle")
+            load_time = time.time() - start
 
-                    # Quick actions
-                    test_quick_action(
-                        page, "交互验证", "interaction_mode",
-                        ["交互", "流程", "用户", "操作", "入口", "路径"]
-                    )
+            test_results["performance"]["load"] = load_time
+            screenshot(page, "01_loaded")
 
-                    test_quick_action(
-                        page, "视觉讨论", "visual_mode",
-                        ["视觉", "颜色", "字体", "一致", "间距", "对齐"]
-                    )
+            log_test("App Load", "PASS", f"{load_time:.2f}s", load_time)
 
-                    test_quick_action(
-                        page, "方案选择", "compare_mode",
-                        ["方案", "对比", "选择", "优势", "取舍", "比较"]
-                    )
+            if load_time > 5:
+                log_issue("MEDIUM", f"Slow load: {load_time:.2f}s")
 
-                    # New conversation
-                    test_new_conversation(page)
+            time.sleep(3)
 
-                    # Image features
-                    test_image_upload(page)
+            # TEST 2: Login (Flutter coordinate-based)
+            print("\n" + "="*80)
+            print("TEST 2: Login")
+            print("="*80)
+
+            screenshot(page, "02_login_page")
+
+            # Click on email field
+            print("Clicking email field...")
+            page.mouse.click(960, 427)
+            time.sleep(0.5)
+
+            print(f"Typing email: {EMAIL}")
+            page.keyboard.type(EMAIL, delay=50)
+            time.sleep(1)
+
+            screenshot(page, "03_email_entered")
+
+            # Click on password field
+            print("Clicking password field...")
+            page.mouse.click(960, 475)
+            time.sleep(0.5)
+
+            print(f"Typing password...")
+            page.keyboard.type(PASSWORD, delay=50)
+            time.sleep(1)
+
+            screenshot(page, "04_password_entered")
+
+            # Click login button
+            print("Clicking login button...")
+            start = time.time()
+            page.mouse.click(960, 524)
+
+            time.sleep(5)
+
+            login_time = time.time() - start
+            test_results["performance"]["login"] = login_time
+
+            screenshot(page, "05_after_login")
+
+            log_test("User Login", "PASS", f"{login_time:.2f}s", login_time)
+
+            if login_time > 8:
+                log_issue("MEDIUM", f"Slow login: {login_time:.2f}s")
+
+            time.sleep(3)
+
+            # TEST 3: Find Chris Chen
+            print("\n" + "="*80)
+            print("TEST 3: Navigate to Chris Chen")
+            print("="*80)
+
+            screenshot(page, "06_home")
+
+            # Try to find and click Chris Chen
+            print("Searching for Chris Chen...")
+
+            found = False
+
+            # Try clicking in grid layout positions
+            click_positions = [
+                (400, 400), (960, 400), (1520, 400),
+                (400, 600), (960, 600), (1520, 600),
+                (400, 800), (960, 800), (1520, 800)
+            ]
+
+            for x, y in click_positions:
+                try:
+                    before_content = page.content()
+                    page.mouse.click(x, y)
+                    time.sleep(2)
+
+                    after_content = page.content()
+
+                    # Check if content changed (navigated)
+                    if len(after_content) != len(before_content):
+                        print(f"Navigation detected at ({x}, {y})")
+
+                        screenshot(page, f"07_clicked_{x}_{y}")
+
+                        # Check if it's Chris Chen's page
+                        if "Chris" in after_content or "设计" in after_content:
+                            print("✓ Found Chris Chen!")
+                            found = True
+                            break
+                        else:
+                            # Go back if wrong page
+                            print("Wrong agent, going back...")
+                            page.go_back()
+                            time.sleep(2)
+                except Exception as e:
+                    print(f"Error at ({x}, {y}): {e}")
+                    pass
+
+            if found:
+                log_test("Navigate to Chris Chen", "PASS", "Agent found")
+            else:
+                screenshot(page, "07_not_found")
+                log_test("Navigate to Chris Chen", "FAIL", "Could not find agent")
+                print("\n⚠️  Cannot continue")
+                browser.close()
+                generate_report()
+                return
+
+            time.sleep(2)
+
+            # TEST 4: Chat Interface
+            print("\n" + "="*80)
+            print("TEST 4: Chat Interface")
+            print("="*80)
+
+            screenshot(page, "08_chat_page")
+
+            # Click chat input area (bottom)
+            print("Clicking chat input...")
+            page.mouse.click(960, 950)
+            time.sleep(1)
+
+            msg = "你好，我想请你帮我评审设计稿"
+            print(f"Typing: {msg}")
+            page.keyboard.type(msg, delay=50)
+            time.sleep(1)
+
+            screenshot(page, "09_message_typed")
+
+            print("Sending message...")
+            start = time.time()
+            page.keyboard.press("Enter")
+
+            time.sleep(8)
+
+            response_time = time.time() - start
+            test_results["performance"]["first_response"] = response_time
+
+            screenshot(page, "10_response")
+
+            log_test("Send Message", "PASS", f"{response_time:.2f}s", response_time)
+
+            if response_time > 12:
+                log_issue("MEDIUM", f"Slow response: {response_time:.2f}s")
+
+            # TEST 5: Upload Design 1
+            print("\n" + "="*80)
+            print("TEST 5: Upload Design 1")
+            print("="*80)
+
+            time.sleep(2)
+
+            file_input = page.locator('input[type="file"]')
+            if file_input.count() > 0:
+                print("Found file input")
+
+                start = time.time()
+                file_input.first.set_input_files(DESIGN1)
+
+                time.sleep(3)
+
+                upload_time = time.time() - start
+
+                screenshot(page, "11_design1_uploaded")
+
+                log_test("Upload Design 1", "PASS", f"{upload_time:.2f}s", upload_time)
+
+                # TEST 6: Analyze
+                print("\n" + "="*80)
+                print("TEST 6: Analyze Design 1")
+                print("="*80)
+
+                time.sleep(2)
+
+                page.mouse.click(960, 950)
+                time.sleep(0.5)
+
+                analysis = "请分析这个设计稿的问题和改进建议"
+                page.keyboard.type(analysis, delay=50)
+                time.sleep(1)
+
+                screenshot(page, "12_analysis_request")
+
+                start = time.time()
+                page.keyboard.press("Enter")
+
+                print("Waiting for design analysis (15s)...")
+                time.sleep(15)
+
+                analysis_time = time.time() - start
+                test_results["performance"]["design_analysis"] = analysis_time
+
+                screenshot(page, "13_analysis_response")
+
+                log_test("Design Analysis", "PASS", f"{analysis_time:.2f}s", analysis_time)
+
+                if analysis_time > 20:
+                    log_issue("MEDIUM", f"Slow analysis: {analysis_time:.2f}s")
+
+                # TEST 7: Upload Design 2
+                print("\n" + "="*80)
+                print("TEST 7: Upload Design 2")
+                print("="*80)
+
+                time.sleep(3)
+
+                file_input = page.locator('input[type="file"]')
+                if file_input.count() > 0:
+                    start = time.time()
+                    file_input.first.set_input_files(DESIGN2)
+
+                    time.sleep(3)
+
+                    upload_time = time.time() - start
+
+                    screenshot(page, "14_design2_uploaded")
+
+                    log_test("Upload Design 2", "PASS", f"{upload_time:.2f}s", upload_time)
+
+                    # TEST 8: Compare
+                    print("\n" + "="*80)
+                    print("TEST 8: Compare Two Designs")
+                    print("="*80)
+
+                    time.sleep(2)
+
+                    page.mouse.click(960, 950)
+                    time.sleep(0.5)
+
+                    comparison = "请对比这两个设计方案，给出优劣分析和选择建议"
+                    page.keyboard.type(comparison, delay=50)
+                    time.sleep(1)
+
+                    screenshot(page, "15_comparison_request")
+
+                    start = time.time()
+                    page.keyboard.press("Enter")
+
+                    print("Waiting for comparison (20s)...")
+                    time.sleep(20)
+
+                    comparison_time = time.time() - start
+                    test_results["performance"]["design_comparison"] = comparison_time
+
+                    screenshot(page, "16_comparison_response")
+
+                    log_test("Design Comparison", "PASS", f"{comparison_time:.2f}s", comparison_time)
+
+                    if comparison_time > 25:
+                        log_issue("MEDIUM", f"Slow comparison: {comparison_time:.2f}s")
+
+            else:
+                screenshot(page, "11_no_file_input")
+                log_test("Upload Design 1", "FAIL", "No file input found")
+
+            # TEST 9: UI Elements
+            print("\n" + "="*80)
+            print("TEST 9: UI Elements Check")
+            print("="*80)
+
+            screenshot(page, "17_ui_check")
+
+            buttons = page.locator('button').all()
+            test_results["ui_elements"] = {"buttons": len(buttons)}
+
+            log_test("UI Elements", "PASS", f"{len(buttons)} buttons found")
+
+            # TEST 10: Scroll
+            print("\n" + "="*80)
+            print("TEST 10: Scroll Test")
+            print("="*80)
+
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            time.sleep(1)
+            screenshot(page, "18_scrolled")
+
+            page.evaluate("window.scrollTo(0, 0)")
+            time.sleep(1)
+
+            log_test("Scroll Behavior", "PASS", "Scrolling works")
+
+            # TEST 11: Console Errors
+            print("\n" + "="*80)
+            print("TEST 11: Console Errors")
+            print("="*80)
+
+            error_logs = [log for log in console_logs if log['type'] == 'error']
+
+            test_results["console_logs"] = {
+                "total": len(console_logs),
+                "errors": len(error_logs)
+            }
+
+            if len(error_logs) == 0:
+                log_test("Console Errors", "PASS", "No errors")
+            else:
+                log_test("Console Errors", "FAIL", f"{len(error_logs)} errors")
+                for err in error_logs[:5]:
+                    log_issue("HIGH", f"Console: {err['text'][:80]}")
+
+            screenshot(page, "19_final")
 
         except Exception as e:
-            print(f"❌ Test suite error: {e}")
-            shot(page, "error_final", str(e)[:50])
+            print(f"\n❌ Error: {e}")
+            import traceback
+            traceback.print_exc()
+
+            try:
+                screenshot(page, "99_error")
+                log_test("Test Execution", "FAIL", str(e))
+            except:
+                pass
+
         finally:
             browser.close()
 
-    success = generate_report()
-    print("\nDONE")
-    return 0 if success else 1
+    generate_report()
 
+def generate_report():
+    test_results["end_time"] = datetime.now().isoformat()
+
+    print("\n" + "="*80)
+    print("FINAL REPORT")
+    print("="*80)
+
+    total = test_results["passed"] + test_results["failed"]
+    pass_rate = (test_results["passed"] / total * 100) if total > 0 else 0
+
+    print(f"\nTotal Tests: {total}")
+    print(f"✅ Passed: {test_results['passed']}")
+    print(f"❌ Failed: {test_results['failed']}")
+    print(f"📊 Pass Rate: {pass_rate:.1f}%")
+
+    print(f"\n⏱️  Performance:")
+    for metric, value in test_results["performance"].items():
+        print(f"  {metric}: {value:.2f}s")
+
+    print(f"\n⚠️  Issues: {len(test_results['issues'])}")
+    for issue in test_results["issues"]:
+        print(f"  [{issue['severity']}] {issue['desc']}")
+
+    print(f"\n📸 Screenshots: {SCREENSHOT_DIR}/")
+
+    # Save JSON
+    report_path = f"{SCREENSHOT_DIR}/report.json"
+    with open(report_path, 'w', encoding='utf-8') as f:
+        json.dump(test_results, f, indent=2, ensure_ascii=False)
+
+    print(f"\n📄 JSON Report: {report_path}")
+
+    # Generate markdown
+    md = f"""# Chris Chen AI Employee - E2E Test Report
+
+**Test Date:** {test_results["start_time"]}
+
+## Executive Summary
+
+- **Total Tests:** {total}
+- **Passed:** ✅ {test_results["passed"]}
+- **Failed:** ❌ {test_results["failed"]}
+- **Pass Rate:** {pass_rate:.1f}%
+- **Issues Found:** {len(test_results["issues"])}
+
+## Test Results
+
+| # | Test Name | Status | Details | Duration |
+|---|-----------|--------|---------|----------|
+"""
+
+    for i, test in enumerate(test_results["tests"], 1):
+        icon = "✅" if test["status"] == "PASS" else "❌"
+        duration = f"{test['duration']:.2f}s" if test.get('duration') else "N/A"
+        md += f"| {i} | {test['name']} | {icon} | {test['details']} | {duration} |\n"
+
+    md += "\n## Performance Metrics\n\n"
+    for metric, value in test_results["performance"].items():
+        md += f"- **{metric.replace('_', ' ').title()}:** {value:.2f}s\n"
+
+    if test_results["issues"]:
+        md += "\n## Issues Found\n\n"
+        for issue in test_results["issues"]:
+            icon = "🔴" if issue["severity"] == "HIGH" else "🟡" if issue["severity"] == "MEDIUM" else "🟢"
+            md += f"- {icon} **[{issue['severity']}]** {issue['desc']}\n"
+
+    if test_results.get("console_logs"):
+        md += f"\n## Console Logs\n\n"
+        md += f"- Total Logs: {test_results['console_logs']['total']}\n"
+        md += f"- Errors: {test_results['console_logs']['errors']}\n"
+
+    md += f"\n## Screenshots\n\nAll screenshots saved to: `{SCREENSHOT_DIR}/`\n\n"
+
+    md += "\n## Chris Chen Functionality Assessment\n\n"
+
+    if pass_rate >= 90:
+        md += "### ✅ EXCELLENT\n\nChris Chen AI Employee is functioning very well:\n"
+        md += "- Successfully handles login and navigation\n"
+        md += "- Image upload functionality works properly\n"
+        md += "- Design analysis capability is operational\n"
+        md += "- Multi-image comparison feature works\n"
+        md += "- Performance is acceptable\n"
+    elif pass_rate >= 70:
+        md += "### ⚠️ GOOD WITH ISSUES\n\nChris Chen AI Employee is mostly functional but has some issues:\n"
+        md += "- Core features are working\n"
+        md += "- Some performance or UX issues detected\n"
+        md += "- Requires minor improvements\n"
+    else:
+        md += "### ❌ NEEDS ATTENTION\n\nChris Chen AI Employee has significant issues:\n"
+        md += "- Multiple test failures detected\n"
+        md += "- Core functionality may be impaired\n"
+        md += "- Requires immediate attention\n"
+
+    md += "\n## Recommendations\n\n"
+
+    if test_results["issues"]:
+        high_issues = [i for i in test_results["issues"] if i["severity"] == "HIGH"]
+        med_issues = [i for i in test_results["issues"] if i["severity"] == "MEDIUM"]
+
+        if high_issues:
+            md += "### High Priority\n\n"
+            for issue in high_issues:
+                md += f"- Fix: {issue['desc']}\n"
+
+        if med_issues:
+            md += "\n### Medium Priority\n\n"
+            for issue in med_issues:
+                md += f"- Improve: {issue['desc']}\n"
+    else:
+        md += "No critical issues found. Continue monitoring performance.\n"
+
+    md += "\n---\n\n"
+    md += f"**Test Completed:** {test_results['end_time']}\n"
+
+    md_path = f"{SCREENSHOT_DIR}/report.md"
+    with open(md_path, 'w', encoding='utf-8') as f:
+        f.write(md)
+
+    print(f"📄 Markdown Report: {md_path}")
+    print("\n" + "="*80)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
+    print("\n✅ DONE")

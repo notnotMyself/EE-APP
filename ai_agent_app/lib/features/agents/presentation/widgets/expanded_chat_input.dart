@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../theme/agent_profile_theme.dart';
 import 'app_selector_popup.dart';
@@ -306,7 +308,60 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 单个附件项
+  /// 支持本地文件和网络URL的图片预览，兼容 Web 和移动端
   Widget _buildAttachmentItem(ChatAttachment attachment) {
+    final displayUrl = attachment.displayUrl;
+    final localPath = attachment.localPath;
+    
+    // 判断图片来源
+    final hasLocalFile = localPath != null && localPath.isNotEmpty;
+    final hasNetworkUrl = displayUrl != null && 
+                          displayUrl.isNotEmpty && 
+                          (displayUrl.startsWith('http://') || displayUrl.startsWith('https://'));
+    final isBlobUrl = localPath != null && localPath.startsWith('blob:');
+    
+    Widget imageWidget;
+    if (isBlobUrl) {
+      // Web 平台的 blob URL
+      imageWidget = Image.network(
+        localPath,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+      );
+    } else if (hasLocalFile && !hasNetworkUrl) {
+      // 移动端本地文件
+      imageWidget = Image.file(
+        File(localPath),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+      );
+    } else if (hasNetworkUrl) {
+      // 网络URL
+      imageWidget = Image.network(
+        displayUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      imageWidget = _buildImagePlaceholder();
+    }
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -316,21 +371,30 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.04),
             borderRadius: BorderRadius.circular(4),
-            image: attachment.displayUrl != null
-                ? DecorationImage(
-                    image: NetworkImage(attachment.displayUrl!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
           ),
-          child: attachment.displayUrl == null
-              ? const Icon(
-                  Icons.image_outlined,
-                  color: AgentProfileTheme.labelColor,
-                  size: 20,
-                )
-              : null,
+          clipBehavior: Clip.antiAlias,
+          child: imageWidget,
         ),
+        // 上传状态指示器
+        if (attachment.status == AttachmentStatus.uploading)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
         // 删除按钮
         if (widget.onAttachmentRemove != null)
           Positioned(
@@ -354,6 +418,18 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
             ),
           ),
       ],
+    );
+  }
+
+  /// 图片占位符
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: Colors.black.withOpacity(0.04),
+      child: const Icon(
+        Icons.image_outlined,
+        color: AgentProfileTheme.labelColor,
+        size: 20,
+      ),
     );
   }
 

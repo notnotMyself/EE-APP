@@ -418,6 +418,7 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
       conversationId: conversationId,
       role: 'user',
       content: content.trim(),
+      attachments: attachments,
       createdAt: DateTime.now(),
     );
 

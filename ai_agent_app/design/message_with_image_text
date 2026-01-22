@@ -1,0 +1,11 @@
+Text(
+    '点按手写笔机身的按键，出现的轮盘方案选择对比',
+    textAlign: TextAlign.justify,
+    style: TextStyle(
+        color: Colors.white,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.40,
+    ),
+)
