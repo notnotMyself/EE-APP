@@ -554,7 +554,8 @@ Files changed:
 - [x] .env.example已创建
 - [x] PRODUCTION_CONFIG.md已创建
 - [x] Git提交信息详细
-- [ ] 测试报告已完成
+- [x] 测试报告已完成（PRE_LAUNCH_TEST_REPORT.md）
+- [x] UI测试指南已创建（MANUAL_UI_TEST_GUIDE.md）
 - [ ] 发版说明已准备
 
 ---
@@ -569,6 +570,39 @@ Files changed:
 - 本地环境无法发送邮箱确认链接
 - 需要在Supabase后台手动确认邮箱
 - 或者在数据库中直接更新 `auth.users.email_confirmed_at`
+
+### 手动UI测试指南
+
+**已创建完整测试指南**: `docs/MANUAL_UI_TEST_GUIDE.md`
+
+**测试指南包含**:
+- ✅ 6个测试场景（注册、登录、协议、错误处理、Agent功能、UI体验）
+- ✅ 29个详细测试用例
+- ✅ 15+张截图要求（每个功能点都有截图说明）
+- ✅ 性能指标测量（启动时间、响应时间、流畅度、内存）
+- ✅ 问题记录模板
+- ✅ 测试结果汇总表格
+
+**如何执行UI测试**:
+```bash
+# 1. 启动后端服务
+cd /Users/80392083/develop/ee-app-pre-launch/backend/agent_orchestrator
+python3 main.py
+
+# 2. 新开终端，启动Flutter应用
+cd /Users/80392083/develop/ee-app-pre-launch/ai_agent_app
+flutter run
+
+# 3. 按照 MANUAL_UI_TEST_GUIDE.md 逐项执行测试
+# 4. 记录测试结果和截图
+# 5. 发现问题立即记录到问题清单
+```
+
+**测试重点**:
+1. ⚠️ **注册页面的username字段** - 这是新增功能，必须验证
+2. ⚠️ **隐私政策和用户协议页面** - 首次登录强制显示，必须验证两个复选框逻辑
+3. ⚠️ **错误提示友好性** - 断网、后端停止、登录失败等场景的中文提示
+4. ⚠️ **性能和流畅度** - 页面切换、消息发送的响应速度
 
 ---
 
@@ -655,6 +689,8 @@ Files changed:
 
 **文档**:
 - `docs/PRODUCTION_CONFIG.md` - 生产环境配置指南
+- `docs/PRE_LAUNCH_TEST_REPORT.md` - 测试报告（本文档）
+- `docs/MANUAL_UI_TEST_GUIDE.md` - UI手动测试指南
 - `/Users/80392083/.claude/ralph-loop.local.md` - 进度跟踪文件
 
 ### B. 测试命令快速参考
