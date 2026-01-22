@@ -69,6 +69,19 @@ class MessageResponse(BaseModel):
         from_attributes = True
 
 
+class ConversationCreate(BaseModel):
+    """创建会话请求模型"""
+
+    agent_id: str = Field(..., description="Agent ID (UUID 或 role string)")
+    title: Optional[str] = Field(None, max_length=255, description="会话标题")
+
+
+class ConversationTitleUpdate(BaseModel):
+    """更新会话标题请求模型"""
+
+    title: str = Field(..., min_length=1, max_length=255, description="新标题")
+
+
 class MessageCreate(BaseModel):
     """发送消息请求模型"""
 
@@ -345,3 +358,226 @@ async def list_user_conversations(
     except Exception as e:
         logger.error(f"Error listing conversations for user {user_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("", response_model=ConversationResponse, status_code=201)
+async def create_conversation(
+    conversation_in: ConversationCreate,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    创建新会话（多会话模式）
+
+    需要认证：需要在Header中提供有效的Bearer Token
+
+    **多会话模式**: 允许用户与同一Agent创建多个会话
+    - 每次调用都会创建新的会话
+    - 不再检查 UNIQUE(user_id, agent_id) 约束
+    - 可指定自定义标题，否则自动生成
+
+    Returns:
+        新创建的会话信息
+    """
+    if not conversation_service:
+        raise HTTPException(
+            status_code=500, detail="Conversation service not initialized"
+        )
+
+    try:
+        # 支持 role string，自动转换为 UUID
+        try:
+            agent_uuid = get_agent_uuid(conversation_in.agent_id)
+            logger.info(
+                f"Creating conversation with agent '{conversation_in.agent_id}' (UUID: {agent_uuid})"
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        # 验证Agent存在且激活
+        if conversation_service.supabase:
+            try:
+                agent_result = (
+                    conversation_service.supabase.table("agents")
+                    .select("id, name, is_active")
+                    .eq("id", agent_uuid)
+                    .execute()
+                )
+
+                if not agent_result.data:
+                    raise HTTPException(status_code=404, detail="Agent not found")
+
+                agent = agent_result.data[0]
+                if not agent.get("is_active", True):
+                    raise HTTPException(status_code=400, detail="Agent is not active")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Failed to validate agent: {e}")
+
+        # 生成默认标题
+        title = conversation_in.title or f"New Conversation"
+
+        # 创建新会话（不再使用 get_or_create）
+        conversation_id = (
+            await conversation_service.conversation_model.create_conversation(
+                user_id=user_id, agent_id=agent_uuid, title=title
+            )
+        )
+
+        # 获取创建的会话详情
+        conversation = await conversation_service.conversation_model.get_by_id(
+            conversation_id
+        )
+
+        if not conversation:
+            raise HTTPException(
+                status_code=500, detail="Failed to create conversation"
+            )
+
+        return ConversationResponse(**conversation)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/agents/{agent_id}/conversations", response_model=List[ConversationResponse])
+async def list_agent_conversations(
+    agent_id: str,
+    user_id: str = Depends(get_current_user_id),
+    limit: int = Query(20, ge=1, le=100, description="对话数量限制"),
+    status: Optional[str] = Query("active", description="对话状态过滤"),
+):
+    """
+    获取用户与特定Agent的所有会话列表（多会话模式）
+
+    需要认证：需要在Header中提供有效的Bearer Token
+
+    **排序**: 按last_message_at降序（最近活跃的在前）
+    **过滤**: 支持按状态过滤（active/archived/closed）
+
+    Returns:
+        与特定Agent的所有会话列表
+    """
+    if not conversation_service:
+        raise HTTPException(
+            status_code=500, detail="Conversation service not initialized"
+        )
+
+    try:
+        # 支持 role string，自动转换为 UUID
+        try:
+            agent_uuid = get_agent_uuid(agent_id)
+            logger.info(
+                f"Listing conversations for agent '{agent_id}' (UUID: {agent_uuid})"
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+
+        # 查询该用户与该Agent的所有会话
+        conversations = await conversation_service.list_agent_conversations(
+            user_id=user_id, agent_id=agent_uuid, limit=limit, status=status
+        )
+
+        # 获取Agent信息
+        agent_info = {}
+        if conversation_service.supabase:
+            try:
+                agent_result = (
+                    conversation_service.supabase.table("agents")
+                    .select("id, name, role")
+                    .eq("id", agent_uuid)
+                    .execute()
+                )
+
+                if agent_result.data:
+                    agent = agent_result.data[0]
+                    agent_info = {
+                        "name": agent.get("name"),
+                        "role": agent.get("role"),
+                    }
+            except Exception as e:
+                logger.warning(f"Failed to fetch agent info: {e}")
+
+        # 构建响应
+        result = []
+        for conv in conversations:
+            result.append(
+                ConversationResponse(
+                    id=conv["id"],
+                    user_id=conv["user_id"],
+                    agent_id=conv["agent_id"],
+                    agent_name=agent_info.get("name"),
+                    agent_role=agent_info.get("role"),
+                    title=conv.get("title"),
+                    status=conv["status"],
+                    started_at=conv["started_at"],
+                    last_message_at=conv.get("last_message_at"),
+                )
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error listing agent conversations for user {user_id}, agent {agent_id}: {e}"
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{conversation_id}/title", response_model=ConversationResponse)
+async def update_conversation_title(
+    conversation_id: str,
+    title_update: ConversationTitleUpdate,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    更新会话标题
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    会验证该对话是否属于当前用户
+
+    用户可自定义会话标题以便区分不同会话
+
+    Returns:
+        更新后的会话信息
+    """
+    if not conversation_service:
+        raise HTTPException(
+            status_code=500, detail="Conversation service not initialized"
+        )
+
+    try:
+        # 验证对话存在且用户有权访问
+        conversation = await conversation_service.conversation_model.get_by_id(
+            conversation_id
+        )
+
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        if conversation["user_id"] != user_id:
+            raise HTTPException(
+                status_code=403, detail="Access denied to this conversation"
+            )
+
+        # 更新标题
+        updated = await conversation_service.conversation_model.update_title(
+            conversation_id=conversation_id, title=title_update.title
+        )
+
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update title")
+
+        return ConversationResponse(**updated)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating conversation title {conversation_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

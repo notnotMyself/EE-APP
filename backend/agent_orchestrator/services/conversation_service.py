@@ -730,6 +730,24 @@ class ConversationService:
         """
         return await self.conversation_model.list_by_user(user_id, limit)
 
+    async def list_agent_conversations(
+        self, user_id: str, agent_id: str, limit: int = 20, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取用户与特定Agent的所有会话（多会话模式）
+
+        Args:
+            user_id: 用户UUID
+            agent_id: Agent UUID
+            limit: 返回数量限制
+            status: 状态过滤（可选）
+
+        Returns:
+            会话列表，按last_message_at降序排列
+        """
+        return await self.conversation_model.list_agent_conversations(
+            user_id=user_id, agent_id=agent_id, limit=limit, status=status
+        )
+
     async def get_conversation(self, conversation_id: str) -> Optional[Dict[str, Any]]:
         """获取单个对话
 
