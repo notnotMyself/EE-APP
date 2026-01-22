@@ -21,7 +21,29 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   final _supabase = Supabase.instance.client;
   final LegalRepository _legalRepository;
 
-  /// 注册
+  /// 注册（带用户名）
+  Future<void> signUpWithUsername({
+    required String email,
+    required String username,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'username': username,  // 存入 raw_user_meta_data
+        },
+      );
+
+      if (response.user == null) {
+        throw Exception('注册失败，请重试');
+      }
+    });
+  }
+
+  /// 注册（不带用户名，保留向后兼容）
   Future<void> signUp({
     required String email,
     required String password,
