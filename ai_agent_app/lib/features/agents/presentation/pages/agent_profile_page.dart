@@ -622,15 +622,6 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             selectedApp: _selectedApp,
             onAppSelected: _onAppSelected,
           ),
-
-          // 快捷功能按钮（对话开始后，键盘收起时显示）
-          if (_hasStartedConversation && !isKeyboardVisible) ...[
-            const SizedBox(height: 12),
-            QuickActionRow(
-              actions: QuickActions.defaults,
-              onActionTap: _onQuickActionTap,
-            ),
-          ],
         ],
       ),
     );
