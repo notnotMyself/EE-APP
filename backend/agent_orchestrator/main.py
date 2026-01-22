@@ -59,13 +59,15 @@ from api import (
     scheduled_jobs_router,
     conversations_router,
     profile_router,
-    notifications_router
+    notifications_router,
+    legal_router,
 )
 from api.briefings import set_briefing_service
-from api.scheduled_jobs import set_scheduler_service, set_supabase_client
+from api.scheduled_jobs import set_scheduler_service, set_supabase_client as set_jobs_supabase
 from api.conversations import set_conversation_service
 from api.profile import set_services as set_profile_services
 from api.websocket_conversations import router as websocket_router, set_websocket_services
+from api.legal import set_supabase_client as set_legal_supabase
 
 # Supabase 客户端
 try:
@@ -167,9 +169,10 @@ scheduler_service = SchedulerService(
 set_briefing_service(briefing_service)
 set_conversation_service(conversation_service)
 set_scheduler_service(scheduler_service)
-set_supabase_client(supabase_client)
+set_jobs_supabase(supabase_client)
 set_profile_services(conversation_service, briefing_service)
 set_websocket_services(conversation_service, supabase_client)  # WebSocket服务注入
+set_legal_supabase(supabase_client)  # Legal API服务注入
 
 # 调试：输出配置信息
 logger.info(f"Agent SDK Config loaded:")
@@ -412,6 +415,7 @@ app.include_router(scheduled_jobs_router)
 app.include_router(conversations_router)
 app.include_router(profile_router)
 app.include_router(notifications_router)
+app.include_router(legal_router)  # Legal API路由
 app.include_router(websocket_router)  # WebSocket对话路由
 
 # Agent Management API
