@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         description="Agent workspace 基础路径"
     )
 
+    # Gemini API (用于封面图生成)
+    GEMINI_API_KEY: str = ""
+    ENABLE_AI_COVER_GENERATION: bool = False  # 默认关闭，需要配置 API Key 后开启
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 

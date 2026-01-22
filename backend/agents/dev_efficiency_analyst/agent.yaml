@@ -25,11 +25,48 @@ skills:
 
 schedule:
   - cron: "0 9 * * 1-5"
-    task: 生成每日研发效能简报
+    task: |
+      请使用 gerrit_analysis skill 执行以下分析并生成每日简报：
+
+      1. 调用 briefing action 获取结构化简报数据：
+         echo '{"action": "briefing", "days": 7}' | python .claude/skills/gerrit_analysis.py
+
+      2. 根据返回的数据，判断是否应该推送（should_push 字段）
+
+      3. 如果 should_push=true，输出以下格式的 JSON（用 ```json 包裹）：
+         {
+           "title": "从返回数据的 title 字段获取",
+           "summary": "从返回数据的 summary 字段获取",
+           "priority": "P0/P1/P2",
+           "metrics": { 从返回数据获取 },
+           "findings": [ 从返回数据获取 ],
+           "key_data": { suspicious_stories, scattered_people 等 },
+           "full_report": "完整的 Markdown 报告"
+         }
+
+      4. 如果 should_push=false，说明数据正常无需推送，输出：
+         {"should_push": false, "reason": "数据正常，无需推送"}
+
+      重要：请确保输出包含结构化的 JSON 数据，这样简报才能正确展示指标卡片和图表。
     enabled: true
 
   - cron: "0 18 * * 5"
-    task: 生成周度效能分析报告
+    task: |
+      请使用 gerrit_analysis skill 生成周度效能分析报告：
+
+      1. 获取多维度分析数据：
+         echo '{"action": "time_efficiency_loss", "days": 30}' | python .claude/skills/gerrit_analysis.py
+
+      2. 同时获取构建分析数据：
+         echo '{"action": "problems", "days": 7}' | python .claude/skills/build_analysis.py
+
+      3. 生成包含以下内容的周度报告：
+         - 代码审查效率（返工率、一次性通过率）
+         - 分支健康度（人均分支数、僵尸分支）
+         - Story 合理性（借单风险、拆分情况）
+         - 构建效率（P95 构建时间、平台对比）
+
+      4. 输出结构化 JSON 格式（用 ```json 包裹），包含 title、summary、metrics、findings、full_report
     enabled: true
 
 secrets:
