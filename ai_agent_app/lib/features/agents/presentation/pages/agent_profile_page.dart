@@ -14,6 +14,7 @@ import '../theme/agent_profile_theme.dart';
 import '../widgets/agent_avatar.dart';
 import '../widgets/app_selector_popup.dart';
 import '../widgets/expanded_chat_input.dart';
+import '../widgets/personality_selector.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/voice_input_dialog.dart';
 
@@ -51,6 +52,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 选中的应用
   AppInfo? _selectedApp;
+
+  /// 选中的人物个性
+  Personality _selectedPersonality = PersonalityList.defaultPersonality;
 
   @override
   void dispose() {
@@ -499,6 +503,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   }
 
   /// 构建AI员工信息区域
+  /// 人物个性选择器的 GlobalKey
+  final GlobalKey _personalityKey = GlobalKey();
+
   Widget _buildAgentInfoSection() {
     final isChrisChen = widget.agent.role == 'design_validator' ||
         widget.agent.name.contains('Chris');
@@ -522,16 +529,79 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
         const SizedBox(height: 4),
 
-        // 描述
-        Text(
-          widget.agent.description,
-          textAlign: TextAlign.center,
-          style: AgentProfileTheme.agentDescriptionStyle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        // 描述 + 人物个性选择
+        GestureDetector(
+          key: _personalityKey,
+          onTap: _showPersonalitySelector,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 描述文字
+              Text(
+                widget.agent.description,
+                textAlign: TextAlign.center,
+                style: AgentProfileTheme.agentDescriptionStyle,
+              ),
+              const SizedBox(width: 4),
+              // 分隔点
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const ShapeDecoration(
+                  color: Color(0xFF393939),
+                  shape: OvalBorder(),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // 当前个性
+              Text(
+                _selectedPersonality.name,
+                textAlign: TextAlign.center,
+                style: AgentProfileTheme.agentDescriptionStyle,
+              ),
+              // 下拉箭头
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 24,
+                color: Colors.black.withOpacity(0.54),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  /// 显示人物个性选择器
+  void _showPersonalitySelector() async {
+    final RenderBox button =
+        _personalityKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+
+    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final buttonSize = button.size;
+
+    // 计算弹窗位置（在按钮下方，居中对齐）
+    final position = RelativeRect.fromLTRB(
+      buttonPosition.dx + buttonSize.width / 2 - 98, // 98 = 196/2
+      buttonPosition.dy + buttonSize.height + 8,
+      overlay.size.width - buttonPosition.dx - buttonSize.width / 2 - 98,
+      0,
+    );
+
+    final personality = await showPersonalitySelectorPopup(
+      context,
+      selectedPersonality: _selectedPersonality,
+      position: position,
+    );
+
+    if (personality != null) {
+      setState(() {
+        _selectedPersonality = personality;
+      });
+    }
   }
 
   /// 构建底部输入区域
@@ -564,8 +634,6 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             attachments: _attachments,
             onAttachmentRemove: _onAttachmentRemove,
             onAttachmentTap: _onAttachmentTap,
-            onBackgroundDescTap: _onBackgroundDescTap,
-            onModeTap: _onModeTap,
             onVoiceTap: _onVoiceTap,
             enabled: !isStreaming && !_isInitializing,
             selectedApp: _selectedApp,
@@ -708,98 +776,6 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     }
   }
 
-  /// 背景描述
-  void _onBackgroundDescTap() {
-    _showBackgroundDescriptionSheet();
-  }
-
-  /// 显示背景描述输入面板
-  void _showBackgroundDescriptionSheet() {
-    final controller = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '方案背景',
-                  style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '描述你的设计方案背景和目标，帮助AI更好地理解需求',
-              style: AgentProfileTheme.agentDescriptionStyle,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              maxLines: 5,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: '例如：这是一个电商APP的商品详情页改版方案，目标是提升转化率...',
-                hintStyle: TextStyle(
-                  color: Colors.black.withOpacity(0.4),
-                  fontSize: 14,
-                ),
-                filled: true,
-                fillColor: Colors.black.withOpacity(0.04),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  final text = controller.text.trim();
-                  Navigator.pop(context);
-                  if (text.isNotEmpty) {
-                    _sendMessageWithAttachments('【方案背景】\n$text', List.from(_attachments));
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0066FF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('开始评审'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// 语音输入
   void _onVoiceTap() {
     showVoiceInputDialog(
@@ -819,63 +795,4 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     });
   }
 
-  /// 模式选择
-  void _onModeTap() {
-    _showModeSelector();
-  }
-
-  /// 显示模式选择器
-  void _showModeSelector() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '选择对话模式',
-              style: AgentProfileTheme.agentNameStyle.copyWith(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            _buildModeOption('默认', '自动选择最佳回复方式', Icons.auto_awesome, true),
-            _buildModeOption('深度分析', '详细分析设计方案', Icons.analytics_outlined, false),
-            _buildModeOption('快速评审', '快速给出关键意见', Icons.flash_on_outlined, false),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建模式选项
-  Widget _buildModeOption(String title, String subtitle, IconData icon, bool isSelected) {
-    return ListTile(
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF0066FF).withOpacity(0.1)
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? const Color(0xFF0066FF) : AgentProfileTheme.labelColor,
-        ),
-      ),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: isSelected
-          ? const Icon(Icons.check_circle, color: Color(0xFF0066FF))
-          : null,
-      onTap: () => Navigator.pop(context),
-    );
-  }
 }

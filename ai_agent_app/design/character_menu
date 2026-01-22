@@ -1,0 +1,30 @@
+Container(
+    width: double.infinity,
+    padding: const EdgeInsets.only(
+        top: 12,
+        left: 20,
+        right: 20,
+        bottom: 8,
+    ),
+    child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 7,
+        children: [
+            SizedBox(
+                width: 156,
+                child: Text(
+                    '选择 Chris 人物个性',
+                    style: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+                        fontSize: 12,
+                        fontFamily: 'OPPO Sans 4.0',
+                        fontWeight: FontWeight.w500,
+                        height: 1.33,
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

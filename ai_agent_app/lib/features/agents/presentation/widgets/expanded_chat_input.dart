@@ -66,14 +66,12 @@ class ChatAttachment {
 /// 基于 Figma 设计稿实现，支持：
 /// - 图片/附件预览
 /// - 文字输入
-/// - 操作工具栏（附件、应用选择、背景描述、模式选择）
+/// - 操作工具栏（附件、应用选择）
 /// - 语音输入（麦克风按钮）
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
   final ValueChanged<String> onSubmit;
   final VoidCallback? onAttachmentTap;           // 添加附件
-  final VoidCallback? onBackgroundDescTap;       // 背景描述
-  final VoidCallback? onModeTap;                 // 模式选择
   final VoidCallback? onVoiceTap;                // 语音输入
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
@@ -86,8 +84,6 @@ class ExpandedChatInput extends StatefulWidget {
     this.hintText = '简单描述下方案背景与目标',
     required this.onSubmit,
     this.onAttachmentTap,
-    this.onBackgroundDescTap,
-    this.onModeTap,
     this.onVoiceTap,
     this.attachments = const [],
     this.onAttachmentRemove,
@@ -389,7 +385,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 操作工具栏
-  /// 按照Figma设计: 附件按钮 + 应用选择按钮 + 背景描述按钮 + "默认"模式按钮 + 发送按钮
+  /// 按照Figma设计: 附件按钮 + 应用选择按钮 + 发送按钮
   Widget _buildToolbar() {
     return Row(
       children: [
@@ -402,10 +398,6 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         
         // 应用选择按钮
         _buildAppSelectorButton(),
-        const SizedBox(width: 3.12),
-        
-        // 模式选择按钮
-        _buildModeButton(),
         
         const Spacer(),
         
@@ -536,42 +528,6 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
 
   /// 模式选择按钮
   /// Figma规范: 宽68, 高32, 圆角21.33
-  Widget _buildModeButton() {
-    return GestureDetector(
-      onTap: widget.onModeTap,
-      child: Container(
-        width: 68,
-        height: 32,
-        decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(21.33),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.tune,
-              size: 18,
-              color: AgentProfileTheme.titleColor,
-            ),
-            const SizedBox(width: 3.56),
-            Text(
-              '默认',
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.9),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 1.67,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// 发送按钮
   Widget _buildSendButton({required bool enabled}) {
     final canSend = enabled && widget.enabled;

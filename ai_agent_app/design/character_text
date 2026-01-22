@@ -1,0 +1,10 @@
+Text(
+    '选择 Chris 人物个性',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.33,
+    ),
+)
