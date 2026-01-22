@@ -467,36 +467,17 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   Widget _buildGreetingSection() {
     const userName = 'User';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _getGreeting(),
-              style: AgentProfileTheme.greetingStyle,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              userName,
-              style: AgentProfileTheme.userNameStyle,
-            ),
-          ],
+        Text(
+          _getGreeting(),
+          style: AgentProfileTheme.greetingStyle,
         ),
-        // 通知图标
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.68),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.notifications_outlined,
-            color: AgentProfileTheme.titleColor,
-          ),
+        const SizedBox(height: 6),
+        Text(
+          userName,
+          style: AgentProfileTheme.userNameStyle,
         ),
       ],
     );
