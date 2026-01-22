@@ -12,6 +12,7 @@ import '../services/attachment_service.dart';
 import '../services/image_upload_service.dart';
 import '../theme/agent_profile_theme.dart';
 import '../widgets/agent_avatar.dart';
+import '../widgets/app_selector_popup.dart';
 import '../widgets/expanded_chat_input.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/voice_input_dialog.dart';
@@ -47,6 +48,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 消息列表滚动控制器
   final ScrollController _scrollController = ScrollController();
+
+  /// 选中的应用
+  AppInfo? _selectedApp;
 
   @override
   void dispose() {
@@ -564,6 +568,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onModeTap: _onModeTap,
             onVoiceTap: _onVoiceTap,
             enabled: !isStreaming && !_isInitializing,
+            selectedApp: _selectedApp,
+            onAppSelected: _onAppSelected,
           ),
 
           // 快捷功能按钮（对话开始后，键盘收起时显示）
@@ -804,6 +810,13 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         }
       },
     );
+  }
+
+  /// 应用选择
+  void _onAppSelected(AppInfo? app) {
+    setState(() {
+      _selectedApp = app;
+    });
   }
 
   /// 模式选择

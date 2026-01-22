@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/agent_profile_theme.dart';
+import 'app_selector_popup.dart';
 
 /// 附件上传状态
 enum AttachmentStatus {
@@ -65,7 +66,7 @@ class ChatAttachment {
 /// 基于 Figma 设计稿实现，支持：
 /// - 图片/附件预览
 /// - 文字输入
-/// - 操作工具栏（附件、背景描述、模式选择）
+/// - 操作工具栏（附件、应用选择、背景描述、模式选择）
 /// - 语音输入（麦克风按钮）
 class ExpandedChatInput extends StatefulWidget {
   final String hintText;
@@ -77,6 +78,8 @@ class ExpandedChatInput extends StatefulWidget {
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
   final bool enabled;
+  final AppInfo? selectedApp;                    // 当前选中的应用
+  final ValueChanged<AppInfo?>? onAppSelected;  // 应用选择回调
 
   const ExpandedChatInput({
     super.key,
@@ -89,6 +92,8 @@ class ExpandedChatInput extends StatefulWidget {
     this.attachments = const [],
     this.onAttachmentRemove,
     this.enabled = true,
+    this.selectedApp,
+    this.onAppSelected,
   });
 
   @override
@@ -384,7 +389,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 操作工具栏
-  /// 按照Figma设计: 附件按钮 + 背景描述按钮 + "默认"模式按钮 + 发送按钮
+  /// 按照Figma设计: 附件按钮 + 应用选择按钮 + 背景描述按钮 + "默认"模式按钮 + 发送按钮
   Widget _buildToolbar() {
     return Row(
       children: [
@@ -395,11 +400,8 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         ),
         const SizedBox(width: 3.12),
         
-        // 背景描述按钮
-        _buildToolButton(
-          icon: Icons.article_outlined,
-          onTap: widget.onBackgroundDescTap,
-        ),
+        // 应用选择按钮
+        _buildAppSelectorButton(),
         const SizedBox(width: 3.12),
         
         // 模式选择按钮
@@ -411,6 +413,87 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         _buildSendButton(enabled: _hasText || widget.attachments.isNotEmpty),
       ],
     );
+  }
+
+  /// 应用选择按钮
+  /// Figma规范: 宽68, 高32, 圆角21.33
+  final GlobalKey _appSelectorKey = GlobalKey();
+  
+  Widget _buildAppSelectorButton() {
+    final selectedApp = widget.selectedApp;
+    final displayName = selectedApp?.name ?? '默认';
+    
+    return GestureDetector(
+      key: _appSelectorKey,
+      onTap: _showAppSelector,
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 11.61),
+        decoration: ShapeDecoration(
+          color: Colors.black.withOpacity(0.04),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(21.33),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 应用图标
+            if (selectedApp != null) ...[
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: selectedApp.icon,
+              ),
+            ] else ...[
+              Icon(
+                Icons.apps_rounded,
+                size: 18,
+                color: AgentProfileTheme.titleColor,
+              ),
+            ],
+            const SizedBox(width: 3.56),
+            Text(
+              displayName,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                height: 1.67,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 显示应用选择弹窗
+  void _showAppSelector() async {
+    final RenderBox button = _appSelectorKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    
+    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final buttonSize = button.size;
+    
+    // 计算弹窗位置（在按钮上方）
+    final position = RelativeRect.fromLTRB(
+      buttonPosition.dx,
+      buttonPosition.dy - 280, // 弹窗高度约256 + 间距
+      overlay.size.width - buttonPosition.dx - buttonSize.width,
+      overlay.size.height - buttonPosition.dy,
+    );
+    
+    final selectedApp = await showAppSelectorPopup(
+      context,
+      selectedApp: widget.selectedApp,
+      position: position,
+    );
+    
+    if (selectedApp != null) {
+      widget.onAppSelected?.call(selectedApp);
+    }
   }
 
   /// 工具按钮
