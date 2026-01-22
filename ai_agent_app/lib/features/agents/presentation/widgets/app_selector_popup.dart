@@ -4,64 +4,45 @@ import 'package:flutter/material.dart';
 class AppInfo {
   final String id;
   final String name;
-  final Widget icon;
+  final String iconPath; // 图标资源路径
 
   const AppInfo({
     required this.id,
     required this.name,
-    required this.icon,
+    required this.iconPath,
   });
 }
 
 /// 预定义的应用列表
 class AppInfoList {
-  static final notepad = AppInfo(
+  static const notepad = AppInfo(
     id: 'notepad',
     name: '便签',
-    icon: _buildGradientIcon(
-      const Color(0xFFFFCF4B),
-      const Color(0xFFFFB200),
-    ),
+    iconPath: 'assets/images/app_icons/app_notepad.png',
   );
 
-  static final gallery = AppInfo(
+  static const gallery = AppInfo(
     id: 'gallery',
     name: '相册',
-    icon: _buildGradientIcon(
-      const Color(0xFF064CFF),
-      const Color(0xFF549AFF),
-    ),
+    iconPath: 'assets/images/app_icons/app_gallery.png',
   );
 
-  static final recorder = AppInfo(
+  static const recorder = AppInfo(
     id: 'recorder',
     name: '录音',
-    icon: _buildRecorderIcon(),
+    iconPath: 'assets/images/app_icons/app_recorder.png',
   );
 
-  static final camera = AppInfo(
+  static const camera = AppInfo(
     id: 'camera',
     name: '相机',
-    icon: _buildCameraIcon(),
+    iconPath: 'assets/images/app_icons/app_camera.png',
   );
 
-  static final weather = AppInfo(
+  static const weather = AppInfo(
     id: 'weather',
     name: '天气',
-    icon: _buildGradientIcon(
-      const Color(0xFF2871FF),
-      const Color(0xFF5AA9FF),
-      isCircular: true,
-    ),
-  );
-
-  static final settings = AppInfo(
-    id: 'settings',
-    name: '设置',
-    icon: _buildGradientIcon(
-      const Color(0xFF8E8E93),
-      const Color(0xFFAEAEB2),
-    ),
+    iconPath: 'assets/images/app_icons/app_weather.png',
   );
 
   /// 所有应用
@@ -71,83 +52,7 @@ class AppInfoList {
         recorder,
         camera,
         weather,
-        settings,
       ];
-
-  /// 构建渐变图标
-  static Widget _buildGradientIcon(
-    Color startColor,
-    Color endColor, {
-    bool isCircular = false,
-  }) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: ShapeDecoration(
-        gradient: LinearGradient(
-          begin: const Alignment(-0.00, -0.00),
-          end: const Alignment(1.00, 1.00),
-          colors: [startColor, endColor],
-        ),
-        shape: isCircular
-            ? const CircleBorder()
-            : RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      ),
-    );
-  }
-
-  /// 录音图标
-  static Widget _buildRecorderIcon() {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F6F7),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Center(
-        child: Container(
-          width: 6,
-          height: 10,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFFFF535D), Color(0xFFDC0F4C)],
-            ),
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 相机图标
-  static Widget _buildCameraIcon() {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment(-0.00, -0.00),
-          end: Alignment(1.00, 1.00),
-          colors: [Color(0xFFF5F6F7), Color(0xFFD2D3DB)],
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Center(
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFCACBD2), width: 2),
-            color: const Color(0xFF2B2B2B),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// 应用选择弹窗
@@ -298,7 +203,24 @@ class _AppSelectorPopupState extends State<AppSelectorPopup> {
         child: Row(
           children: [
             // 应用图标
-            app.icon,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.asset(
+                app.iconPath,
+                width: 20,
+                height: 20,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.apps, size: 14),
+                ),
+              ),
+            ),
             const SizedBox(width: 12),
             // 应用名称
             Expanded(
@@ -314,10 +236,10 @@ class _AppSelectorPopupState extends State<AppSelectorPopup> {
             ),
             // 选中标记
             if (isSelected)
-              Icon(
+              const Icon(
                 Icons.check,
                 size: 20,
-                color: const Color(0xFF0066FF),
+                color: Color(0xFF0066FF),
               ),
           ],
         ),
@@ -360,4 +282,3 @@ Future<AppInfo?> showAppSelectorPopup(
 
   return result;
 }
-

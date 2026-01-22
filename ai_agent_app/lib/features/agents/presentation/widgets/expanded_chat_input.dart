@@ -441,10 +441,19 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           children: [
             // 应用图标
             if (selectedApp != null) ...[
-              SizedBox(
-                width: 18,
-                height: 18,
-                child: selectedApp.icon,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.asset(
+                  selectedApp.iconPath,
+                  width: 18,
+                  height: 18,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(
+                    Icons.apps_rounded,
+                    size: 18,
+                    color: AgentProfileTheme.titleColor,
+                  ),
+                ),
               ),
             ] else ...[
               Icon(
