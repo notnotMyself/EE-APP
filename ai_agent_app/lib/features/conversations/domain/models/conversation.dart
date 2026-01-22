@@ -26,6 +26,7 @@ class Message with _$Message {
     @JsonKey(name: 'conversation_id') required String conversationId,
     required String role,
     required String content,
+    List<Map<String, dynamic>>? attachments,
     @JsonKey(name: 'created_at') required DateTime createdAt,
   }) = _Message;
 

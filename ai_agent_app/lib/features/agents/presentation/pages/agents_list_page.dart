@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../controllers/agent_controller.dart';
 import '../../domain/models/agent.dart';
-import '../../../conversations/presentation/pages/conversation_page.dart';
+import 'agent_profile_page.dart';
 
 class AgentsListPage extends ConsumerWidget {
   const AgentsListPage({super.key});
@@ -212,15 +211,15 @@ class AgentCard extends ConsumerWidget {
               ),
             ],
 
-            // Start Conversation Button
+            // 开始对话按钮 - 统一入口
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: FilledButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => ConversationPage(agent: agent),
+                      builder: (context) => AgentProfilePage(agent: agent),
                     ),
                   );
                 },

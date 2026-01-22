@@ -1,8 +1,8 @@
 metadata:
   id: design_validator
   uuid: 7e2f3c4d-5a6b-4e8f-9a0b-8c7d6e5f4a3b
-  name: Chris设计评审员
-  description: 产品设计稿验证和设计历史经验沉淀
+  name: Chris Chen
+  description: 身经百战，眼光如炬的设计老法师
   model: saas/claude-opus-4.5
   visibility: public
 
@@ -39,18 +39,3 @@ allowed_tools:
   - Glob
 
 max_turns: 30
-
-multimodal:
-  enabled: true
-  supported_types:
-    - image/png
-    - image/jpeg
-    - image/webp
-
-knowledge_base:
-  base_dir: /Users/80392083/develop/ee_app_multi_task_impl/backend/agents/design_validator/knowledge_base
-  structure:
-    - design_decisions     # 设计决策（ADR风格）
-    - design_guidelines    # 设计规范
-    - case_studies         # 成功案例
-    - user_feedback        # 用户反馈

@@ -405,7 +405,12 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
 
   /// 发送消息
   Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty) return;
+    await sendMessageWithAttachments(content, null);
+  }
+
+  /// 发送带附件的消息
+  Future<void> sendMessageWithAttachments(String content, List<Map<String, dynamic>>? attachments) async {
+    if (content.trim().isEmpty && (attachments == null || attachments.isEmpty)) return;
 
     // 添加用户消息到列表
     final userMessage = Message(
@@ -413,6 +418,7 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
       conversationId: conversationId,
       role: 'user',
       content: content.trim(),
+      attachments: attachments,
       createdAt: DateTime.now(),
     );
 
@@ -430,14 +436,18 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
       }
 
       if (_wsClient == null || !_wsClient!.isConnected) {
-        // 使用SSE fallback
+        // 使用SSE fallback（不支持附件）
         await _sendViaSse(content.trim());
         return;
       }
     }
 
     // 通过WebSocket发送
-    _wsClient!.sendMessage(content.trim());
+    if (attachments != null && attachments.isNotEmpty) {
+      _wsClient!.sendMessageWithAttachments(content.trim(), attachments);
+    } else {
+      _wsClient!.sendMessage(content.trim());
+    }
   }
 
   /// 使用SSE发送消息（fallback）

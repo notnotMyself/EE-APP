@@ -1,0 +1,32 @@
+Text(
+    '图片',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.38,
+    ),
+)
+// ---
+Text(
+    '文件',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.38,
+    ),
+)
+// ---
+Text(
+    'Figma  链接',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.38,
+    ),
+)

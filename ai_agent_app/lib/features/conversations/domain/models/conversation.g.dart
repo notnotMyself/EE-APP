@@ -36,6 +36,9 @@ _$MessageImpl _$$MessageImplFromJson(Map<String, dynamic> json) =>
       conversationId: json['conversation_id'] as String,
       role: json['role'] as String,
       content: json['content'] as String,
+      attachments: (json['attachments'] as List<dynamic>?)
+          ?.map((e) => e as Map<String, dynamic>)
+          .toList(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
 
@@ -45,5 +48,6 @@ Map<String, dynamic> _$$MessageImplToJson(_$MessageImpl instance) =>
       'conversation_id': instance.conversationId,
       'role': instance.role,
       'content': instance.content,
+      'attachments': instance.attachments,
       'created_at': instance.createdAt.toIso8601String(),
     };

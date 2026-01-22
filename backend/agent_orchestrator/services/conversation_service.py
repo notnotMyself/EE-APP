@@ -14,9 +14,12 @@ Conversation Service - 对话服务
 """
 
 import asyncio
+import base64
 import logging
 import json
-from typing import Any, AsyncGenerator, Dict, List, Optional
+import re
+import httpx
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 from datetime import datetime
 
 from models import ConversationModel, MessageModel
@@ -25,6 +28,49 @@ from agent_registry import get_global_registry
 from config import get_timeout_config
 
 logger = logging.getLogger(__name__)
+
+# 模式前缀正则匹配 [MODE:xxx]
+MODE_PATTERN = re.compile(r'^\[MODE:(\w+)\]\s*(.*)$', re.DOTALL)
+
+# 评审模式映射到描述
+REVIEW_MODE_PROMPTS = {
+    'interaction_check': """
+【评审模式: 交互可用性验证 (模式 A)】
+
+请使用「模式 A: 交互可用性验证」进行评审，重点关注：
+1. 功能入口 - 用户认知模型匹配度
+2. 操作路径 - 心智模型与断点检测
+3. 交互一致性 - 平台规范符合度（iOS HIG / Material Design）
+4. 状态反馈 - 操作确认充分度
+5. 认知负荷 - 复杂度控制
+
+请按风险等级（🔴高/🟡中/🟢低）列出发现的问题，并给出具体改进建议。
+""",
+    'visual_consistency': """
+【评审模式: 视觉一致性与清晰度验证 (模式 B)】
+
+请使用「模式 B: 视觉一致性与清晰度验证」进行评审，重点关注：
+1. 颜色使用 - 品牌色板、对比度（WCAG AA >= 4.5:1）
+2. 字体字号 - Type Scale、最小字号 >= 12pt
+3. 间距布局 - 8pt Grid、对齐规范
+4. 视觉层级 - 主次信息、关键操作突出
+5. 组件一致性 - 设计系统复用
+
+请按风险等级（🔴高/🟡中/🟢低）列出发现的问题，并给出具体改进建议。
+""",
+    'compare_designs': """
+【评审模式: 方案对比与专业评估 (模式 C)】
+
+请使用「模式 C: 方案对比与专业评估」进行评审，从以下维度对比各方案：
+1. 认知难度 - 理解设计意图的认知成本
+2. 操作效率 - 完成任务的步骤数和复杂度
+3. 决策负荷 - 需要做出的选择和判断
+4. 符合预期 - 心智模型和平台规范匹配度
+5. 心理负担 - 可能产生的焦虑或困惑
+
+请给出各方案的优劣分析和最终推荐。
+""",
+}
 
 
 class ConversationService:
@@ -61,6 +107,83 @@ class ConversationService:
 
         # 优化：Agent role 缓存（减少数据库查询）
         self._agent_role_cache: Dict[str, str] = {}
+
+    def _extract_mode_and_message(self, user_message: str) -> Tuple[Optional[str], str]:
+        """从消息中提取模式标识和原始消息
+
+        消息格式: [MODE:interaction_check] 用户消息
+
+        Args:
+            user_message: 用户原始消息
+
+        Returns:
+            (mode_id, clean_message): 模式ID和清理后的消息
+        """
+        match = MODE_PATTERN.match(user_message)
+        if match:
+            mode_id = match.group(1)
+            clean_message = match.group(2).strip()
+            logger.info(f"Extracted review mode: {mode_id}")
+            return mode_id, clean_message
+        return None, user_message
+
+    def _get_mode_prompt(self, mode_id: str) -> str:
+        """获取模式对应的评审指令
+
+        Args:
+            mode_id: 模式ID (如 interaction_check)
+
+        Returns:
+            评审指令 prompt
+        """
+        return REVIEW_MODE_PROMPTS.get(mode_id, "")
+
+    async def _download_and_encode_images(
+        self, attachments: List[Dict]
+    ) -> List[Dict[str, Any]]:
+        """下载附件图片并转换为 base64
+
+        Args:
+            attachments: 附件列表 [{id, url, mime_type}]
+
+        Returns:
+            图片内容块列表，可直接用于 Claude 多模态
+        """
+        image_blocks = []
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for attachment in attachments:
+                url = attachment.get("url")
+                mime_type = attachment.get("mime_type", "image/jpeg")
+
+                if not url:
+                    continue
+
+                # 只处理图片类型
+                if not mime_type.startswith("image/"):
+                    logger.info(f"Skipping non-image attachment: {mime_type}")
+                    continue
+
+                try:
+                    response = await client.get(url)
+                    response.raise_for_status()
+
+                    image_data = base64.standard_b64encode(response.content).decode("utf-8")
+
+                    image_blocks.append({
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mime_type,
+                            "data": image_data,
+                        }
+                    })
+
+                    logger.info(f"Downloaded and encoded image: {url[:50]}...")
+                except Exception as e:
+                    logger.warning(f"Failed to download image {url}: {e}")
+
+        return image_blocks
 
     @property
     def conversation_timeout(self) -> int:
@@ -692,6 +815,7 @@ class ConversationService:
         user_message: str,
         user_id: str,
         ws_writer: Any,  # WebSocketWriter
+        attachments: Optional[List[Dict]] = None,
     ) -> None:
         """通过WebSocket发送消息并流式返回AI回复
 
@@ -702,6 +826,7 @@ class ConversationService:
             user_message: 用户消息内容
             user_id: 用户UUID
             ws_writer: WebSocketWriter实例
+            attachments: 附件列表 [{id, url, mime_type}]
 
         Raises:
             ValueError: 对话不存在或用户无权访问时
@@ -736,11 +861,12 @@ class ConversationService:
             )
 
             async with asyncio.timeout(timeout_seconds):
-                # 1. 保存用户消息
+                # 1. 保存用户消息（包含附件元数据）
                 await self.message_model.create_text_message(
                     conversation_id=conversation_id,
                     role="user",
                     content=user_message,
+                    attachments=attachments,
                 )
 
                 # 2. 根据是否为任务选择执行流程
@@ -759,6 +885,7 @@ class ConversationService:
                         conversation=conversation,
                         user_message=user_message,
                         ws_writer=ws_writer,
+                        attachments=attachments,
                     )
 
         except asyncio.TimeoutError:
@@ -862,8 +989,12 @@ class ConversationService:
         conversation: Dict,
         user_message: str,
         ws_writer: Any,
+        attachments: Optional[List[Dict]] = None,
     ) -> None:
         """原有对话流程（WebSocket版本）"""
+        # 提取模式标识和清理消息
+        mode_id, clean_message = self._extract_mode_and_message(user_message)
+
         # 并行执行多个IO操作
         agent_role_task = asyncio.create_task(
             asyncio.to_thread(self._get_agent_role, conversation["agent_id"])
@@ -876,13 +1007,34 @@ class ConversationService:
 
         agent_role, messages = await asyncio.gather(agent_role_task, messages_task)
 
+        # 处理附件图片（如果有）
+        image_blocks = []
+        if attachments:
+            image_blocks = await self._download_and_encode_images(attachments)
+            if image_blocks:
+                logger.info(f"Downloaded and encoded {len(image_blocks)} images for multimodal analysis")
+
         # 构建上下文
         context_prompt = self._build_context_with_briefings(conversation, messages)
-        full_prompt = (
-            f"{context_prompt}\n\n"
-            f"用户最新消息: {user_message}\n\n"
-            f"请根据对话历史和简报信息回答用户的问题。"
-        )
+
+        # 如果有评审模式，添加对应的评审指令
+        mode_prompt = self._get_mode_prompt(mode_id) if mode_id else ""
+
+        if mode_prompt:
+            # 有评审模式时，使用专业评审 prompt
+            full_prompt = (
+                f"{context_prompt}\n\n"
+                f"{mode_prompt}\n\n"
+                f"用户消息: {clean_message}\n\n"
+                f"请按照指定的评审模式进行分析。如果用户上传了图片，请仔细分析图片内容。"
+            )
+        else:
+            # 普通对话
+            full_prompt = (
+                f"{context_prompt}\n\n"
+                f"用户最新消息: {clean_message}\n\n"
+                f"请根据对话历史和简报信息回答用户的问题。"
+            )
 
         # 流式生成回复
         # 工具执行进度心跳任务
@@ -910,6 +1062,7 @@ class ConversationService:
         async for event in self.agent_service.execute_query(
             prompt=full_prompt,
             agent_role=agent_role,
+            image_blocks=image_blocks if image_blocks else None,
         ):
             event_type = event.get("type")
             # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)

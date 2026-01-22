@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -178,6 +180,10 @@ class StreamingMessageBubble extends ConsumerWidget {
 }
 
 /// 消息气泡内容
+/// 
+/// Figma设计规范：
+/// - 用户消息：蓝色背景(0xFF2C69FF) + 白色文字
+/// - AI消息：白色背景 + 深色文字
 class MessageBubbleContent extends StatelessWidget {
   final Message message;
   final bool isStreaming;
@@ -191,7 +197,17 @@ class MessageBubbleContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    final theme = Theme.of(context);
+
+    // Figma设计规范：用户蓝色，AI白色
+    final backgroundColor = isUser
+        ? const Color(0xFF2C69FF)  // 用户消息：蓝色
+        : Colors.white;            // AI消息：白色
+    
+    final textColor = isUser
+        ? Colors.white             // 用户消息：白色文字
+        : const Color(0xFF1A1A1A); // AI消息：深色文字
+
+    final borderRadius = BorderRadius.circular(24); // Figma design radius
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -199,44 +215,93 @@ class MessageBubbleContent extends StatelessWidget {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
-        decoration: BoxDecoration(
-          color: isUser
-              ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+        decoration: ShapeDecoration(
+          color: backgroundColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: borderRadius,
+          ),
+          // AI消息添加轻微阴影，增强层次感
+          shadows: isUser ? null : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (isUser)
-              Text(
-                message.content,
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary,
-                  fontSize: 15,
+            // 消息文本内容
+            if (isUser) ...[
+              if (message.content.isNotEmpty)
+                Text(
+                  message.content,
+                  textAlign: TextAlign.justify,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.40,
+                  ),
                 ),
-              )
-            else
+              // 显示附件（用户消息）
+              if (message.attachments != null && message.attachments!.isNotEmpty) ...[
+                if (message.content.isNotEmpty) const SizedBox(height: 10),
+                _buildAttachments(context, message.attachments!),
+              ],
+            ] else ...[
+              // AI消息使用Markdown渲染
               MarkdownBody(
                 data: message.content,
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 15,
-                    height: 1.5,
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    height: 1.50,
+                  ),
+                  h1: TextStyle(
+                    color: textColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  h2: TextStyle(
+                    color: textColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  h3: TextStyle(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                   code: TextStyle(
-                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                    backgroundColor: const Color(0xFFF5F5F5),
                     fontSize: 13,
+                    color: const Color(0xFF333333),
+                    fontFamily: 'monospace',
                   ),
                   codeblockDecoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
+                    color: const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(8),
+                  ),
+                  listBullet: TextStyle(color: textColor),
+                  blockquoteDecoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: const Color(0xFF2C69FF),
+                        width: 3,
+                      ),
+                    ),
                   ),
                 ),
                 selectable: true,
               ),
+            ],
+            // 流式传输指示器
             if (isStreaming) ...[
               const SizedBox(height: 8),
               SizedBox(
@@ -245,13 +310,116 @@ class MessageBubbleContent extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation(
-                    theme.colorScheme.primary,
+                    isUser ? Colors.white : const Color(0xFF2C69FF),
                   ),
                 ),
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// 构建附件展示区域
+  /// Figma设计规范：图片缩略图43x43，圆角4px，间距3px
+  Widget _buildAttachments(BuildContext context, List<Map<String, dynamic>> attachments) {
+    return Container(
+      width: double.infinity,
+      child: Wrap(
+        spacing: 3,
+        runSpacing: 3,
+        children: attachments.map((attachment) {
+          final url = attachment['url'] as String?;
+          if (url == null || url.isEmpty) return const SizedBox.shrink();
+
+          return _AttachmentThumbnail(url: url);
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// 附件缩略图组件
+/// 
+/// 支持本地文件和网络URL，兼容 Web 和移动端
+class _AttachmentThumbnail extends StatelessWidget {
+  final String url;
+
+  const _AttachmentThumbnail({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    // 判断是本地文件还是网络URL
+    final isNetworkUrl = url.startsWith('http://') || url.startsWith('https://');
+    final isLocalFile = !isNetworkUrl && (url.startsWith('/') || url.startsWith('file://') || url.startsWith('blob:'));
+    final cleanPath = url.startsWith('file://') ? url.substring(7) : url;
+
+    return Container(
+      width: 43,
+      height: 43,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _buildImage(isNetworkUrl, isLocalFile, cleanPath),
+    );
+  }
+
+  Widget _buildImage(bool isNetworkUrl, bool isLocalFile, String cleanPath) {
+    if (isNetworkUrl) {
+      // 网络URL
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+      );
+    } else if (isLocalFile) {
+      // 本地文件 - Web 平台使用 blob URL，移动端使用 File
+      if (url.startsWith('blob:')) {
+        // Web 平台的 blob URL 可以直接用 Image.network
+        return Image.network(
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      } else {
+        // 移动端使用 File
+        return Image.file(
+          File(cleanPath),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+        );
+      }
+    } else {
+      return _buildImagePlaceholder();
+    }
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: Colors.black.withOpacity(0.04),
+      child: const Icon(
+        Icons.image_outlined,
+        size: 20,
+        color: Colors.grey,
       ),
     );
   }

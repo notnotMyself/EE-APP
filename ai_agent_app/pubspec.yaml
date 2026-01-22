@@ -46,9 +46,18 @@ dependencies:
   # 工具类
   intl: ^0.19.0
   uuid: ^4.3.3
+  path: ^1.8.0
   logger: ^2.0.2+1
   shared_preferences: ^2.2.2
   connectivity_plus: ^5.0.2
+
+  # 文件和媒体选择
+  image_picker: ^1.0.7
+  file_picker: ^6.1.1
+  
+  # 语音输入
+  speech_to_text: ^6.6.0
+  permission_handler: ^11.3.0
 
   # JSON序列化
   json_annotation: ^4.8.1
@@ -74,6 +83,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/app_icons/
 
   # fonts:
   #   - family: CustomFont

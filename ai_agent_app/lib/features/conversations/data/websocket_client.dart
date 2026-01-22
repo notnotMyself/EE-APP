@@ -256,6 +256,18 @@ class ConversationWebSocketClient {
     });
   }
 
+  /// 发送带附件的消息
+  void sendMessageWithAttachments(String content, List<Map<String, dynamic>>? attachments) {
+    final message = <String, dynamic>{
+      'type': 'message',
+      'content': content,
+    };
+    if (attachments != null && attachments.isNotEmpty) {
+      message['attachments'] = attachments;
+    }
+    _send(message);
+  }
+
   void _send(Map<String, dynamic> data) {
     if (_channel == null || _connectionState != ConnectionState.connected) {
       _logger.w('Cannot send message: not connected');
