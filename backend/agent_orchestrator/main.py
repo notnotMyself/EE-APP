@@ -33,12 +33,14 @@ try:
 except ImportError:
     logging.warning("python-dotenv not installed, using system environment variables")
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 from typing import List, Optional
 import json
+import traceback
 
 # 新的 Agent SDK
 from agent_sdk import AgentSDKService, AgentSDKConfig
@@ -311,6 +313,98 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================
+# 全局异常处理器 (Global Exception Handlers)
+# ============================================
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTP异常处理器 - 处理所有HTTPException"""
+    logger.warning(f"HTTP {exc.status_code}: {exc.detail} (path={request.url.path})")
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": exc.detail,
+            }
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """请求验证异常处理器 - 处理Pydantic验证错误"""
+    logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
+
+    # 提取第一个错误信息，生成用户友好的提示
+    first_error = exc.errors()[0] if exc.errors() else {}
+    field = " -> ".join(str(loc) for loc in first_error.get("loc", []))
+    msg = first_error.get("msg", "验证失败")
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "success": False,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": f"请求参数错误: {field} - {msg}",
+                "details": exc.errors() if os.getenv("ENV") == "dev" else None
+            }
+        }
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    """业务逻辑异常处理器 - 处理ValueError（通常是业务校验失败）"""
+    logger.warning(f"Business error on {request.url.path}: {str(exc)}")
+
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "success": False,
+            "error": {
+                "code": "BUSINESS_ERROR",
+                "message": str(exc) if str(exc) else "操作失败，请检查输入",
+            }
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理器 - 捕获所有未处理的异常"""
+    # 记录详细错误日志（包含堆栈跟踪）
+    logger.error(
+        f"Unhandled exception on {request.method} {request.url.path}",
+        exc_info=True
+    )
+
+    # 生产环境不暴露技术细节
+    is_dev = os.getenv("ENV") == "dev"
+    error_details = {
+        "exception_type": type(exc).__name__,
+        "exception_message": str(exc),
+        "traceback": traceback.format_exc()
+    } if is_dev else None
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "服务器内部错误，请稍后重试" if not is_dev else str(exc),
+                "details": error_details
+            }
+        }
+    )
+
 
 # 注册新的API路由
 app.include_router(briefings_router)
