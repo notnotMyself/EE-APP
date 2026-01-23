@@ -45,6 +45,7 @@ dependencies:
 
   # 工具类
   intl: ^0.19.0
+  timeago: ^3.6.1
   uuid: ^4.3.3
   path: ^1.8.0
   logger: ^2.0.2+1
@@ -84,8 +85,9 @@ flutter:
   assets:
     - assets/images/
     - assets/images/app_icons/
+    - assets/icons/
 
-  # fonts:
-  #   - family: CustomFont
-  #     fonts:
-  #       - asset: fonts/CustomFont-Regular.ttf
+  fonts:
+    - family: OPPO Sans
+      fonts:
+        - asset: assets/fonts/OPPO Sans 4.0.ttf

@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-01-20T19:06:06.323038",
+  "last_updated": "2026-01-23T09:00:36.217439",
   "source": "ai-bot.cn",
   "news_by_date": {
     "1月6·周二": [
@@ -124,48 +124,7 @@
       }
     ],
     "1月7·周三": [],
-    "1月20·周二": [
-      {
-        "title": "GLM-4.7-Flash开源、免费",
-        "url": "https://mp.weixin.qq.com/s/JDyyRbMmSLDDGuepJ-Y56w",
-        "summary": "智谱AI正式开源并发布GLM-4.7-Flash模型，模型采用混合思考架构，总参数量30B，激活参数量仅3B，为轻量化部署提供高性能选择。模型在SWE-bench Verified、τ²-Bench等主流基准测试中表现优异，超越同尺寸开源模型达到SOTA水平。",
-        "source": "智谱",
-        "category": "前沿技术",
-        "tag": "开源"
-      },
-      {
-        "title": "欢迎报名 Kimi 新模型 API 内测计划",
-        "url": "https://mp.weixin.qq.com/s/mheGTIQJsxDtjbHFOv6FjA",
-        "summary": "月之暗面（Moonshot AI）正式启动Kimi新模型API内测计划，面向已完成企业认证的开放平台用户开放申请。平台将根据开发者使用场景与新模型能力的匹配度筛选首批测试用户，通过审核后将由官方团队电话联系。与开发者共同探索下一代模型的应用潜力。",
-        "source": "Kimi开放平台",
-        "category": "前沿技术",
-        "tag": "工具"
-      },
-      {
-        "title": "马斯克开源 X 平台推荐算法",
-        "url": "https://mp.weixin.qq.com/s/vpFmSJZa_8XPKeewFrV8qQ",
-        "summary": "马斯克宣布正式开源X平台（原Twitter）核心推荐算法代码x-Algorithm，成为首个将流量分发逻辑完全透明化的主流社交平台。新版算法采用与xAI的Grok模型相同的Transformer架构，实现”零人工特征工程”，完全依赖模型自主学习用户交互历史来预测内容相关性。",
-        "source": "APPSSO",
-        "category": "前沿技术",
-        "tag": "开源"
-      },
-      {
-        "title": "「自然选择」融资3000万美元，阿里、蚂蚁布局AI陪伴",
-        "url": "https://mp.weixin.qq.com/s/jwSoZ32Gd4ELa537L2nbsg",
-        "summary": "AI陪伴公司「自然选择」完成超3000万美元融资，投资方包括阿里巴巴、蚂蚁集团、启明创投等机构。公司推出的《EVE》产品重新定义了AI陪伴的五个维度：主动发起关怀、双商兼具的”活人感”、SOTA级长时记忆、高沉浸感设计以及破次元生活服务介入。",
-        "source": "暗涌Waves",
-        "category": "产业重磅",
-        "tag": "重磅"
-      },
-      {
-        "title": "Kimi开启新一轮融资！估值直冲48亿美元",
-        "url": "https://mp.weixin.qq.com/s/-AMWtMb1jNE2hCdIu5FqbA",
-        "summary": "月之暗面在距上轮融资仅数周后启动新一轮融资，投前估值逼近48亿美元，较上月43亿美元估值溢价5亿美元。本轮融资获机构疯狂抢购，主因智谱与MiniMax港股上市表现强劲后，投资人加速布局中国AI头部标的。公司目前持有超100亿人民币现金储备，创始人杨植麟表示不急于IPO，将聚焦下一代K3推理模型研发与算力扩容。",
-        "source": "Z Finance",
-        "category": "产业重磅",
-        "tag": "重磅"
-      }
-    ],
+    "1月20·周二": [],
     "1月19·周一": [],
     "1月16·周五": [
       {
@@ -201,6 +160,48 @@
         "tag": ""
       }
     ],
-    "1月15·周四": []
+    "1月15·周四": [],
+    "1月21·周三": [
+      {
+        "title": "百度发布文心大模型 5.0 正式版：2.4 万亿参数，具备全模态理解与生成能力",
+        "url": "https://mp.weixin.qq.com/s/1n3Pog6rZ-l27PSVQqKHgg",
+        "summary": "百度正式发布文心大模型5.0版本，模型参数量达2.4万亿，采用原生全模态统一建模技术，具备文本、图像、音频、视频等信息的全面理解与生成能力。官方表示，在40余项权威基准评测中，其语言与多模态理解能力超越Gemini-2.5-Pro、GPT-5-High等国际主流模型。",
+        "source": "百度文心",
+        "category": "前沿技术",
+        "tag": ""
+      },
+      {
+        "title": "腾讯CodeBuddy Code 2.0 重磅升级！",
+        "url": "https://mp.weixin.qq.com/s/mXziYWAqRTP-I7UxmKyRTg",
+        "summary": "腾讯CodeBuddy Code2.0版本正式发布，核心升级包括开放SDK集成能力，通过Plan模式与ACP协议实现Agent能力标准化输出，支持企业快速构建生产级AI应用。平台全面兼容开发者社区生态，支持Plugin插件市场与自定义Subagents智能体，集成TencentOS提供容器化安全沙箱运行环境。新版本增强工程记忆、LSP代码诊断等核心功能，支持GLM-4.7等多模型切换。",
+        "source": "腾讯云代码助手CodeBuddy",
+        "category": "前沿技术",
+        "tag": "工具"
+      },
+      {
+        "title": "8B端侧写作智能体AgentCPM-Report开源！",
+        "url": "https://mp.weixin.qq.com/s/bH9GV1C7mXNVGX-Jhlgobw",
+        "summary": "清华大学、中国人民大学、面壁智能与OpenBMB社区联合发布本地化深度调研智能体AgentCPM-Report。模型仅8B参数，通过40轮深度检索与100轮思维链推演，在DeepResearch Bench等三大评测中综合表现超越部分顶级闭源系统，尤其在洞察性指标排名第一。",
+        "source": "面壁智能",
+        "category": "前沿技术",
+        "tag": "开源"
+      },
+      {
+        "title": "10B击败200B！阶跃星辰开源视觉语言SOTA：Step3-VL-10B",
+        "url": "https://mp.weixin.qq.com/s/Sh5j0uG0wtR04XHrg-EoYA",
+        "summary": "阶跃星辰（StepFun）开源10B参数多模态模型Step3-VL-10B，在多项基准测试中性能超越参数量20倍以上的主流大模型。模型在视觉感知、数学竞赛、逻辑推理等核心维度达到SOTA水平，其创新的并行协调推理机制（PaCoRe）显著提升复杂任务处理能力。",
+        "source": "阶跃星辰",
+        "category": "前沿技术",
+        "tag": "开源"
+      },
+      {
+        "title": "MiniMax推出Agent 2.0，升级为进阶型桌面智能协作伙伴",
+        "url": "https://mp.weixin.qq.com/s/I2RgH04J2l5mG1x492T17A",
+        "summary": "MiniMax发布第二代智能体产品MiniMax Agent 2.0，推出“AI原生工作台”新范式。平台包含桌面端应用，支持Windows和Mac系统，可深度打通本地文件与环境，实现本地与云端任务的无缝协同。核心创新“Expert Agents”专家系统，通过封装行业SOP与私有知识，将专业能力从通用70分提升至95分以上。",
+        "source": "机器之心",
+        "category": "前沿技术",
+        "tag": "工具"
+      }
+    ]
   }
 }

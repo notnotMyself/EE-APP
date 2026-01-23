@@ -1,13 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../domain/models/conversation.dart';
 import '../state/conversation_notifier.dart';
 import '../state/conversation_state.dart';
 import 'tool_execution_card.dart';
+
+/// OPPO Sans 字体家族名称
+const String _oppoSansFamily = 'OPPO Sans';
 
 /// 优化的消息列表组件
 ///
@@ -151,16 +156,34 @@ class StreamingMessageBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final streamingContent = ref.watch(
+    // 使用单个 select 同时获取流式内容和最新消息，避免状态不同步
+    final data = ref.watch(
       conversationNotifierProvider(conversationId).select(
-        (state) => state.streamingState.maybeMap(
-          streaming: (s) => s.content,
-          orElse: () => null,
-        ),
+        (state) {
+          final streamingContent = state.streamingState.maybeMap(
+            streaming: (s) => s.content,
+            orElse: () => null,
+          );
+          // 获取最新的 assistant 消息内容，用于去重检查
+          final lastAssistantContent = state.messages.isNotEmpty &&
+                  state.messages.last.role == 'assistant'
+              ? state.messages.last.content
+              : null;
+          return (streamingContent, lastAssistantContent);
+        },
       ),
     );
 
+    final streamingContent = data.$1;
+    final lastAssistantContent = data.$2;
+
+    // 如果没有流式内容，不显示
     if (streamingContent == null || streamingContent.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // 防止重复：如果流式内容与最新消息内容相同，说明消息已经添加到列表，不再显示流式气泡
+    if (lastAssistantContent != null && lastAssistantContent == streamingContent) {
       return const SizedBox.shrink();
     }
 
@@ -184,7 +207,7 @@ class StreamingMessageBubble extends ConsumerWidget {
 /// Figma设计规范：
 /// - 用户消息：蓝色背景(0xFF2C69FF) + 白色文字
 /// - AI消息：白色背景 + 深色文字
-class MessageBubbleContent extends StatelessWidget {
+class MessageBubbleContent extends StatefulWidget {
   final Message message;
   final bool isStreaming;
 
@@ -195,8 +218,14 @@ class MessageBubbleContent extends StatelessWidget {
   });
 
   @override
+  State<MessageBubbleContent> createState() => _MessageBubbleContentState();
+}
+
+class _MessageBubbleContentState extends State<MessageBubbleContent> {
+
+  @override
   Widget build(BuildContext context) {
-    final isUser = message.role == 'user';
+    final isUser = widget.message.role == 'user';
 
     // Figma设计规范：用户蓝色，AI白色
     final backgroundColor = isUser
@@ -209,114 +238,249 @@ class MessageBubbleContent extends StatelessWidget {
 
     final borderRadius = BorderRadius.circular(24); // Figma design radius
 
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        decoration: ShapeDecoration(
-          color: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: borderRadius,
+    return Column(
+      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.8,
+              ),
+              decoration: ShapeDecoration(
+                color: backgroundColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: borderRadius,
+                ),
+                // AI消息添加轻微阴影，增强层次感
+                shadows: isUser ? null : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 消息文本内容
+                  if (isUser) ...[
+                    if (widget.message.content.isNotEmpty)
+                      Text(
+                        widget.message.content,
+                        textAlign: TextAlign.justify,
+                        style: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          height: 1.40,
+                        ),
+                      ),
+                    // 显示附件（用户消息）
+                    if (widget.message.attachments != null && widget.message.attachments!.isNotEmpty) ...[
+                      if (widget.message.content.isNotEmpty) const SizedBox(height: 10),
+                      _buildAttachments(context, widget.message.attachments!),
+                    ],
+                  ] else ...[
+                    // AI消息使用Markdown渲染
+                    MarkdownBody(
+                      data: widget.message.content,
+                      styleSheet: MarkdownStyleSheet(
+                        p: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          height: 1.50,
+                        ),
+                        h1: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        h2: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        h3: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        code: TextStyle(
+                          backgroundColor: const Color(0xFFF5F5F5),
+                          fontSize: 13,
+                          color: const Color(0xFF333333),
+                          fontFamily: 'monospace',
+                        ),
+                        codeblockDecoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        listBullet: TextStyle(
+                          fontFamily: _oppoSansFamily,
+                          color: textColor,
+                        ),
+                        blockquoteDecoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: const Color(0xFF2C69FF),
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                      ),
+                      selectable: true,
+                    ),
+                  ],
+                  // 流式传输指示器
+                  if (widget.isStreaming) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          isUser ? Colors.white : const Color(0xFF2C69FF),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-          // AI消息添加轻微阴影，增强层次感
-          shadows: isUser ? null : [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+        // AI消息操作按钮（复制、转发、保存）- 固定显示
+        if (!isUser && !widget.isStreaming) ...[
+          const SizedBox(height: 8),
+          _buildMessageActions(context),
+        ],
+      ],
+    );
+  }
+
+  /// 构建消息操作按钮（复制、转发、保存）
+  /// 基于 Figma message_button 设计
+  Widget _buildMessageActions(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 复制按钮
+        _buildSvgActionButton(
+          assetPath: 'assets/icons/copy.svg',
+          onTap: () => _handleCopy(context),
+        ),
+        const SizedBox(width: 9),
+        // 转发按钮
+        _buildSvgActionButton(
+          assetPath: 'assets/icons/forward.svg',
+          onTap: () => _showDevelopingDialog(context, '转发'),
+        ),
+        const SizedBox(width: 9),
+        // 保存按钮
+        _buildSvgActionButton(
+          assetPath: 'assets/icons/save.svg',
+          onTap: () => _showDevelopingDialog(context, '保存'),
+        ),
+      ],
+    );
+  }
+
+  /// 操作按钮样式（使用 SVG 图标，基于 Figma 规范）
+  Widget _buildSvgActionButton({
+    required String assetPath,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        clipBehavior: Clip.antiAlias,
+        decoration: ShapeDecoration(
+          color: Colors.black.withOpacity(0.04),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(90),
+          ),
+        ),
+        child: Center(
+          child: SvgPicture.asset(
+            assetPath,
+            width: 15,
+            height: 15,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withOpacity(0.9),
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 复制消息内容
+  void _handleCopy(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: widget.message.content));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('已复制到剪贴板'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 显示正在开发中对话框
+  void _showDevelopingDialog(BuildContext context, String feature) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.construction_rounded,
+              color: const Color(0xFF2C69FF),
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$feature功能',
+              style: const TextStyle(
+                fontFamily: _oppoSansFamily,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 消息文本内容
-            if (isUser) ...[
-              if (message.content.isNotEmpty)
-                Text(
-                  message.content,
-                  textAlign: TextAlign.justify,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 1.40,
-                  ),
-                ),
-              // 显示附件（用户消息）
-              if (message.attachments != null && message.attachments!.isNotEmpty) ...[
-                if (message.content.isNotEmpty) const SizedBox(height: 10),
-                _buildAttachments(context, message.attachments!),
-              ],
-            ] else ...[
-              // AI消息使用Markdown渲染
-              MarkdownBody(
-                data: message.content,
-                styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(
-                    color: textColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 1.50,
-                  ),
-                  h1: TextStyle(
-                    color: textColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  h2: TextStyle(
-                    color: textColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  h3: TextStyle(
-                    color: textColor,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  code: TextStyle(
-                    backgroundColor: const Color(0xFFF5F5F5),
-                    fontSize: 13,
-                    color: const Color(0xFF333333),
-                    fontFamily: 'monospace',
-                  ),
-                  codeblockDecoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  listBullet: TextStyle(color: textColor),
-                  blockquoteDecoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: const Color(0xFF2C69FF),
-                        width: 3,
-                      ),
-                    ),
-                  ),
-                ),
-                selectable: true,
-              ),
-            ],
-            // 流式传输指示器
-            if (isStreaming) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(
-                    isUser ? Colors.white : const Color(0xFF2C69FF),
-                  ),
-                ),
-              ),
-            ],
-          ],
+        content: Text(
+          '正在开发中，敬请期待...',
+          style: TextStyle(
+            fontFamily: _oppoSansFamily,
+            fontSize: 14,
+            color: Colors.black.withOpacity(0.6),
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              '知道了',
+              style: TextStyle(fontFamily: _oppoSansFamily),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -484,6 +648,7 @@ class ConnectionStatusIndicator extends ConsumerWidget {
         Text(
           text,
           style: TextStyle(
+            fontFamily: _oppoSansFamily,
             color: color,
             fontSize: 12,
           ),
@@ -496,6 +661,7 @@ class ConnectionStatusIndicator extends ConsumerWidget {
 /// 等待AI响应的指示器
 ///
 /// 在用户发送消息后立即显示，让用户知道系统正在处理
+/// 优化：使用蓝色主题色，添加友好的文字提示
 class WaitingIndicator extends StatefulWidget {
   const WaitingIndicator({super.key});
 
@@ -506,6 +672,9 @@ class WaitingIndicator extends StatefulWidget {
 class _WaitingIndicatorState extends State<WaitingIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+
+  // 品牌蓝色
+  static const Color _brandBlue = Color(0xFF2C69FF);
 
   @override
   void initState() {
@@ -524,33 +693,48 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 三个跳动的点
-            _buildDot(colorScheme, 0),
+            _buildDot(0),
             const SizedBox(width: 4),
-            _buildDot(colorScheme, 1),
+            _buildDot(1),
             const SizedBox(width: 4),
-            _buildDot(colorScheme, 2),
+            _buildDot(2),
+            const SizedBox(width: 10),
+            // 友好的文字提示
+            Text(
+              '正在思考...',
+              style: TextStyle(
+                fontFamily: _oppoSansFamily,
+                color: Colors.black.withOpacity(0.5),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDot(ColorScheme colorScheme, int index) {
+  Widget _buildDot(int index) {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -563,12 +747,12 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
             : (2 - value * 2); // 1 -> 0
 
         return Transform.translate(
-          offset: Offset(0, -4 * offset),
+          offset: Offset(0, -3 * offset),
           child: Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.6 + 0.4 * offset),
+              color: _brandBlue.withOpacity(0.5 + 0.5 * offset),
               shape: BoxShape.circle,
             ),
           ),

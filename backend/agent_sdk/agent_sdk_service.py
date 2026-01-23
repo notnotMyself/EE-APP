@@ -3,15 +3,21 @@ Agent SDK Service
 
 基于 Claude Agent SDK 的 Agent 服务封装。
 处理 Agent 任务执行、消息流式输出、工具调用等。
+
+多模态支持：
+- 对于纯文本请求，使用 Claude Agent SDK（支持工具调用）
+- 对于带图片的多模态请求，使用 Anthropic API 直接调用（流式输出）
 """
 
 import asyncio
 import logging
+import os
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Union
 
+from anthropic import AsyncAnthropic
 from claude_agent_sdk import (
     AgentDefinition,
     AssistantMessage,
@@ -44,9 +50,9 @@ class MessageBuffer:
     def __init__(
         self,
         flush_callback: Callable[[str], Any],
-        initial_flush_interval: float = 0.03,  # 首次 30ms 快速刷新 (优化: 从50ms减少)
-        steady_flush_interval: float = 0.1,    # 后续 100ms 稳定刷新 (优化: 从300ms减少)
-        max_buffer_size: int = 30,             # 30 字符触发刷新 (优化: 从50减少)
+        initial_flush_interval: float = 0.01,  # 首次 10ms 快速刷新 (TTFT优化)
+        steady_flush_interval: float = 0.08,   # 后续 80ms 稳定刷新
+        max_buffer_size: int = 15,             # 15 字符触发刷新 (更快响应)
     ):
         self.flush_callback = flush_callback
         self.initial_flush_interval = initial_flush_interval
@@ -114,7 +120,12 @@ class MessageBuffer:
 
 
 class AgentSDKService:
-    """基于 Claude Agent SDK 的 Agent 服务"""
+    """基于 Claude Agent SDK 的 Agent 服务
+    
+    多模态支持：
+    - 纯文本请求：使用 Claude Agent SDK（支持工具调用）
+    - 带图片请求：使用 Anthropic API 直接调用（流式输出）
+    """
 
     def __init__(
         self,
@@ -124,9 +135,34 @@ class AgentSDKService:
         self.config = config or get_config()
         self.supabase = supabase_client
         self._cancelled_tasks: set = set()
+        
+        # 预热优化：System prompt 缓存（减少文件 I/O）
+        self._system_prompt_cache: Dict[str, str] = {}
+        
+        # 预热优化：Agent options 缓存
+        self._agent_options_cache: Dict[str, ClaudeAgentOptions] = {}
+        
+        # 初始化 Anthropic 客户端（用于多模态请求）
+        self._anthropic_client: Optional[AsyncAnthropic] = None
+        api_key = self.config.anthropic_auth_token or os.getenv("ANTHROPIC_AUTH_TOKEN")
+        base_url = self.config.anthropic_base_url or os.getenv("ANTHROPIC_BASE_URL")
+        
+        if api_key:
+            self._anthropic_client = AsyncAnthropic(
+                api_key=api_key,
+                base_url=base_url,
+            )
+            logger.info(f"Anthropic client initialized for multimodal support (base_url={base_url})")
 
     def _load_system_prompt(self, agent_role: str) -> str:
-        """加载 Agent 的系统提示词"""
+        """加载 Agent 的系统提示词（带缓存优化）
+        
+        预热优化：首次加载后缓存，避免重复文件 I/O
+        """
+        # 检查缓存
+        if agent_role in self._system_prompt_cache:
+            return self._system_prompt_cache[agent_role]
+        
         workdir = self.config.get_agent_workdir(agent_role)
         claude_md_path = workdir / "CLAUDE.md"
 
@@ -135,25 +171,39 @@ class AgentSDKService:
             raise AgentNotFoundError(agent_role)
 
         if not claude_md_path.exists():
-            return f"""你是{role_config.name}。
+            prompt = f"""你是{role_config.name}。
 
 职责：{role_config.description}
 
 请根据用户的问题提供专业的回答和建议。"""
+            self._system_prompt_cache[agent_role] = prompt
+            return prompt
 
         try:
             with open(claude_md_path, "r", encoding="utf-8") as f:
-                return f.read()
+                prompt = f.read()
+                self._system_prompt_cache[agent_role] = prompt
+                logger.info(f"System prompt cached for agent: {agent_role}")
+                return prompt
         except Exception as e:
             logger.error(f"Error loading CLAUDE.md for {agent_role}: {e}")
-            return f"你是{role_config.name}。"
+            prompt = f"你是{role_config.name}。"
+            self._system_prompt_cache[agent_role] = prompt
+            return prompt
 
     def _get_agent_options(
         self,
         agent_role: str,
         mcp_servers: Optional[List[Any]] = None,
     ) -> ClaudeAgentOptions:
-        """构建 Agent 配置选项"""
+        """构建 Agent 配置选项（带缓存优化）
+        
+        注意：MCP servers 不缓存，因为可能变化
+        """
+        # 检查缓存（仅当没有 mcp_servers 时使用缓存）
+        if not mcp_servers and agent_role in self._agent_options_cache:
+            return self._agent_options_cache[agent_role]
+        
         role_config = self.config.get_agent_role(agent_role)
         if not role_config:
             raise AgentNotFoundError(agent_role)
@@ -175,8 +225,210 @@ class AgentSDKService:
         # 添加 MCP 服务器
         if mcp_servers:
             options.mcp_servers = mcp_servers
+        else:
+            # 缓存（仅当没有 mcp_servers 时）
+            self._agent_options_cache[agent_role] = options
 
         return options
+
+    def warmup_agent(self, agent_role: str) -> None:
+        """预热 Agent 配置（减少首次请求延迟）
+        
+        在 WebSocket 连接时调用，预加载：
+        1. System prompt（从文件）
+        2. Agent options
+        
+        Args:
+            agent_role: Agent 角色标识
+        """
+        try:
+            # 预加载配置（会触发缓存）
+            self._get_agent_options(agent_role)
+            logger.info(f"Agent warmed up: {agent_role}")
+        except Exception as e:
+            logger.warning(f"Failed to warmup agent {agent_role}: {e}")
+
+    async def _execute_multimodal_query(
+        self,
+        prompt: str,
+        agent_role: str,
+        image_blocks: List[Dict[str, Any]],
+        on_text_chunk: Optional[Callable[[str], Any]] = None,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        执行多模态查询（带图片）
+        
+        根据 Claude Agent SDK 文档，有两种方式支持多模态：
+        1. ClaudeSDKClient 流式输入模式 - 支持图片（推荐）
+        2. query() 单消息模式 - 不支持图片
+        
+        这里优先尝试使用 ClaudeSDKClient，如果失败则回退到 Anthropic API。
+        
+        Args:
+            prompt: 用户提示词
+            agent_role: Agent 角色
+            image_blocks: 图片内容块列表
+            on_text_chunk: 文本块回调
+            
+        Yields:
+            消息事件字典
+        """
+        # 优先尝试使用 ClaudeSDKClient 流式输入模式
+        logger.info("[Multimodal] Attempting ClaudeSDKClient approach...")
+        try:
+            event_count = 0
+            async for event in self._execute_multimodal_via_sdk_client(
+                prompt, agent_role, image_blocks, on_text_chunk
+            ):
+                event_count += 1
+                logger.info(f"[Multimodal] SDK Client yielded event #{event_count}: {event.get('type')}")
+                yield event
+            logger.info(f"[Multimodal] SDK Client completed, total events: {event_count}")
+            return
+        except Exception as e:
+            logger.warning(f"[Multimodal] ClaudeSDKClient failed, falling back to Anthropic API: {e}", exc_info=True)
+        
+        # 回退到 Anthropic API 直接调用
+        async for event in self._execute_multimodal_via_anthropic(
+            prompt, agent_role, image_blocks, on_text_chunk
+        ):
+            yield event
+
+    async def _execute_multimodal_via_sdk_client(
+        self,
+        prompt: str,
+        agent_role: str,
+        image_blocks: List[Dict[str, Any]],
+        on_text_chunk: Optional[Callable[[str], Any]] = None,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        使用 ClaudeSDKClient 流式输入模式执行多模态查询
+        
+        根据文档 https://platform.claude.com/docs/zh-CN/agent-sdk/streaming-vs-single-mode
+        流式输入模式支持图片上传，使用异步生成器发送消息。
+        """
+        from claude_agent_sdk import ClaudeSDKClient
+        
+        logger.info(f"[SDK Client] Starting multimodal query with {len(image_blocks)} images")
+        
+        options = self._get_agent_options(agent_role)
+        logger.info(f"[SDK Client] Options prepared for agent_role={agent_role}")
+        
+        # 构建多模态消息内容
+        message_content = image_blocks + [{"type": "text", "text": prompt}]
+        logger.info(f"[SDK Client] Message content prepared: {len(message_content)} blocks")
+        
+        async def message_generator():
+            """异步消息生成器 - 流式输入模式"""
+            logger.info("[SDK Client] Message generator yielding user message")
+            yield {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": message_content,
+                }
+            }
+            logger.info("[SDK Client] Message generator completed")
+        
+        logger.info(f"[SDK Client] Creating ClaudeSDKClient...")
+        
+        try:
+            async with ClaudeSDKClient(options) as client:
+                logger.info("[SDK Client] Client context entered, calling query...")
+                await client.query(message_generator())
+                logger.info("[SDK Client] Query submitted, receiving response...")
+                
+                async for message in client.receive_response():
+                    logger.info(f"[SDK Client] Received message type: {type(message).__name__}")
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                logger.info(f"[SDK Client] TextBlock received: {len(block.text)} chars")
+                                if on_text_chunk:
+                                    await self._safe_callback(on_text_chunk, block.text)
+                                yield {
+                                    "type": "text_chunk",
+                                    "content": block.text,
+                                }
+                            elif isinstance(block, ToolUseBlock):
+                                logger.info(f"[SDK Client] ToolUseBlock: {block.name}")
+                                yield {
+                                    "type": "tool_use",
+                                    "tool_name": block.name,
+                                    "tool_id": block.id,
+                                    "input": block.input,
+                                }
+                    elif isinstance(message, ResultMessage):
+                        logger.info(f"[SDK Client] ResultMessage received")
+                        yield {
+                            "type": "result",
+                            "total_cost_usd": message.total_cost_usd,
+                            "duration_ms": message.duration_ms,
+                            "num_turns": message.num_turns,
+                        }
+                        
+                logger.info("[SDK Client] Response stream completed")
+        except Exception as e:
+            logger.error(f"[SDK Client] Error in ClaudeSDKClient: {e}", exc_info=True)
+            raise
+
+    async def _execute_multimodal_via_anthropic(
+        self,
+        prompt: str,
+        agent_role: str,
+        image_blocks: List[Dict[str, Any]],
+        on_text_chunk: Optional[Callable[[str], Any]] = None,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        使用 Anthropic API 直接调用执行多模态查询（回退方案）
+        """
+        if not self._anthropic_client:
+            logger.error("Anthropic client not initialized for multimodal query")
+            yield {
+                "type": "error",
+                "error": "多模态功能未配置，请检查 ANTHROPIC_AUTH_TOKEN",
+            }
+            return
+        
+        role_config = self.config.get_agent_role(agent_role)
+        if not role_config:
+            raise AgentNotFoundError(agent_role)
+        
+        system_prompt = self._load_system_prompt(agent_role)
+        message_content = image_blocks + [{"type": "text", "text": prompt}]
+        
+        logger.info(f"Executing multimodal query via Anthropic API with {len(image_blocks)} images")
+        
+        try:
+            async with self._anthropic_client.messages.stream(
+                model=role_config.model,
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": message_content}],
+            ) as stream:
+                async for text in stream.text_stream:
+                    if text:
+                        if on_text_chunk:
+                            await self._safe_callback(on_text_chunk, text)
+                        yield {
+                            "type": "text_delta",
+                            "content": text,
+                        }
+                
+                final_message = await stream.get_final_message()
+                if final_message:
+                    yield {
+                        "type": "result",
+                        "input_tokens": final_message.usage.input_tokens if final_message.usage else 0,
+                        "output_tokens": final_message.usage.output_tokens if final_message.usage else 0,
+                    }
+                    
+        except Exception as e:
+            logger.error(f"Anthropic API multimodal query failed: {e}", exc_info=True)
+            yield {
+                "type": "error",
+                "error": f"多模态查询失败: {str(e)}",
+            }
 
     async def execute_query(
         self,
@@ -204,19 +456,23 @@ class AgentSDKService:
         Yields:
             消息事件字典
         """
+        # 多模态请求：使用 Anthropic API 直接调用（Agent SDK 不支持列表格式的 prompt）
+        if image_blocks:
+            logger.info(f"Executing multimodal query with {len(image_blocks)} images using Anthropic API")
+            async for event in self._execute_multimodal_query(
+                prompt=prompt,
+                agent_role=agent_role,
+                image_blocks=image_blocks,
+                on_text_chunk=on_text_chunk,
+            ):
+                yield event
+            return
+
+        # 纯文本请求：使用 Agent SDK（支持工具调用）
         options = self._get_agent_options(agent_role, mcp_servers)
 
-        # 构建多模态内容（如果有图片）
-        if image_blocks:
-            # 多模态内容：先是图片，然后是文本提示
-            multimodal_content = image_blocks + [{"type": "text", "text": prompt}]
-            query_prompt = multimodal_content
-            logger.info(f"Executing multimodal query with {len(image_blocks)} images")
-        else:
-            query_prompt = prompt
-
         try:
-            async for message in query(prompt=query_prompt, options=options):
+            async for message in query(prompt=prompt, options=options):
                 # 处理 StreamEvent：细粒度流式输出（token 级别）
                 if isinstance(message, StreamEvent):
                     event = message.event

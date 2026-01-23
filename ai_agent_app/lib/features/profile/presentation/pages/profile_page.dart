@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../agents/presentation/theme/agent_profile_theme.dart';
+
+/// OPPO Sans 字体家族名称
+const String _oppoSansFamily = 'OPPO Sans';
 
 /// Profile page - shows user information, subscriptions, and settings
 class ProfilePage extends ConsumerWidget {
@@ -33,7 +35,8 @@ class ProfilePage extends ConsumerWidget {
                   children: [
                     Text(
                       '我的',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: _oppoSansFamily,
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
                         color: AgentProfileTheme.titleColor,
@@ -42,7 +45,8 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       '个人中心与设置',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: _oppoSansFamily,
                         fontSize: 13,
                         color: AgentProfileTheme.labelColor,
                       ),
@@ -147,7 +151,8 @@ class ProfilePage extends ConsumerWidget {
             child: Center(
               child: Text(
                 initial,
-                style: GoogleFonts.poppins(
+                style: const TextStyle(
+                  fontFamily: _oppoSansFamily,
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -164,7 +169,8 @@ class ProfilePage extends ConsumerWidget {
               children: [
                 Text(
                   _getDisplayName(email),
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: _oppoSansFamily,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: AgentProfileTheme.titleColor,
@@ -173,7 +179,8 @@ class ProfilePage extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   email,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: _oppoSansFamily,
                     fontSize: 14,
                     color: AgentProfileTheme.labelColor,
                   ),
@@ -202,7 +209,8 @@ class ProfilePage extends ConsumerWidget {
                       const SizedBox(width: 6),
                       Text(
                         '已认证',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
+                          fontFamily: _oppoSansFamily,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: const Color(0xFF10B981),
@@ -305,7 +313,8 @@ class ProfilePage extends ConsumerWidget {
         const SizedBox(height: 10),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: _oppoSansFamily,
             fontSize: 22,
             fontWeight: FontWeight.w700,
             color: AgentProfileTheme.titleColor,
@@ -314,7 +323,8 @@ class ProfilePage extends ConsumerWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: _oppoSansFamily,
             fontSize: 12,
             color: AgentProfileTheme.labelColor,
           ),
@@ -426,7 +436,8 @@ class ProfilePage extends ConsumerWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: _oppoSansFamily,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: AgentProfileTheme.titleColor,
@@ -435,7 +446,8 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
+                        fontFamily: _oppoSansFamily,
                         fontSize: 12,
                         color: AgentProfileTheme.labelColor,
                       ),
@@ -488,7 +500,8 @@ class ProfilePage extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   '退出登录',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
+                    fontFamily: _oppoSansFamily,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFFEF4444),
@@ -520,7 +533,8 @@ class ProfilePage extends ConsumerWidget {
         ),
         title: Text(
           '退出登录',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: _oppoSansFamily,
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: AgentProfileTheme.titleColor,
@@ -528,7 +542,8 @@ class ProfilePage extends ConsumerWidget {
         ),
         content: Text(
           '确定要退出登录吗？',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
+            fontFamily: _oppoSansFamily,
             fontSize: 14,
             color: AgentProfileTheme.labelColor,
           ),
@@ -538,7 +553,8 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
               '取消',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: _oppoSansFamily,
                 fontWeight: FontWeight.w500,
                 color: AgentProfileTheme.labelColor,
               ),
@@ -551,7 +567,8 @@ class ProfilePage extends ConsumerWidget {
             ),
             child: Text(
               '退出',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
+                fontFamily: _oppoSansFamily,
                 fontWeight: FontWeight.w500,
               ),
             ),

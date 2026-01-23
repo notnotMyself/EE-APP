@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 import '../../domain/models/agent.dart';
 import '../theme/agent_profile_theme.dart';
 import 'agent_avatar.dart';
+import 'personality_selector.dart';
+
+/// OPPO Sans 字体家族名称
+const String _oppoSansFamily = 'OPPO Sans';
 
 /// AI员工介绍卡片
 ///
 /// 用于空会话时显示Agent的介绍信息
-/// 包括头像、名称、描述等
+/// 包括头像、名称、描述、人物个性等
 class AgentProfileCard extends StatelessWidget {
   final Agent agent;
-  final String? greeting;
+  final Personality? selectedPersonality;
+  final VoidCallback? onPersonalityTap;
 
   const AgentProfileCard({
     super.key,
     required this.agent,
-    this.greeting,
+    this.selectedPersonality,
+    this.onPersonalityTap,
   });
 
   @override
@@ -24,17 +30,9 @@ class AgentProfileCard extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // 问候语（如果有）
-        if (greeting != null) ...[
-          Text(
-            greeting!,
-            style: AgentProfileTheme.greetingStyle,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-        ],
-
         // 头像
         AgentAvatar(
           avatarUrl: agent.avatarUrl,
@@ -53,13 +51,78 @@ class AgentProfileCard extends StatelessWidget {
 
         const SizedBox(height: 4),
 
-        // 描述
-        Text(
-          agent.description,
-          style: AgentProfileTheme.agentDescriptionStyle,
-          textAlign: TextAlign.center,
-        ),
+        // 描述 + 人物个性（按 Figma 设计）
+        _buildDescriptionWithPersonality(),
       ],
+    );
+  }
+
+  /// 构建描述和人物个性行
+  /// 基于 Figma 设计：描述 · 个性名称 [下拉图标]
+  Widget _buildDescriptionWithPersonality() {
+    final personalityName = selectedPersonality?.name ?? '默认';
+
+    return GestureDetector(
+      onTap: onPersonalityTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 描述文字 + 分隔点 + 个性名称
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 描述（完整显示）
+              Text(
+                agent.description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.black.withOpacity(0.54),
+                  fontSize: 14,
+                  fontFamily: _oppoSansFamily,
+                  fontWeight: FontWeight.w400,
+                  height: 1.43,
+                ),
+              ),
+              const SizedBox(width: 4),
+              // 分隔点
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const ShapeDecoration(
+                  color: Color(0xFF393939),
+                  shape: OvalBorder(),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // 个性名称
+              Text(
+                personalityName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: selectedPersonality != null
+                      ? const Color(0xFF0066FF)
+                      : Colors.black.withOpacity(0.54),
+                  fontSize: 14,
+                  fontFamily: _oppoSansFamily,
+                  fontWeight: FontWeight.w400,
+                  height: 1.43,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 2),
+          // 下拉图标
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: Colors.black.withOpacity(0.54),
+          ),
+        ],
+      ),
     );
   }
 }

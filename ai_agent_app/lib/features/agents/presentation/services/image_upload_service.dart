@@ -46,17 +46,22 @@ class ImageUploadService {
       }
 
       // 生成唯一文件名
-      final extension = path.extension(attachment.localPath!).toLowerCase();
+      // Web 平台的 localPath 可能是 blob URL，需要优先从 filename 获取扩展名
+      final extension = _getExtension(attachment);
       final fileName = '${_uuid.v4()}$extension';
       final storagePath = 'chat-attachments/$fileName';
 
       final supabase = Supabase.instance.client;
 
+      // 获取 MIME 类型：优先使用附件对象中存储的 mimeType
+      final contentType = _getContentType(attachment);
+      debugPrint('上传文件: ${attachment.filename}, MIME: $contentType, 扩展名: $extension');
+
       // 上传到 Supabase Storage（使用字节数据）
       await supabase.storage
           .from(_bucketName)
           .uploadBinary(storagePath, fileBytes, fileOptions: FileOptions(
-            contentType: getMimeType(attachment.localPath),
+            contentType: contentType,
           ));
 
       // 获取公开 URL
@@ -129,6 +134,68 @@ class ImageUploadService {
     }
 
     return results;
+  }
+
+  /// 获取文件扩展名（优先从 filename 获取）
+  /// 
+  /// Web 平台的 localPath 可能是 blob URL，无法获取扩展名
+  /// 优先顺序: filename > localPath
+  String _getExtension(ChatAttachment attachment) {
+    // 优先从 filename 获取扩展名
+    if (attachment.filename != null && attachment.filename!.isNotEmpty) {
+      final ext = path.extension(attachment.filename!).toLowerCase();
+      if (ext.isNotEmpty) return ext;
+    }
+    
+    // 从 localPath 获取（移动端有效）
+    if (attachment.localPath != null) {
+      final ext = path.extension(attachment.localPath!).toLowerCase();
+      if (ext.isNotEmpty) return ext;
+    }
+    
+    // 从 mimeType 推断
+    return _extensionFromMimeType(attachment.mimeType);
+  }
+
+  /// 获取 Content-Type（优先使用附件对象中存储的 mimeType）
+  /// 
+  /// 优先顺序: attachment.mimeType > filename > localPath
+  String _getContentType(ChatAttachment attachment) {
+    // 1. 优先使用附件对象中已存储的 mimeType
+    if (attachment.mimeType != null && 
+        attachment.mimeType!.isNotEmpty &&
+        attachment.mimeType != 'application/octet-stream') {
+      return attachment.mimeType!;
+    }
+    
+    // 2. 从 filename 推断
+    if (attachment.filename != null && attachment.filename!.isNotEmpty) {
+      final mimeType = getMimeType(attachment.filename);
+      if (mimeType != 'application/octet-stream') {
+        return mimeType;
+      }
+    }
+    
+    // 3. 从 localPath 推断
+    return getMimeType(attachment.localPath);
+  }
+
+  /// 从 MIME 类型推断扩展名
+  String _extensionFromMimeType(String? mimeType) {
+    switch (mimeType) {
+      case 'image/jpeg':
+        return '.jpg';
+      case 'image/png':
+        return '.png';
+      case 'image/gif':
+        return '.gif';
+      case 'image/webp':
+        return '.webp';
+      case 'application/pdf':
+        return '.pdf';
+      default:
+        return '';
+    }
   }
 
   /// 获取 MIME 类型

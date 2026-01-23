@@ -51,7 +51,49 @@ class ConversationController extends StateNotifier<AsyncValue<void>> {
 
   final Ref ref;
 
-  /// 创建新对话
+  /// 创建新对话（多会话模式）
+  ///
+  /// 每次调用都会创建全新的会话，用于：
+  /// - 从AI市场进入对话页面
+  /// - 点击"新建会话"按钮
+  Future<Conversation?> createNewConversation(String agentId, {String? title}) async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      print('createNewConversation: currentUser is null');
+      state = AsyncValue.error('请先登录', StackTrace.current);
+      return null;
+    }
+
+    print('createNewConversation: userId=${currentUser.id}, agentId=$agentId');
+    state = const AsyncValue.loading();
+    try {
+      final repository = ref.read(conversationRepositoryProvider);
+      final conversation = await repository.createNewConversation(
+        userId: currentUser.id,
+        agentId: agentId,
+        title: title,
+      );
+
+      print('createNewConversation: success, conversationId=${conversation.id}');
+      state = const AsyncValue.data(null);
+
+      // 刷新对话列表
+      ref.invalidate(userConversationsProvider);
+      ref.invalidate(agentConversationsProvider(agentId));
+
+      return conversation;
+    } catch (e, stack) {
+      print('createNewConversation: error=$e');
+      print('createNewConversation: stack=$stack');
+      state = AsyncValue.error(e, stack);
+      return null;
+    }
+  }
+
+  /// 创建新对话（旧方法 - 保留兼容性）
+  ///
+  /// 注意：此方法使用 get_or_create 逻辑，可能返回已存在的会话。
+  /// 新代码应使用 createNewConversation() 方法。
   Future<Conversation?> createConversation(String agentId) async {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) {

@@ -313,6 +313,45 @@ class ConnectionManager:
             return False
         return self._connections[conversation_id][user_id].is_alive
 
+    async def check_and_cleanup_stale_connection(
+        self, conversation_id: str, user_id: str
+    ) -> bool:
+        """检查连接是否活跃，如果是僵尸连接则清理
+        
+        Returns:
+            True 如果连接已清理或不存在（可以建立新连接）
+            False 如果连接仍然活跃（应该拒绝新连接）
+        """
+        if conversation_id not in self._connections:
+            return True
+        if user_id not in self._connections[conversation_id]:
+            return True
+            
+        state = self._connections[conversation_id][user_id]
+        if not state.is_alive:
+            # 连接已标记为不活跃，清理它
+            await self.disconnect(conversation_id, user_id)
+            return True
+            
+        # 尝试发送一个空 ping 来检查连接是否真的活跃
+        try:
+            await asyncio.wait_for(
+                state.websocket.send_json({"type": "ping", "ts": time.time()}),
+                timeout=2.0,  # 2秒超时
+            )
+            # 连接仍然活跃
+            return False
+        except Exception as e:
+            # 发送失败，说明是僵尸连接，清理它
+            logger.info(
+                f"Cleaning up stale connection: conversation={conversation_id}, "
+                f"user={user_id}, error={e}"
+            )
+            # 标记为不活跃并清理
+            state.is_alive = False
+            await self.disconnect(conversation_id, user_id)
+            return True
+
 
 # 全局连接管理器实例
 _connection_manager: Optional[ConnectionManager] = None

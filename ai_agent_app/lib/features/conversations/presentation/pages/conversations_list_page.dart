@@ -110,10 +110,31 @@ class _ConversationsListPageState extends ConsumerState<ConversationsListPage> {
           // 内容区域
           conversationsAsync.when(
             data: (conversations) {
+              // 按 agentId 分组，每个 AI 员工只保留最新的一条会话
+              final latestByAgent = <String, ConversationSummary>{};
+              for (final c in conversations) {
+                final existing = latestByAgent[c.agentId];
+                if (existing == null ||
+                    (c.lastMessageAt != null &&
+                        (existing.lastMessageAt == null ||
+                            c.lastMessageAt!.isAfter(existing.lastMessageAt!)))) {
+                  latestByAgent[c.agentId] = c;
+                }
+              }
+              
+              // 转换为列表并按时间排序（最新的在前）
+              var uniqueConversations = latestByAgent.values.toList()
+                ..sort((a, b) {
+                  if (a.lastMessageAt == null && b.lastMessageAt == null) return 0;
+                  if (a.lastMessageAt == null) return 1;
+                  if (b.lastMessageAt == null) return -1;
+                  return b.lastMessageAt!.compareTo(a.lastMessageAt!);
+                });
+
               // Filter by search query
               final filtered = _searchQuery.isEmpty
-                  ? conversations
-                  : conversations
+                  ? uniqueConversations
+                  : uniqueConversations
                       .where((c) =>
                           c.agentName
                               .toLowerCase()

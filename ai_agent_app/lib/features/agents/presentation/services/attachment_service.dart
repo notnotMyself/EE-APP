@@ -26,12 +26,15 @@ class AttachmentService {
 
       if (image == null) return null;
 
+      // Web 平台: image.path 可能是 blob URL，需要用 image.name 获取 MIME 类型
+      final mimeType = _getMimeTypeFromNameOrPath(image.name, image.path);
+      
       return ChatAttachment(
         id: _uuid.v4(),
         localPath: image.path,
         networkUrl: null,
         thumbnailUrl: null,
-        mimeType: _getMimeType(image.path),
+        mimeType: mimeType,
         filename: image.name,
       );
     } catch (e) {
@@ -52,12 +55,15 @@ class AttachmentService {
 
       if (photo == null) return null;
 
+      // Web 平台: photo.path 可能是 blob URL，需要用 photo.name 获取 MIME 类型
+      final mimeType = _getMimeTypeFromNameOrPath(photo.name, photo.path);
+      
       return ChatAttachment(
         id: _uuid.v4(),
         localPath: photo.path,
         networkUrl: null,
         thumbnailUrl: null,
-        mimeType: _getMimeType(photo.path),
+        mimeType: mimeType,
         filename: photo.name,
       );
     } catch (e) {
@@ -78,12 +84,13 @@ class AttachmentService {
       // 限制最大数量
       final limitedImages = images.take(maxImages).toList();
 
+      // Web 平台: image.path 可能是 blob URL，需要用 image.name 获取 MIME 类型
       return limitedImages.map((image) => ChatAttachment(
         id: _uuid.v4(),
         localPath: image.path,
         networkUrl: null,
         thumbnailUrl: null,
-        mimeType: _getMimeType(image.path),
+        mimeType: _getMimeTypeFromNameOrPath(image.name, image.path),
         filename: image.name,
       )).toList();
     } catch (e) {
@@ -145,6 +152,20 @@ class AttachmentService {
       debugPrint('选择多个文件失败: $e');
       return [];
     }
+  }
+
+  /// 从文件名或路径获取 MIME 类型
+  /// 
+  /// Web 平台上 path 可能是 blob URL（如 blob:http://...），无法提取扩展名
+  /// 优先使用 filename 获取 MIME 类型
+  String _getMimeTypeFromNameOrPath(String filename, String path) {
+    // 优先从 filename 获取
+    final mimeFromName = _getMimeType(filename);
+    if (mimeFromName != 'application/octet-stream') {
+      return mimeFromName;
+    }
+    // 回退到 path
+    return _getMimeType(path);
   }
 
   /// 获取MIME类型

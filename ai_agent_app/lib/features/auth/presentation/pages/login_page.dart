@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../controllers/auth_controller.dart';
 
-/// 统一设计主题颜色
+/// OPPO Sans 字体家族名称
+const String _oppoSansFamily = 'OPPO Sans';
+
+/// 统一设计主题颜色（基于 Figma）
 class _AppDesign {
   static const Color backgroundColor = Color(0xFFE9EAF0);
-  static const Color titleColor = Color(0xFF0D1B34);
+  static const Color titleColor = Color(0xFF0E162B);
+  static const Color subtitleColor = Color(0xFF61738D);
   static const Color labelColor = Color(0xFF8696BB);
-  static const Color cardBackground = Color(0xADFFFFFF);
-  static const Color accentBlue = Color(0xFF378AFF);
+  static const Color inputBackground = Color(0xFFF8FAFC);
+  static const Color inputBorder = Color(0xFFE1E8F0);
+  static const Color buttonColor = Colors.black;
   static const Color errorRed = Color(0xFFEF4444);
 }
 
@@ -81,7 +85,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('登录失败: ${e.toString()}'),
+            content: Text(
+              '登录失败: ${e.toString()}',
+              style: const TextStyle(fontFamily: _oppoSansFamily),
+            ),
             backgroundColor: _AppDesign.errorRed,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -101,58 +108,53 @@ class _LoginPageState extends ConsumerState<LoginPage>
     return Scaffold(
       backgroundColor: _AppDesign.backgroundColor,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Logo with gradient background
-                      _buildLogo(),
-                      const SizedBox(height: 32),
-
-                      // Title
-                      Text(
-                        'AI数字员工平台',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: _AppDesign.titleColor,
-                          height: 1.2,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Subtitle
-                      Text(
-                        '企业内部的AI角色工作台',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          color: _AppDesign.labelColor,
-                          height: 1.4,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 48),
-
-                      // Login Card
-                      _buildLoginCard(isLoading),
-                      const SizedBox(height: 24),
-
-                      // Register Link
-                      _buildRegisterLink(isLoading),
-                    ],
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Form(
+              key: _formKey,
+              child: Stack(
+                children: [
+                  // 顶部标题区域
+                  Positioned(
+                    left: 17,
+                    top: 56,
+                    child: _buildHeader(),
                   ),
-                ),
+
+                  // 中间插图区域（品牌插图）
+                  Positioned(
+                    left: 5,
+                    top: 122,
+                    child: Container(
+                      width: MediaQuery.of(context).size.width - 10,
+                      height: 400,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/Saly-11.png'),
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 底部输入区域
+                  Positioned(
+                    left: 17,
+                    right: 17,
+                    bottom: 100,
+                    child: _buildInputSection(isLoading),
+                  ),
+
+                  // 登录按钮
+                  Positioned(
+                    left: 17,
+                    right: 17,
+                    bottom: 30,
+                    child: _buildLoginButton(isLoading),
+                  ),
+                ],
               ),
             ),
           ),
@@ -161,116 +163,100 @@ class _LoginPageState extends ConsumerState<LoginPage>
     );
   }
 
-  Widget _buildLogo() {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _AppDesign.accentBlue,
-            _AppDesign.accentBlue.withOpacity(0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  /// 顶部标题区域（基于 Figma 设计）
+  Widget _buildHeader() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 主标题
+        Text(
+          'AI数字员工',
+          style: TextStyle(
+            color: _AppDesign.titleColor,
+            fontSize: 30,
+            fontFamily: _oppoSansFamily,
+            fontWeight: FontWeight.w600,
+            height: 1.25,
+            letterSpacing: -0.35,
+          ),
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: _AppDesign.accentBlue.withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+        const SizedBox(height: 8),
+        // 副标题
+        Text(
+          '让每个人都能雇得起员工',
+          style: TextStyle(
+            color: _AppDesign.subtitleColor,
+            fontSize: 14,
+            fontFamily: _oppoSansFamily,
+            fontWeight: FontWeight.w400,
+            height: 1.43,
+            letterSpacing: -0.15,
           ),
-        ],
-      ),
-      child: const Icon(
-        Icons.psychology_rounded,
-        size: 56,
-        color: Colors.white,
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildLoginCard(bool isLoading) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: _AppDesign.cardBackground,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Email Field
-          _buildTextField(
-            controller: _emailController,
-            label: '邮箱',
-            hint: '请输入邮箱地址',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
-            enabled: !isLoading,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '请输入邮箱';
-              }
-              if (!value.contains('@')) {
-                return '请输入有效的邮箱地址';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 20),
-
-          // Password Field
-          _buildTextField(
-            controller: _passwordController,
-            label: '密码',
-            hint: '请输入密码',
-            icon: Icons.lock_outlined,
-            obscureText: _obscurePassword,
-            enabled: !isLoading,
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: _AppDesign.labelColor,
-                size: 20,
-              ),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
+  /// 输入框区域（基于 Figma 设计）
+  Widget _buildInputSection(bool isLoading) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 账号输入框
+        _buildInputField(
+          controller: _emailController,
+          hintText: '账号',
+          icon: Icons.person_outline,
+          keyboardType: TextInputType.emailAddress,
+          enabled: !isLoading,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return '请输入账号';
+            }
+            if (!value.contains('@')) {
+              return '请输入有效的邮箱地址';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 10),
+        // 密码输入框
+        _buildInputField(
+          controller: _passwordController,
+          hintText: '请输入密码',
+          icon: Icons.lock_outline,
+          obscureText: _obscurePassword,
+          enabled: !isLoading,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: Colors.black.withOpacity(0.54),
+              size: 20,
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '请输入密码';
-              }
-              return null;
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
             },
           ),
-          const SizedBox(height: 32),
-
-          // Login Button
-          _buildLoginButton(isLoading),
-        ],
-      ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return '请输入密码';
+            }
+            return null;
+          },
+        ),
+      ],
     );
   }
 
-  Widget _buildTextField({
+  /// 输入框组件（基于 Figma 设计）
+  Widget _buildInputField({
     required TextEditingController controller,
-    required String label,
-    required String hint,
+    required String hintText,
     required IconData icon,
     TextInputType? keyboardType,
     bool obscureText = false,
@@ -278,146 +264,129 @@ class _LoginPageState extends ConsumerState<LoginPage>
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _AppDesign.titleColor,
+    return Container(
+      height: 56,
+      decoration: ShapeDecoration(
+        color: _AppDesign.inputBackground,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(
+            width: 0.62,
+            color: _AppDesign.inputBorder,
           ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscureText,
-          enabled: enabled,
-          validator: validator,
-          style: GoogleFonts.poppins(
-            fontSize: 15,
-            color: _AppDesign.titleColor,
+      ),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        enabled: enabled,
+        validator: validator,
+        style: TextStyle(
+          fontFamily: _oppoSansFamily,
+          fontSize: 14,
+          color: Colors.black.withOpacity(0.9),
+        ),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(
+            fontFamily: _oppoSansFamily,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: Colors.black.withOpacity(0.54),
+            height: 1.43,
           ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(
-              fontSize: 15,
-              color: _AppDesign.labelColor.withOpacity(0.6),
-            ),
-            prefixIcon: Icon(
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 16, right: 12),
+            child: Icon(
               icon,
-              color: _AppDesign.labelColor,
+              color: Colors.black.withOpacity(0.54),
               size: 20,
             ),
-            suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.6),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: Colors.white.withOpacity(0.8),
-                width: 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: _AppDesign.accentBlue,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: _AppDesign.errorRed,
-                width: 1,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(
-                color: _AppDesign.errorRed,
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 48,
+            minHeight: 20,
+          ),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 18,
+          ),
+          errorStyle: TextStyle(
+            fontFamily: _oppoSansFamily,
+            fontSize: 12,
+            color: _AppDesign.errorRed,
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildLoginButton(bool isLoading) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: 56,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _handleLogin,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _AppDesign.accentBlue,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: _AppDesign.accentBlue.withOpacity(0.6),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Text(
-                '登录',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
       ),
     );
   }
 
-  Widget _buildRegisterLink(bool isLoading) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '还没有账号？',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: _AppDesign.labelColor,
+  /// 登录按钮（基于 Figma 设计）
+  Widget _buildLoginButton(bool isLoading) {
+    return Container(
+      height: 56,
+      decoration: ShapeDecoration(
+        color: _AppDesign.buttonColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(40),
+        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x23000000),
+            blurRadius: 54,
+            offset: Offset(0, 6),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : _handleLogin,
+          borderRadius: BorderRadius.circular(40),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '开始',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontFamily: _oppoSansFamily,
+                          fontWeight: FontWeight.w600,
+                          height: 1.50,
+                          letterSpacing: -0.31,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ],
+                  ),
           ),
         ),
-        TextButton(
-          onPressed: isLoading ? null : () => context.go('/register'),
-          style: TextButton.styleFrom(
-            foregroundColor: _AppDesign.accentBlue,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-          ),
-          child: Text(
-            '立即注册',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

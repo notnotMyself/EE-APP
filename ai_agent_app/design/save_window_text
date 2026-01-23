@@ -1,0 +1,58 @@
+Text(
+    '保存至“便签”的团队资产库',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 18,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w600,
+        height: 1.44,
+    ),
+)
+// ---
+Text(
+    '简单填写保存至资产库的原因',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    '手写笔设计原则',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.38,
+    ),
+)
+// ---
+Text(
+    '取消',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+    ),
+)
+// ---
+Text(
+    '保存',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.white /* 颜色-Color-文字&图标-Label-couiColorLabelOnColor */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+    ),
+)

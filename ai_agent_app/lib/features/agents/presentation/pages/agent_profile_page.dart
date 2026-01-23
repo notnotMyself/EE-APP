@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/models/agent.dart';
 import '../../../conversations/domain/models/conversation.dart';
@@ -21,6 +22,7 @@ import '../widgets/personality_selector.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/agent_profile_card.dart';
 import '../widgets/conversation_selector.dart';
+import '../widgets/voice_input_dialog.dart';
 
 /// AI员工详情页面（整合对话功能）
 ///
@@ -59,13 +61,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   /// 选中的应用
   AppInfo? _selectedApp;
 
+  /// 选中的人物个性
+  Personality? _selectedPersonality;
+
   @override
   void initState() {
     super.initState();
 
-    // ⚡ 立即预创建会话,消除延迟
+    // ⚡ 立即加载或创建会话
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _precreateConversation();
+      _loadOrCreateConversation();
     });
   }
 
@@ -79,46 +84,61 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     super.dispose();
   }
 
-  /// 预创建会话(后台静默,不阻塞UI)
+  /// 加载或创建会话
   ///
-  /// 在页面加载时立即创建会话并建立WebSocket连接,
-  /// 这样用户点击发送时无需等待,立即响应
-  Future<void> _precreateConversation() async {
+  /// 优先加载该 AI 员工的最新对话，如果没有则创建新会话
+  Future<void> _loadOrCreateConversation() async {
     // 检查是否已经有会话ID
     if (_conversationId != null) return;
 
     // 检查用户登录状态
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) {
-      // 用户未登录,静默失败
-      debugPrint('⚠️ 预创建会话失败: 用户未登录');
+      debugPrint('⚠️ 加载会话失败: 用户未登录');
       return;
     }
 
     try {
-      debugPrint('⚡ 开始预创建会话...');
+      debugPrint('⚡ 开始加载 ${widget.agent.name} 的最新会话...');
       final startTime = DateTime.now();
 
-      // 1. 创建会话
-      final conversation = await ref
+      // 1. 先尝试获取该 Agent 的最新对话
+      final conversations = await ref
           .read(conversationControllerProvider.notifier)
-          .createConversation(widget.agent.id);
+          .getAgentConversations(widget.agent.id);
 
-      if (conversation == null) {
-        debugPrint('⚠️ 会话创建失败(将在发送时重试)');
-        return;
+      String? conversationId;
+
+      if (conversations.isNotEmpty) {
+        // 有历史对话，使用最新的一个
+        final latestConversation = conversations.first; // 已按时间排序，最新的在前
+        conversationId = latestConversation.id;
+        debugPrint('📂 找到最新会话: $conversationId');
+      } else {
+        // 没有历史对话，创建新会话
+        debugPrint('📝 没有历史会话，创建新会话...');
+        final newConversation = await ref
+            .read(conversationControllerProvider.notifier)
+            .createNewConversation(widget.agent.id);
+
+        if (newConversation == null) {
+          debugPrint('⚠️ 会话创建失败(将在发送时重试)');
+          return;
+        }
+        conversationId = newConversation.id;
+        debugPrint('✅ 新会话创建完成: $conversationId');
       }
 
-      final createDuration = DateTime.now().difference(startTime);
-      debugPrint('✅ 会话创建完成: ${conversation.id} (耗时: ${createDuration.inMilliseconds}ms)');
+      final loadDuration = DateTime.now().difference(startTime);
+      debugPrint('✅ 会话加载完成: $conversationId (耗时: ${loadDuration.inMilliseconds}ms)');
 
       if (!mounted) return;
 
-      setState(() => _conversationId = conversation.id);
+      setState(() => _conversationId = conversationId);
 
-      // 2. 并行初始化WebSocket(不等待完成,避免阻塞)
+      // 2. 初始化WebSocket连接
       unawaited(
-        ref.read(conversationNotifierProvider(conversation.id).notifier)
+        ref.read(conversationNotifierProvider(conversationId!).notifier)
             .initialize()
             .then((_) {
               final totalDuration = DateTime.now().difference(startTime);
@@ -129,7 +149,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             }),
       );
     } catch (e, stack) {
-      debugPrint('❌ 预创建会话异常: $e');
+      debugPrint('❌ 加载会话异常: $e');
       // 静默失败,不显示错误给用户
       // 发送消息时会触发 _ensureConversation() 重试
     }
@@ -145,6 +165,18 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     if (hour < 18) return '下午好';
     if (hour < 22) return '晚上好';
     return '夜深了';
+  }
+
+  /// 获取用户显示名称
+  String _getUserDisplayName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return '用户';
+    
+    final email = user.email ?? '';
+    if (email.isEmpty || !email.contains('@')) {
+      return '用户';
+    }
+    return email.split('@')[0];
   }
 
   /// 创建或获取对话
@@ -164,9 +196,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     setState(() => _isInitializing = true);
 
     try {
+      // 使用多会话模式创建新会话
       final conversation = await ref
           .read(conversationControllerProvider.notifier)
-          .createConversation(widget.agent.id);
+          .createNewConversation(widget.agent.id);
 
       if (conversation != null && mounted) {
         setState(() {
@@ -393,10 +426,11 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         children: [
           const SizedBox(height: 40),
 
-          // AI员工介绍卡片
+          // AI员工介绍卡片（包含人物个性选择）
           AgentProfileCard(
             agent: widget.agent,
-            greeting: _getGreeting(),
+            selectedPersonality: _selectedPersonality,
+            onPersonalityTap: _showPersonalitySelector,
           ),
 
           const SizedBox(height: 40),
@@ -441,6 +475,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             // 有消息时显示紧凑 Agent 信息
             const SizedBox(width: 8),
             _buildCompactAgentInfo(),
+          ] else ...[
+            // 无消息时显示问候语
+            const SizedBox(width: 8),
+            _buildGreetingHeader(),
           ],
           const Spacer(),
           if (_conversationId != null && hasMessages)
@@ -488,8 +526,60 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
+  /// 构建问候语头部（基于 Figma greeting 设计）
+  Widget _buildGreetingHeader() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 问候语
+        Text(
+          _getGreeting(),
+          style: AgentProfileTheme.greetingStyle,
+        ),
+        const SizedBox(height: 2),
+        // 用户名
+        Text(
+          _getUserDisplayName(),
+          style: AgentProfileTheme.userNameStyle,
+        ),
+      ],
+    );
+  }
+
+  /// 显示人物个性选择弹窗
+  void _showPersonalitySelector() async {
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+
+    // 计算弹窗位置（屏幕中央偏上）
+    final screenWidth = overlay.size.width;
+    final screenHeight = overlay.size.height;
+    
+    final position = RelativeRect.fromLTRB(
+      (screenWidth - 196) / 2, // 弹窗宽度196，居中
+      screenHeight * 0.35,     // 屏幕35%位置
+      (screenWidth - 196) / 2,
+      screenHeight * 0.35,
+    );
+
+    final selected = await showPersonalitySelectorPopup(
+      context,
+      selectedPersonality: _selectedPersonality,
+      position: position,
+      agentName: widget.agent.name,
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedPersonality = selected;
+      });
+    }
+  }
+
   /// 开始新对话
-  void _startNewConversation() {
+  void _startNewConversation() async {
     // 清除当前对话状态
     if (_conversationId != null) {
       ref.invalidate(conversationNotifierProvider(_conversationId!));
@@ -503,16 +593,28 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       _isSendingInitialMessage = false;
     });
 
-    // 预创建新会话
-    _precreateConversation();
+    // 创建全新的会话（不是加载已有的）
+    final newConversation = await ref
+        .read(conversationControllerProvider.notifier)
+        .createNewConversation(widget.agent.id);
 
-    // 显示提示
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已创建新对话'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    if (newConversation != null && mounted) {
+      setState(() => _conversationId = newConversation.id);
+
+      // 初始化WebSocket连接
+      unawaited(
+        ref.read(conversationNotifierProvider(newConversation.id).notifier)
+            .initialize(),
+      );
+
+      // 显示提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已创建新对话'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   /// 显示会话选择器

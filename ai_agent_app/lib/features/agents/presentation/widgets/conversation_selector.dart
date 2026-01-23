@@ -29,12 +29,6 @@ class ConversationSelector extends ConsumerStatefulWidget {
     required this.onRenameConversation,
   });
 
-  @override
-  ConsumerState<ConversationSelector> createState() =>
-      _ConversationSelectorState();
-}
-
-class _ConversationSelectorState extends ConsumerState<ConversationSelector> {
   /// 显示会话选择器
   static void show(
     BuildContext context, {
@@ -61,6 +55,12 @@ class _ConversationSelectorState extends ConsumerState<ConversationSelector> {
     );
   }
 
+  @override
+  ConsumerState<ConversationSelector> createState() =>
+      _ConversationSelectorState();
+}
+
+class _ConversationSelectorState extends ConsumerState<ConversationSelector> {
   /// 显示重命名对话框
   void _showRenameDialog(Conversation conversation) {
     final controller = TextEditingController(text: conversation.title ?? '');
