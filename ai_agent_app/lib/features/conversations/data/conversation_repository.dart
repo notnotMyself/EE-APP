@@ -20,6 +20,51 @@ class ConversationRepository {
   /// 获取后端API基础URL
   String get baseUrl => AppConfig.apiUrl;
 
+  /// 创建新会话（多会话模式）
+  ///
+  /// 调用 POST /conversations 创建一个全新的会话，
+  /// 每次调用都会创建新会话，不会返回已存在的会话。
+  Future<Conversation> createNewConversation({
+    required String userId,
+    required String agentId,
+    String? title,
+  }) async {
+    try {
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
+
+      final response = await dio.post(
+        '${AppConfig.apiUrl}/conversations',
+        data: {
+          'agent_id': agentId,
+          if (title != null) 'title': title,
+        },
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        return Conversation(
+          id: data['id'] as String,
+          userId: data['user_id'] as String,
+          agentId: data['agent_id'] as String,
+          title: data['title'] as String?,
+          status: data['status'] as String?,
+          startedAt: DateTime.parse(data['started_at'] as String),
+          lastMessageAt: data['last_message_at'] != null
+              ? DateTime.parse(data['last_message_at'] as String)
+              : null,
+        );
+      } else {
+        throw Exception('创建会话失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('创建会话失败: ${e.message}');
+    } catch (e) {
+      throw Exception('创建会话失败: $e');
+    }
+  }
+
   /// 获取或创建对话（通过后端 API）
   ///
   /// 数据库有唯一约束限制每个用户-Agent对只能有一个对话，
@@ -74,6 +119,71 @@ class ConversationRepository {
           .toList();
     } catch (e) {
       throw Exception('获取对话列表失败: $e');
+    }
+  }
+
+  /// 获取用户与特定Agent的所有会话（多会话模式）
+  ///
+  /// 调用后端API获取会话列表，支持状态过滤
+  Future<List<Conversation>> getAgentConversations({
+    required String agentId,
+    int limit = 20,
+    String? status,
+  }) async {
+    try {
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
+
+      final queryParameters = <String, dynamic>{
+        'limit': limit,
+        if (status != null) 'status': status,
+      };
+
+      final response = await dio.get(
+        '${AppConfig.apiUrl}/conversations/agents/$agentId/conversations',
+        queryParameters: queryParameters,
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        final conversations = response.data as List? ?? [];
+        return conversations
+            .map((json) => Conversation.fromJson(json as Map<String, dynamic>))
+            .toList();
+      } else {
+        throw Exception('获取会话列表失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('获取会话列表失败: ${e.message}');
+    } catch (e) {
+      throw Exception('获取会话列表失败: $e');
+    }
+  }
+
+  /// 更新会话标题
+  Future<Conversation> updateConversationTitle({
+    required String conversationId,
+    required String title,
+  }) async {
+    try {
+      final dio = Dio();
+      final authHeaders = await AuthenticatedHttpClient.getAuthHeaders();
+
+      final response = await dio.put(
+        '${AppConfig.apiUrl}/conversations/$conversationId/title',
+        data: {'title': title},
+        options: Options(headers: authHeaders),
+      );
+
+      if (response.statusCode == 200) {
+        return Conversation.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        throw Exception('更新会话标题失败: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('更新会话标题失败: ${e.message}');
+    } catch (e) {
+      throw Exception('更新会话标题失败: $e');
     }
   }
 

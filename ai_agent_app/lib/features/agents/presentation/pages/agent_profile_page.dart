@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/models/agent.dart';
 import '../../../conversations/domain/models/conversation.dart';
@@ -17,6 +20,8 @@ import '../widgets/app_selector_popup.dart';
 import '../widgets/expanded_chat_input.dart';
 import '../widgets/personality_selector.dart';
 import '../widgets/quick_action_button.dart';
+import '../widgets/agent_profile_card.dart';
+import '../widgets/conversation_selector.dart';
 import '../widgets/voice_input_dialog.dart';
 
 /// AI员工详情页面（整合对话功能）
@@ -42,9 +47,6 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   /// 对话ID
   String? _conversationId;
 
-  /// 是否已开始对话
-  bool _hasStartedConversation = false;
-
   /// 是否正在初始化
   bool _isInitializing = false;
 
@@ -60,7 +62,17 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   AppInfo? _selectedApp;
 
   /// 选中的人物个性
-  Personality _selectedPersonality = PersonalityList.defaultPersonality;
+  Personality? _selectedPersonality;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ⚡ 立即加载或创建会话
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadOrCreateConversation();
+    });
+  }
 
   @override
   void dispose() {
@@ -70,6 +82,77 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     }
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 加载或创建会话
+  ///
+  /// 优先加载该 AI 员工的最新对话，如果没有则创建新会话
+  Future<void> _loadOrCreateConversation() async {
+    // 检查是否已经有会话ID
+    if (_conversationId != null) return;
+
+    // 检查用户登录状态
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      debugPrint('⚠️ 加载会话失败: 用户未登录');
+      return;
+    }
+
+    try {
+      debugPrint('⚡ 开始加载 ${widget.agent.name} 的最新会话...');
+      final startTime = DateTime.now();
+
+      // 1. 先尝试获取该 Agent 的最新对话
+      final conversations = await ref
+          .read(conversationControllerProvider.notifier)
+          .getAgentConversations(widget.agent.id);
+
+      String? conversationId;
+
+      if (conversations.isNotEmpty) {
+        // 有历史对话，使用最新的一个
+        final latestConversation = conversations.first; // 已按时间排序，最新的在前
+        conversationId = latestConversation.id;
+        debugPrint('📂 找到最新会话: $conversationId');
+      } else {
+        // 没有历史对话，创建新会话
+        debugPrint('📝 没有历史会话，创建新会话...');
+        final newConversation = await ref
+            .read(conversationControllerProvider.notifier)
+            .createNewConversation(widget.agent.id);
+
+        if (newConversation == null) {
+          debugPrint('⚠️ 会话创建失败(将在发送时重试)');
+          return;
+        }
+        conversationId = newConversation.id;
+        debugPrint('✅ 新会话创建完成: $conversationId');
+      }
+
+      final loadDuration = DateTime.now().difference(startTime);
+      debugPrint('✅ 会话加载完成: $conversationId (耗时: ${loadDuration.inMilliseconds}ms)');
+
+      if (!mounted) return;
+
+      setState(() => _conversationId = conversationId);
+
+      // 2. 初始化WebSocket连接
+      unawaited(
+        ref.read(conversationNotifierProvider(conversationId!).notifier)
+            .initialize()
+            .then((_) {
+              final totalDuration = DateTime.now().difference(startTime);
+              debugPrint('🔌 WebSocket连接完成 (总耗时: ${totalDuration.inMilliseconds}ms)');
+            })
+            .catchError((e) {
+              debugPrint('⚠️ WebSocket连接失败: $e');
+            }),
+      );
+    } catch (e, stack) {
+      debugPrint('❌ 加载会话异常: $e');
+      // 静默失败,不显示错误给用户
+      // 发送消息时会触发 _ensureConversation() 重试
+    }
   }
 
   /// 获取问候语
@@ -82,6 +165,18 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     if (hour < 18) return '下午好';
     if (hour < 22) return '晚上好';
     return '夜深了';
+  }
+
+  /// 获取用户显示名称
+  String _getUserDisplayName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return '用户';
+    
+    final email = user.email ?? '';
+    if (email.isEmpty || !email.contains('@')) {
+      return '用户';
+    }
+    return email.split('@')[0];
   }
 
   /// 创建或获取对话
@@ -101,9 +196,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     setState(() => _isInitializing = true);
 
     try {
+      // 使用多会话模式创建新会话
       final conversation = await ref
           .read(conversationControllerProvider.notifier)
-          .createConversation(widget.agent.id);
+          .createNewConversation(widget.agent.id);
 
       if (conversation != null && mounted) {
         setState(() {
@@ -142,24 +238,20 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       return;
     }
 
-    // 标记已开始对话（立即切换UI）
-    if (!_hasStartedConversation) {
-      setState(() {
-        _hasStartedConversation = true;
-        _isSendingInitialMessage = true;
-        _pendingMessageContent = message;
-        _pendingAttachments = List.from(attachments);
-        _attachments.clear(); // 立即清空输入框附件
-      });
-    }
+    // 设置乐观UI状态（立即显示消息）
+    setState(() {
+      _isSendingInitialMessage = true;
+      _pendingMessageContent = message;
+      _pendingAttachments = List.from(attachments);
+      _attachments.clear(); // 立即清空输入框附件
+    });
 
     // 确保对话已创建
     await _ensureConversation();
     if (_conversationId == null) {
-      // 创建失败，回滚状态
+      // 创建失败，清理乐观UI
       if (mounted) {
         setState(() {
-          _hasStartedConversation = false;
           _isSendingInitialMessage = false;
           _pendingMessageContent = null;
           _pendingAttachments = null;
@@ -171,9 +263,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     try {
       // 上传附件
       List<Map<String, dynamic>>? uploadedAttachments;
-      // 使用保存的 pending attachments，因为参数 attachments 可能被清空或不准确
       final attachmentsToSend = _pendingAttachments ?? attachments;
-      
+
       if (attachmentsToSend.isNotEmpty) {
         final uploadService = ref.read(imageUploadServiceProvider);
         final uploaded = await uploadService.uploadAttachments(attachmentsToSend);
@@ -188,7 +279,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           .read(conversationNotifierProvider(_conversationId!).notifier)
           .sendMessageWithAttachments(message, uploadedAttachments);
 
-      // 发送成功，切换到正式列表视图
+      // 发送成功，清理乐观UI
       if (mounted) {
         setState(() {
           _isSendingInitialMessage = false;
@@ -204,10 +295,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('发送消息失败: $e')),
         );
-        // 保持在对话界面，但可能需要显示重试按钮？
-        // 暂时不回滚 _hasStartedConversation，让用户停留在对话界面
         setState(() {
-           _isSendingInitialMessage = false; // 允许切换到主视图（虽然可能没有消息）
+          _isSendingInitialMessage = false;
         });
       }
     }
@@ -230,19 +319,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       message = '[MODE:${action.modeId}] $message';
     }
 
-    // 标记已开始对话
-    if (!_hasStartedConversation) {
-      setState(() {
-        _hasStartedConversation = true;
-        _isSendingInitialMessage = true;
-        _pendingMessageContent = message;
-        _pendingAttachments = List.from(_attachments);
-        _attachments.clear();
-      });
-    }
-
     if (message != null && message.isNotEmpty) {
-      _sendMessageWithAttachments(message, _pendingAttachments ?? []);
+      _sendMessageWithAttachments(message, List.from(_attachments));
     }
   }
 
@@ -279,11 +357,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             // 顶部导航栏
             _buildAppBar(),
 
-            // 主内容区域
+            // 主内容区域（统一视图）
             Expanded(
-              child: _hasStartedConversation
-                  ? _buildConversationView()
-                  : _buildProfileView(isKeyboardVisible),
+              child: _buildUnifiedConversationView(),
             ),
 
             // 底部输入区域
@@ -294,8 +370,96 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
+  /// 构建统一的对话视图
+  ///
+  /// 根据消息数量决定显示内容:
+  /// - 有消息: 只显示消息列表
+  /// - 无消息: 显示介绍卡片 + 快捷按钮
+  Widget _buildUnifiedConversationView() {
+    // 正在发送初始消息,显示乐观UI
+    if (_isSendingInitialMessage) {
+      return _buildPendingMessageList();
+    }
+
+    // 还没有创建会话,显示加载
+    if (_conversationId == null) {
+      // 如果正在初始化,显示加载指示器
+      if (_isInitializing) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      // 否则显示介绍页面
+      return _buildIntroductionView();
+    }
+
+    // 已创建会话,监听消息
+    final messagesAsync = ref.watch(
+      conversationNotifierProvider(_conversationId!).select(
+        (state) => state.messages,
+      ),
+    );
+
+    final messages = messagesAsync;
+
+    // 如果有消息,只显示消息列表
+    if (messages.isNotEmpty) {
+      return OptimizedMessageList(
+        conversationId: _conversationId!,
+        scrollController: _scrollController,
+      );
+    }
+
+    // 无消息,显示介绍视图
+    return _buildIntroductionView();
+  }
+
+  /// 构建介绍视图（空会话时显示）
+  Widget _buildIntroductionView() {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardVisible = keyboardHeight > 0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AgentProfileTheme.horizontalPadding,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+
+          // AI员工介绍卡片（包含人物个性选择）
+          AgentProfileCard(
+            agent: widget.agent,
+            selectedPersonality: _selectedPersonality,
+            onPersonalityTap: _showPersonalitySelector,
+          ),
+
+          const SizedBox(height: 40),
+
+          // 快捷功能按钮（键盘弹起时隐藏）
+          if (!isKeyboardVisible) ...[
+            QuickActionRow(
+              actions: QuickActions.defaults,
+              onActionTap: _onQuickActionTap,
+            ),
+          ],
+
+          // 底部间距
+          SizedBox(height: isKeyboardVisible ? 16 : 32),
+        ],
+      ),
+    );
+  }
+
   /// 构建顶部导航栏
   Widget _buildAppBar() {
+    // 判断是否有消息（用于决定是否显示紧凑Agent信息）
+    final hasMessages = _conversationId != null &&
+        ref.watch(
+          conversationNotifierProvider(_conversationId!).select(
+            (state) => state.messages.isNotEmpty,
+          ),
+        );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
@@ -307,13 +471,17 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
               color: AgentProfileTheme.titleColor,
             ),
           ),
-          if (_hasStartedConversation) ...[
-            // 对话模式显示 Agent 信息
+          if (hasMessages) ...[
+            // 有消息时显示紧凑 Agent 信息
             const SizedBox(width: 8),
             _buildCompactAgentInfo(),
+          ] else ...[
+            // 无消息时显示问候语
+            const SizedBox(width: 8),
+            _buildGreetingHeader(),
           ],
           const Spacer(),
-          if (_conversationId != null && _hasStartedConversation)
+          if (_conversationId != null && hasMessages)
             _buildConnectionStatus(),
           PopupMenuButton<String>(
             icon: const Icon(
@@ -325,9 +493,22 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
                 case 'new_conversation':
                   _startNewConversation();
                   break;
+                case 'conversation_history':
+                  _showConversationSelector();
+                  break;
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'conversation_history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history, size: 20),
+                    SizedBox(width: 12),
+                    Text('会话历史'),
+                  ],
+                ),
+              ),
               const PopupMenuItem<String>(
                 value: 'new_conversation',
                 child: Row(
@@ -345,8 +526,60 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
+  /// 构建问候语头部（基于 Figma greeting 设计）
+  Widget _buildGreetingHeader() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 问候语
+        Text(
+          _getGreeting(),
+          style: AgentProfileTheme.greetingStyle,
+        ),
+        const SizedBox(height: 2),
+        // 用户名
+        Text(
+          _getUserDisplayName(),
+          style: AgentProfileTheme.userNameStyle,
+        ),
+      ],
+    );
+  }
+
+  /// 显示人物个性选择弹窗
+  void _showPersonalitySelector() async {
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+
+    // 计算弹窗位置（屏幕中央偏上）
+    final screenWidth = overlay.size.width;
+    final screenHeight = overlay.size.height;
+    
+    final position = RelativeRect.fromLTRB(
+      (screenWidth - 196) / 2, // 弹窗宽度196，居中
+      screenHeight * 0.35,     // 屏幕35%位置
+      (screenWidth - 196) / 2,
+      screenHeight * 0.35,
+    );
+
+    final selected = await showPersonalitySelectorPopup(
+      context,
+      selectedPersonality: _selectedPersonality,
+      position: position,
+      agentName: widget.agent.name,
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedPersonality = selected;
+      });
+    }
+  }
+
   /// 开始新对话
-  void _startNewConversation() {
+  void _startNewConversation() async {
     // 清除当前对话状态
     if (_conversationId != null) {
       ref.invalidate(conversationNotifierProvider(_conversationId!));
@@ -354,17 +587,117 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
     setState(() {
       _conversationId = null;
-      _hasStartedConversation = false;
       _attachments.clear();
+      _pendingMessageContent = null;
+      _pendingAttachments = null;
+      _isSendingInitialMessage = false;
+    });
+
+    // 创建全新的会话（不是加载已有的）
+    final newConversation = await ref
+        .read(conversationControllerProvider.notifier)
+        .createNewConversation(widget.agent.id);
+
+    if (newConversation != null && mounted) {
+      setState(() => _conversationId = newConversation.id);
+
+      // 初始化WebSocket连接
+      unawaited(
+        ref.read(conversationNotifierProvider(newConversation.id).notifier)
+            .initialize(),
+      );
+
+      // 显示提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已创建新对话'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// 显示会话选择器
+  void _showConversationSelector() async {
+    // 获取该Agent的所有会话
+    final conversations = await ref
+        .read(conversationControllerProvider.notifier)
+        .getAgentConversations(widget.agent.id);
+
+    if (!mounted) return;
+
+    ConversationSelector.show(
+      context,
+      agentId: widget.agent.id,
+      currentConversationId: _conversationId,
+      conversations: conversations,
+      onNewConversation: _startNewConversation,
+      onSelectConversation: _switchToConversation,
+      onRenameConversation: _renameConversation,
+    );
+  }
+
+  /// 切换到指定会话
+  void _switchToConversation(String conversationId) {
+    // 清除当前对话状态
+    if (_conversationId != null) {
+      ref.invalidate(conversationNotifierProvider(_conversationId!));
+    }
+
+    // 切换会话
+    setState(() {
+      _conversationId = conversationId;
+      _attachments.clear();
+      _pendingMessageContent = null;
+      _pendingAttachments = null;
+      _isSendingInitialMessage = false;
+    });
+
+    // 初始化新会话的WebSocket连接
+    ref
+        .read(conversationNotifierProvider(conversationId).notifier)
+        .initialize()
+        .then((_) {
+      debugPrint('✅ 切换到会话: $conversationId');
+    }).catchError((e) {
+      debugPrint('⚠️ 切换会话失败: $e');
     });
 
     // 显示提示
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('已创建新对话'),
-        duration: Duration(seconds: 2),
+        content: Text('已切换会话'),
+        duration: Duration(seconds: 1),
       ),
     );
+  }
+
+  /// 重命名会话
+  void _renameConversation(String conversationId, String newTitle) async {
+    final result = await ref
+        .read(conversationControllerProvider.notifier)
+        .updateConversationTitle(
+          conversationId: conversationId,
+          title: newTitle,
+        );
+
+    if (mounted) {
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('会话标题已更新'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('更新失败，请重试'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// 紧凑的 Agent 信息（对话模式使用）
@@ -465,60 +798,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
-  /// 构建个人资料视图（未开始对话时）
-  Widget _buildProfileView(bool isKeyboardVisible) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AgentProfileTheme.horizontalPadding,
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-
-          // 问候区域
-          _buildGreetingSection(),
-
-          const SizedBox(height: 40),
-
-          // AI员工信息区域
-          _buildAgentInfoSection(),
-
-          const SizedBox(height: 40),
-
-          // 快捷功能按钮（键盘弹起时隐藏）
-          if (!isKeyboardVisible) ...[
-            QuickActionRow(
-              actions: QuickActions.defaults,
-              onActionTap: _onQuickActionTap,
-            ),
-          ],
-
-          // 底部间距
-          SizedBox(height: isKeyboardVisible ? 16 : 32),
-        ],
-      ),
-    );
-  }
-
-  /// 构建对话视图（开始对话后）
-  Widget _buildConversationView() {
-    // 如果正在发送初始消息或者对话ID为空（但已开始），显示乐观UI
-    if (_isSendingInitialMessage || (_conversationId == null && _hasStartedConversation)) {
-      return _buildPendingMessageList();
-    }
-
-    if (_conversationId == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return OptimizedMessageList(
-      conversationId: _conversationId!,
-      scrollController: _scrollController,
-    );
-  }
-
   /// 构建待发送消息列表（乐观UI）
-  /// 
+  ///
   /// 立即显示用户消息，同时在后台处理创建对话和上传附件
   Widget _buildPendingMessageList() {
     return Column(
@@ -601,130 +882,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
-  /// 构建问候区域
-  Widget _buildGreetingSection() {
-    const userName = 'User';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _getGreeting(),
-          style: AgentProfileTheme.greetingStyle,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          userName,
-          style: AgentProfileTheme.userNameStyle,
-        ),
-      ],
-    );
-  }
-
-  /// 构建AI员工信息区域
-  /// 人物个性选择器的 GlobalKey
-  final GlobalKey _personalityKey = GlobalKey();
-
-  Widget _buildAgentInfoSection() {
-    final isChrisChen = widget.agent.role == 'design_validator' ||
-        widget.agent.name.contains('Chris');
-
-    return Column(
-      children: [
-        // 头像
-        AgentAvatar(
-          avatarUrl: widget.agent.avatarUrl,
-          assetPath: isChrisChen ? AgentProfileTheme.chrisChenAvatar : null,
-          fallbackText: widget.agent.name,
-        ),
-
-        const SizedBox(height: 14),
-
-        // 名称
-        Text(
-          widget.agent.name,
-          style: AgentProfileTheme.agentNameStyle,
-        ),
-
-        const SizedBox(height: 4),
-
-        // 描述 + 人物个性选择
-        GestureDetector(
-          key: _personalityKey,
-          onTap: _showPersonalitySelector,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 描述文字
-              Text(
-                widget.agent.description,
-                textAlign: TextAlign.center,
-                style: AgentProfileTheme.agentDescriptionStyle,
-              ),
-              const SizedBox(width: 4),
-              // 分隔点
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const ShapeDecoration(
-                  color: Color(0xFF393939),
-                  shape: OvalBorder(),
-                ),
-              ),
-              const SizedBox(width: 4),
-              // 当前个性
-              Text(
-                _selectedPersonality.name,
-                textAlign: TextAlign.center,
-                style: AgentProfileTheme.agentDescriptionStyle,
-              ),
-              // 下拉箭头
-              Icon(
-                Icons.keyboard_arrow_down,
-                size: 24,
-                color: Colors.black.withOpacity(0.54),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 显示人物个性选择器
-  void _showPersonalitySelector() async {
-    final RenderBox button =
-        _personalityKey.currentContext!.findRenderObject() as RenderBox;
-    final RenderBox overlay =
-        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-
-    final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
-    final buttonSize = button.size;
-
-    // 计算弹窗位置（在按钮下方，居中对齐）
-    final position = RelativeRect.fromLTRB(
-      buttonPosition.dx + buttonSize.width / 2 - 98, // 98 = 196/2
-      buttonPosition.dy + buttonSize.height + 8,
-      overlay.size.width - buttonPosition.dx - buttonSize.width / 2 - 98,
-      0,
-    );
-
-    final personality = await showPersonalitySelectorPopup(
-      context,
-      selectedPersonality: _selectedPersonality,
-      position: position,
-    );
-
-    if (personality != null) {
-      setState(() {
-        _selectedPersonality = personality;
-      });
-    }
-  }
-
   /// 构建底部输入区域
   Widget _buildInputSection(bool isKeyboardVisible, bool isStreaming) {
+    // 判断是否有消息（用于决定是否显示顶部边框）
+    final hasMessages = _conversationId != null &&
+        ref.watch(
+          conversationNotifierProvider(_conversationId!).select(
+            (state) => state.messages.isNotEmpty,
+          ),
+        );
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AgentProfileTheme.horizontalPadding,
@@ -732,7 +899,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         AgentProfileTheme.horizontalPadding,
         isKeyboardVisible ? 8 : 24,
       ),
-      decoration: _hasStartedConversation
+      decoration: hasMessages
           ? BoxDecoration(
               color: AgentProfileTheme.backgroundColor,
               border: Border(

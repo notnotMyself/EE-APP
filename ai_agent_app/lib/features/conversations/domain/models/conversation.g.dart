@@ -15,6 +15,7 @@ _$ConversationImpl _$$ConversationImplFromJson(Map<String, dynamic> json) =>
       lastMessageAt: json['last_message_at'] == null
           ? null
           : DateTime.parse(json['last_message_at'] as String),
+      title: json['title'] as String?,
       status: json['status'] as String?,
       context: json['context'] as Map<String, dynamic>?,
     );
@@ -26,6 +27,7 @@ Map<String, dynamic> _$$ConversationImplToJson(_$ConversationImpl instance) =>
       'agent_id': instance.agentId,
       'started_at': instance.startedAt.toIso8601String(),
       'last_message_at': instance.lastMessageAt?.toIso8601String(),
+      'title': instance.title,
       'status': instance.status,
       'context': instance.context,
     };

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+/// OPPO Sans 字体家族名称
+const String _oppoSansFamily = 'OPPO Sans';
+
 /// 人物个性数据模型
 class Personality {
   final String id;
@@ -59,15 +62,19 @@ class PersonalityList {
 class PersonalitySelectorPopup extends StatelessWidget {
   final Personality? selectedPersonality;
   final ValueChanged<Personality> onPersonalitySelected;
+  final String? agentName;
 
   const PersonalitySelectorPopup({
     super.key,
     this.selectedPersonality,
     required this.onPersonalitySelected,
+    this.agentName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final displayName = agentName ?? 'AI';
+    
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 168, maxWidth: 256),
       child: Container(
@@ -96,11 +103,11 @@ class PersonalitySelectorPopup extends StatelessWidget {
               child: SizedBox(
                 width: 156,
                 child: Text(
-                  '选择 Chris 人物个性',
+                  '选择 $displayName 人物个性',
                   style: TextStyle(
                     color: Colors.black.withOpacity(0.54),
                     fontSize: 12,
-                    fontFamily: 'OPPO Sans 4.0',
+                    fontFamily: _oppoSansFamily,
                     fontWeight: FontWeight.w500,
                     height: 1.33,
                   ),
@@ -164,7 +171,7 @@ class PersonalitySelectorPopup extends StatelessWidget {
                                   ? const Color(0xFF0066FF)
                                   : Colors.black.withOpacity(0.90),
                               fontSize: 16,
-                              fontFamily: 'OPPO Sans 4.0',
+                              fontFamily: _oppoSansFamily,
                               fontWeight: FontWeight.w400,
                               height: 1.38,
                             ),
@@ -199,6 +206,7 @@ Future<Personality?> showPersonalitySelectorPopup(
   BuildContext context, {
   Personality? selectedPersonality,
   required RelativeRect position,
+  String? agentName,
 }) async {
   Personality? result;
 
@@ -219,6 +227,7 @@ Future<Personality?> showPersonalitySelectorPopup(
           onPersonalitySelected: (p) {
             result = p;
           },
+          agentName: agentName,
         ),
       ),
     ],

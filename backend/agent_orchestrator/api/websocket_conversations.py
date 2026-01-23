@@ -45,6 +45,28 @@ def set_websocket_services(conv_service, supabase):
     supabase_client = supabase
 
 
+async def _warmup_agent_async(agent_id: str) -> None:
+    """异步预热 Agent 配置
+    
+    在 WebSocket 连接后异步执行，预加载：
+    1. Agent role 解析
+    2. System prompt（CLAUDE.md 文件）
+    3. Agent options 配置
+    
+    这样用户发送第一条消息时，这些都已经在缓存中了。
+    """
+    try:
+        if conversation_service and hasattr(conversation_service, 'agent_service'):
+            agent_service = conversation_service.agent_service
+            # 获取 agent role（触发缓存）
+            agent_role = conversation_service._get_agent_role(agent_id)
+            # 预热 agent 配置（触发文件加载和缓存）
+            agent_service.warmup_agent(agent_role)
+    except Exception as e:
+        # 预热失败不影响正常功能，只记录日志
+        logger.debug(f"Agent warmup failed (non-critical): {e}")
+
+
 async def verify_token(token: str) -> Optional[str]:
     """验证JWT Token并返回用户ID
 
@@ -126,6 +148,7 @@ async def conversation_websocket(
     manager = get_connection_manager()
 
     # 验证对话存在且属于用户（仅当服务可用时）
+    agent_id_for_warmup: Optional[str] = None
     if conversation_service and supabase_client:
         try:
             conversation = await conversation_service.get_conversation(conversation_id)
@@ -137,21 +160,34 @@ async def conversation_websocket(
                 await websocket.send_json({"type": "error", "content": "Access denied"})
                 await websocket.close(code=4003, reason="Access denied")
                 return
+            # 保存 agent_id 用于预热
+            agent_id_for_warmup = conversation.get("agent_id")
         except Exception as e:
             logger.warning(f"Failed to verify conversation (continuing anyway): {e}")
             # 继续连接，不阻塞（开发环境）
 
-    # 如果同一用户在同一 conversation 已经有活跃连接，拒绝新连接以避免“互相替换→无限重连”
-    # （前端若意外创建了多个 WS 实例，会导致后端不断 close old_state，从而形成循环）
+    # 检查是否有现有连接
+    # 如果有僵尸连接（无法通信），先清理它
+    # 如果连接真的活跃，才拒绝新连接
     if manager.is_connected(conversation_id, user_id):
+        # 检查并清理可能的僵尸连接
+        can_connect = await manager.check_and_cleanup_stale_connection(
+            conversation_id, user_id
+        )
+        if not can_connect:
+            # 连接真的活跃，拒绝新连接
+            logger.info(
+                f"Rejecting duplicate WS connection: conversation={conversation_id}, user={user_id}"
+            )
+            await websocket.send_json(
+                {"type": "error", "content": "Already connected to this conversation"}
+            )
+            await websocket.close(code=4000, reason="Already connected")
+            return
+        # 僵尸连接已清理，可以继续建立新连接
         logger.info(
-            f"Rejecting duplicate WS connection: conversation={conversation_id}, user={user_id}"
+            f"Cleaned up stale connection, allowing new: conversation={conversation_id}, user={user_id}"
         )
-        await websocket.send_json(
-            {"type": "error", "content": "Already connected to this conversation"}
-        )
-        await websocket.close(code=4000, reason="Already connected")
-        return
 
     # 连接WebSocket
     try:
@@ -167,6 +203,10 @@ async def conversation_websocket(
             "conversation_id": conversation_id,
             "ts": asyncio.get_event_loop().time(),
         })
+
+        # 预热优化：异步预加载 Agent 配置（减少首次消息延迟）
+        if agent_id_for_warmup and conversation_service:
+            asyncio.create_task(_warmup_agent_async(agent_id_for_warmup))
 
         # 消息处理循环
         while True:

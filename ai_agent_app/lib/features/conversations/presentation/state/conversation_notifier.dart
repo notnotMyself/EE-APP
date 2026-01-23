@@ -170,9 +170,8 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
         break;
 
       case WSMessageType.done:
-        _finalizeMessage();
-        // 重置工具状态
-        state = state.copyWith(toolState: const ToolExecutionState.idle());
+        // 合并所有状态更新为一个原子操作，避免中间状态导致 UI 闪烁
+        _finalizeMessageAndResetTool();
         break;
 
       case WSMessageType.error:
@@ -366,7 +365,57 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
     );
   }
 
-  /// 完成消息
+  /// 完成消息并重置工具状态（原子操作）
+  /// 
+  /// 合并所有状态更新为单次操作，避免中间状态导致 UI 重复渲染
+  void _finalizeMessageAndResetTool() {
+    // 先刷新所有缓冲（不触发状态更新，直接合并到缓冲）
+    _flushTimer?.cancel();
+    _flushTimer = null;
+    
+    // 合并缓冲内容但不更新状态
+    String bufferedContent = '';
+    if (_contentBuffer.isNotEmpty) {
+      bufferedContent = _contentBuffer.join();
+      _contentBuffer.clear();
+    }
+
+    // 重置流式状态
+    _isStreaming = false;
+    _streamingStartTime = null;
+
+    // 获取完整的流式内容（现有内容 + 缓冲内容）
+    final existingContent = state.streamingState.maybeMap(
+      streaming: (s) => s.content,
+      orElse: () => '',
+    );
+    final fullContent = existingContent + bufferedContent;
+
+    if (fullContent.isNotEmpty) {
+      final newMessage = Message(
+        id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
+        conversationId: conversationId,
+        role: 'assistant',
+        content: fullContent,
+        createdAt: DateTime.now(),
+      );
+
+      // 单次原子状态更新：添加消息 + 完成流式 + 重置工具
+      state = state.copyWith(
+        messages: [...state.messages, newMessage],
+        streamingState: const StreamingState.completed(),
+        toolState: const ToolExecutionState.idle(),
+      );
+    } else {
+      // 即使没有内容，也要重置状态
+      state = state.copyWith(
+        streamingState: const StreamingState.completed(),
+        toolState: const ToolExecutionState.idle(),
+      );
+    }
+  }
+
+  /// 完成消息（保留用于 SSE fallback）
   void _finalizeMessage() {
     // 先刷新所有缓冲
     _flushTimer?.cancel();

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+/// OPPO Sans 字体家族名称
+const String oppoSansFamily = 'OPPO Sans';
 
 /// AI员工详情页面的设计规范
 /// 基于 Figma 设计稿提取
@@ -42,11 +44,12 @@ class AgentProfileTheme {
   static const Color accentBlue = Color(0xFF378AFF);
   
   // ============================================
-  // 字体样式
+  // 字体样式 - 使用 OPPO Sans 字体
   // ============================================
   
   /// 问候语样式（"早上好"）
-  static TextStyle get greetingStyle => GoogleFonts.poppins(
+  static TextStyle get greetingStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: labelColor,
     fontSize: 16,
     fontWeight: FontWeight.w400,
@@ -54,7 +57,8 @@ class AgentProfileTheme {
   );
   
   /// 用户名样式
-  static TextStyle get userNameStyle => GoogleFonts.poppins(
+  static TextStyle get userNameStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: titleColor,
     fontSize: 20,
     fontWeight: FontWeight.w700,
@@ -62,7 +66,8 @@ class AgentProfileTheme {
   );
   
   /// AI员工名称样式
-  static TextStyle get agentNameStyle => GoogleFonts.poppins(
+  static TextStyle get agentNameStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: titleColor,
     fontSize: 26,
     fontWeight: FontWeight.w700,
@@ -71,6 +76,7 @@ class AgentProfileTheme {
   
   /// AI员工描述样式
   static TextStyle get agentDescriptionStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: textSecondary,
     fontSize: 14,
     fontWeight: FontWeight.w400,
@@ -79,6 +85,7 @@ class AgentProfileTheme {
   
   /// 输入框提示文字样式
   static TextStyle get inputHintStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: Colors.black,
     fontSize: 16,
     fontWeight: FontWeight.w400,
@@ -86,7 +93,8 @@ class AgentProfileTheme {
   );
   
   /// 快捷按钮标签样式
-  static TextStyle get quickActionLabelStyle => GoogleFonts.poppins(
+  static TextStyle get quickActionLabelStyle => const TextStyle(
+    fontFamily: oppoSansFamily,
     color: labelColor,
     fontSize: 16,
     fontWeight: FontWeight.w400,

@@ -27,7 +27,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     namespace = "com.ee.preview"
-    compileSdk = 34
+    compileSdk = 35
     ndkVersion = "25.1.8937393"
 
     compileOptions {
@@ -42,9 +42,20 @@ android {
     defaultConfig {
         applicationId = "com.ee.preview"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+        
+        // Manifest 占位符配置
+        manifestPlaceholders = [
+            // JPush 配置
+            JPUSH_PKGNAME: applicationId,
+            JPUSH_APPKEY: "YOUR_JPUSH_APP_KEY",  // TODO: 替换为实际的 JPush AppKey
+            JPUSH_CHANNEL: "developer-default"
+        ]
+        
+        // 多 Dex 支持
+        multiDexEnabled true
     }
 
     buildTypes {

@@ -29,6 +29,7 @@ mixin _$Conversation {
   DateTime get startedAt => throw _privateConstructorUsedError;
   @JsonKey(name: 'last_message_at')
   DateTime? get lastMessageAt => throw _privateConstructorUsedError;
+  String? get title => throw _privateConstructorUsedError;
   String? get status => throw _privateConstructorUsedError;
   Map<String, dynamic>? get context => throw _privateConstructorUsedError;
 
@@ -54,6 +55,7 @@ abstract class $ConversationCopyWith<$Res> {
       @JsonKey(name: 'agent_id') String agentId,
       @JsonKey(name: 'started_at') DateTime startedAt,
       @JsonKey(name: 'last_message_at') DateTime? lastMessageAt,
+      String? title,
       String? status,
       Map<String, dynamic>? context});
 }
@@ -78,6 +80,7 @@ class _$ConversationCopyWithImpl<$Res, $Val extends Conversation>
     Object? agentId = null,
     Object? startedAt = null,
     Object? lastMessageAt = freezed,
+    Object? title = freezed,
     Object? status = freezed,
     Object? context = freezed,
   }) {
@@ -102,6 +105,10 @@ class _$ConversationCopyWithImpl<$Res, $Val extends Conversation>
           ? _value.lastMessageAt
           : lastMessageAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
       status: freezed == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -128,6 +135,7 @@ abstract class _$$ConversationImplCopyWith<$Res>
       @JsonKey(name: 'agent_id') String agentId,
       @JsonKey(name: 'started_at') DateTime startedAt,
       @JsonKey(name: 'last_message_at') DateTime? lastMessageAt,
+      String? title,
       String? status,
       Map<String, dynamic>? context});
 }
@@ -150,6 +158,7 @@ class __$$ConversationImplCopyWithImpl<$Res>
     Object? agentId = null,
     Object? startedAt = null,
     Object? lastMessageAt = freezed,
+    Object? title = freezed,
     Object? status = freezed,
     Object? context = freezed,
   }) {
@@ -174,6 +183,10 @@ class __$$ConversationImplCopyWithImpl<$Res>
           ? _value.lastMessageAt
           : lastMessageAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      title: freezed == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String?,
       status: freezed == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -195,6 +208,7 @@ class _$ConversationImpl implements _Conversation {
       @JsonKey(name: 'agent_id') required this.agentId,
       @JsonKey(name: 'started_at') required this.startedAt,
       @JsonKey(name: 'last_message_at') this.lastMessageAt,
+      this.title,
       this.status,
       final Map<String, dynamic>? context})
       : _context = context;
@@ -217,6 +231,8 @@ class _$ConversationImpl implements _Conversation {
   @JsonKey(name: 'last_message_at')
   final DateTime? lastMessageAt;
   @override
+  final String? title;
+  @override
   final String? status;
   final Map<String, dynamic>? _context;
   @override
@@ -230,7 +246,7 @@ class _$ConversationImpl implements _Conversation {
 
   @override
   String toString() {
-    return 'Conversation(id: $id, userId: $userId, agentId: $agentId, startedAt: $startedAt, lastMessageAt: $lastMessageAt, status: $status, context: $context)';
+    return 'Conversation(id: $id, userId: $userId, agentId: $agentId, startedAt: $startedAt, lastMessageAt: $lastMessageAt, title: $title, status: $status, context: $context)';
   }
 
   @override
@@ -245,14 +261,23 @@ class _$ConversationImpl implements _Conversation {
                 other.startedAt == startedAt) &&
             (identical(other.lastMessageAt, lastMessageAt) ||
                 other.lastMessageAt == lastMessageAt) &&
+            (identical(other.title, title) || other.title == title) &&
             (identical(other.status, status) || other.status == status) &&
             const DeepCollectionEquality().equals(other._context, _context));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, userId, agentId, startedAt,
-      lastMessageAt, status, const DeepCollectionEquality().hash(_context));
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      userId,
+      agentId,
+      startedAt,
+      lastMessageAt,
+      title,
+      status,
+      const DeepCollectionEquality().hash(_context));
 
   /// Create a copy of Conversation
   /// with the given fields replaced by the non-null parameter values.
@@ -277,6 +302,7 @@ abstract class _Conversation implements Conversation {
       @JsonKey(name: 'agent_id') required final String agentId,
       @JsonKey(name: 'started_at') required final DateTime startedAt,
       @JsonKey(name: 'last_message_at') final DateTime? lastMessageAt,
+      final String? title,
       final String? status,
       final Map<String, dynamic>? context}) = _$ConversationImpl;
 
@@ -297,6 +323,8 @@ abstract class _Conversation implements Conversation {
   @override
   @JsonKey(name: 'last_message_at')
   DateTime? get lastMessageAt;
+  @override
+  String? get title;
   @override
   String? get status;
   @override
@@ -321,7 +349,8 @@ mixin _$Message {
   String get conversationId => throw _privateConstructorUsedError;
   String get role => throw _privateConstructorUsedError;
   String get content => throw _privateConstructorUsedError;
-  List<Map<String, dynamic>>? get attachments => throw _privateConstructorUsedError;
+  List<Map<String, dynamic>>? get attachments =>
+      throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
 

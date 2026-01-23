@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 开发环境：允许明文HTTP访问本地服务器 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.101.138.205</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
+

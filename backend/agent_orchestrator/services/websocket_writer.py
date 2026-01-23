@@ -72,9 +72,9 @@ class WebSocketWriter:
         connection_manager: ConnectionManager,
         conversation_id: str,
         user_id: str,
-        initial_flush_interval: float = 0.05,  # 50ms首次刷新
-        steady_flush_interval: float = 0.1,  # 100ms稳定刷新
-        max_buffer_size: int = 30,  # 30字符触发刷新
+        initial_flush_interval: float = 0.01,  # 10ms首次刷新 (优化: 从50ms减少)
+        steady_flush_interval: float = 0.08,  # 80ms稳定刷新 (优化: 从100ms减少)
+        max_buffer_size: int = 15,  # 15字符触发刷新 (优化: 从30减少)
     ):
         self.websocket = websocket
         self.manager = connection_manager
@@ -93,6 +93,9 @@ class WebSocketWriter:
 
         # 累积的完整内容（用于保存到数据库）
         self._accumulated_content = ""
+        
+        # 是否是首次输出（用于TTFT优化）
+        self._is_first_output = True
 
     @property
     def accumulated_content(self) -> str:
@@ -100,10 +103,19 @@ class WebSocketWriter:
         return self._accumulated_content
 
     async def write_text_chunk(self, content: str) -> None:
-        """写入文本chunk（带缓冲）"""
+        """写入文本chunk（带缓冲）
+        
+        TTFT优化：首次输出立即刷新，让用户尽快看到第一个字符
+        """
         async with self._lock:
             self._buffer.append(content)
             self._accumulated_content += content
+
+            # 首次输出立即刷新（TTFT优化）
+            if self._is_first_output:
+                self._is_first_output = False
+                await self._flush_buffer()
+                return
 
             # 计算当前应该使用的刷新间隔
             flush_interval = (

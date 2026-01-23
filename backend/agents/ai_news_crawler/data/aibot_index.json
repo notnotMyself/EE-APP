@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-01-21T11:03:21.219144",
+  "last_updated": "2026-01-23T09:00:36.217439",
   "source": "ai-bot.cn",
   "news_by_date": {
     "1月6·周二": [
@@ -162,6 +162,30 @@
     ],
     "1月15·周四": [],
     "1月21·周三": [
+      {
+        "title": "百度发布文心大模型 5.0 正式版：2.4 万亿参数，具备全模态理解与生成能力",
+        "url": "https://mp.weixin.qq.com/s/1n3Pog6rZ-l27PSVQqKHgg",
+        "summary": "百度正式发布文心大模型5.0版本，模型参数量达2.4万亿，采用原生全模态统一建模技术，具备文本、图像、音频、视频等信息的全面理解与生成能力。官方表示，在40余项权威基准评测中，其语言与多模态理解能力超越Gemini-2.5-Pro、GPT-5-High等国际主流模型。",
+        "source": "百度文心",
+        "category": "前沿技术",
+        "tag": ""
+      },
+      {
+        "title": "腾讯CodeBuddy Code 2.0 重磅升级！",
+        "url": "https://mp.weixin.qq.com/s/mXziYWAqRTP-I7UxmKyRTg",
+        "summary": "腾讯CodeBuddy Code2.0版本正式发布，核心升级包括开放SDK集成能力，通过Plan模式与ACP协议实现Agent能力标准化输出，支持企业快速构建生产级AI应用。平台全面兼容开发者社区生态，支持Plugin插件市场与自定义Subagents智能体，集成TencentOS提供容器化安全沙箱运行环境。新版本增强工程记忆、LSP代码诊断等核心功能，支持GLM-4.7等多模型切换。",
+        "source": "腾讯云代码助手CodeBuddy",
+        "category": "前沿技术",
+        "tag": "工具"
+      },
+      {
+        "title": "8B端侧写作智能体AgentCPM-Report开源！",
+        "url": "https://mp.weixin.qq.com/s/bH9GV1C7mXNVGX-Jhlgobw",
+        "summary": "清华大学、中国人民大学、面壁智能与OpenBMB社区联合发布本地化深度调研智能体AgentCPM-Report。模型仅8B参数，通过40轮深度检索与100轮思维链推演，在DeepResearch Bench等三大评测中综合表现超越部分顶级闭源系统，尤其在洞察性指标排名第一。",
+        "source": "面壁智能",
+        "category": "前沿技术",
+        "tag": "开源"
+      },
       {
         "title": "10B击败200B！阶跃星辰开源视觉语言SOTA：Step3-VL-10B",
         "url": "https://mp.weixin.qq.com/s/Sh5j0uG0wtR04XHrg-EoYA",

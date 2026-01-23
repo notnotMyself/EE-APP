@@ -1,0 +1,491 @@
+Container(
+    width: 360,
+    height: 800,
+    clipBehavior: Clip.antiAlias,
+    decoration: ShapeDecoration(
+        color: const Color(0xFFE9EAF0),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(42),
+        ),
+    ),
+    child: Stack(
+        children: [
+            Positioned(
+                left: 0,
+                top: 0,
+                child: Container(
+                    width: 360,
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                            Container(
+                                width: 360,
+                                height: 40,
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(),
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: 0,
+                                            child: Container(
+                                                width: 360,
+                                                height: 40,
+                                                padding: const EdgeInsets.only(top: 8, left: 20, right: 20, bottom: 6),
+                                                clipBehavior: Clip.antiAlias,
+                                                decoration: BoxDecoration(),
+                                                child: Stack(
+                                                    children: [
+                                                        Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisAlignment: MainAxisAlignment.start,
+                                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                                            spacing: 4,
+                                                            children: [
+                                                                Container(
+                                                                    height: 26,
+                                                                    child: Row(
+                                                                        mainAxisSize: MainAxisSize.min,
+                                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                                                        spacing: 10,
+                                                                        children: [
+                                                                            Text(
+                                                                                '19:30',
+                                                                                style: TextStyle(
+                                                                                    color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                                                                                    fontSize: 12,
+                                                                                    fontFamily: 'OPPO Sans 4.0 SC',
+                                                                                    fontWeight: FontWeight.w600,
+                                                                                ),
+                                                                            ),
+                                                                        ],
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        Container(
+                                                            height: 26,
+                                                            child: Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                                children: [
+                                                                    Container(width: 20, height: 16, child: Stack()),
+                                                                    Container(
+                                                                        width: 22,
+                                                                        height: 16,
+                                                                        clipBehavior: Clip.antiAlias,
+                                                                        decoration: BoxDecoration(),
+                                                                        child: Stack(
+                                                                            children: [
+                                                                                Positioned(
+                                                                                    left: 2.25,
+                                                                                    top: -0.75,
+                                                                                    child: Container(
+                                                                                        width: 17.50,
+                                                                                        height: 17.50,
+                                                                                        clipBehavior: Clip.antiAlias,
+                                                                                        decoration: BoxDecoration(),
+                                                                                        child: Stack(),
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                    Container(
+                                                                        width: 22,
+                                                                        height: 16,
+                                                                        clipBehavior: Clip.antiAlias,
+                                                                        decoration: BoxDecoration(),
+                                                                        child: Stack(),
+                                                                    ),
+                                                                    Container(
+                                                                        width: 20,
+                                                                        height: 16,
+                                                                        child: Stack(
+                                                                            children: [
+                                                                                Positioned(
+                                                                                    left: 2.40,
+                                                                                    top: 2,
+                                                                                    child: Row(
+                                                                                        mainAxisSize: MainAxisSize.min,
+                                                                                        mainAxisAlignment: MainAxisAlignment.start,
+                                                                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                                                                        spacing: 1.80,
+                                                                                        children: [
+                                                                                        ,
+                                                                                        ],
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                    Container(
+                                                                        width: 26,
+                                                                        height: 16,
+                                                                        child: Stack(
+                                                                            children: [
+                                                                                Positioned(
+                                                                                    left: 2,
+                                                                                    top: 2.67,
+                                                                                    child: Container(
+                                                                                        width: 22,
+                                                                                        height: 11.33,
+                                                                                        decoration: BoxDecoration(
+                                                                                            color: Colors.black.withValues(alpha: 0.26) /* 颜色-Color-文字&图标-Label-couiColorLabelTertiary */,
+                                                                                        ),
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            ),
+                                                        ),
+                                                        Positioned(
+                                                            left: 169.75,
+                                                            top: 10.75,
+                                                            child: Container(
+                                                                width: 20.50,
+                                                                height: 20.50,
+                                                                decoration: ShapeDecoration(shape: OvalBorder()),
+                                                            ),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            Positioned(
+                left: 17,
+                top: 56,
+                child: Container(
+                    width: 233.99,
+                    height: 65.49,
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 7.99,
+                        children: [
+                            Container(
+                                width: double.infinity,
+                                height: 37.50,
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: -0.38,
+                                            child: Text(
+                                                '灵感验证官',
+                                                style: TextStyle(
+                                                    color: const Color(0xFF0E162B),
+                                                    fontSize: 30,
+                                                    fontFamily: 'OPPO Sans 4.0',
+                                                    fontWeight: FontWeight.w600,
+                                                    height: 1.25,
+                                                    letterSpacing: -0.35,
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                width: double.infinity,
+                                height: 20,
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: 0.24,
+                                            child: Text(
+                                                '让每一个像素都经得起推敲。',
+                                                style: TextStyle(
+                                                    color: const Color(0xFF61738D),
+                                                    fontSize: 14,
+                                                    fontFamily: 'OPPO Sans 4.0',
+                                                    fontWeight: FontWeight.w400,
+                                                    height: 1.43,
+                                                    letterSpacing: -0.15,
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            Positioned(
+                left: 17,
+                top: 537,
+                child: Container(
+                    width: 329.30,
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 10,
+                        children: [
+                            Container(
+                                width: double.infinity,
+                                height: 55.99,
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: 0,
+                                            child: Container(
+                                                width: 329.30,
+                                                height: 55.99,
+                                                padding: const EdgeInsets.only(left: 48, right: 16),
+                                                clipBehavior: Clip.antiAlias,
+                                                decoration: ShapeDecoration(
+                                                    color: const Color(0xFFF8FAFC),
+                                                    shape: RoundedRectangleBorder(
+                                                        side: BorderSide(
+                                                            width: 0.62,
+                                                            color: const Color(0xFFE1E8F0),
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(16),
+                                                    ),
+                                                ),
+                                                child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    children: [
+                                                        Text(
+                                                            '账号',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                                color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+                                                                fontSize: 14,
+                                                                fontFamily: 'OPPO Sans 4.0',
+                                                                fontWeight: FontWeight.w400,
+                                                                height: 1.43,
+                                                            ),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                        Positioned(
+                                            left: 15.99,
+                                            top: 18,
+                                            child: Container(
+                                                width: 19.99,
+                                                height: 19.99,
+                                                child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Container(
+                                                            width: double.infinity,
+                                                            height: 19.99,
+                                                            clipBehavior: Clip.antiAlias,
+                                                            decoration: BoxDecoration(),
+                                                            child: Stack(),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                width: double.infinity,
+                                height: 55.99,
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: 0,
+                                            child: Container(
+                                                width: 329.30,
+                                                height: 55.99,
+                                                padding: const EdgeInsets.symmetric(horizontal: 48),
+                                                clipBehavior: Clip.antiAlias,
+                                                decoration: ShapeDecoration(
+                                                    color: const Color(0xFFF8FAFC),
+                                                    shape: RoundedRectangleBorder(
+                                                        side: BorderSide(
+                                                            width: 0.62,
+                                                            color: const Color(0xFFE1E8F0),
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(16),
+                                                    ),
+                                                ),
+                                                child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    children: [
+                                                        Text(
+                                                            '请输入密码',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                                color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+                                                                fontSize: 14,
+                                                                fontFamily: 'OPPO Sans 4.0',
+                                                                fontWeight: FontWeight.w400,
+                                                                height: 1.43,
+                                                            ),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                        Positioned(
+                                            left: 15.99,
+                                            top: 18,
+                                            child: Container(
+                                                width: 19.99,
+                                                height: 19.99,
+                                                child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Container(
+                                                            width: double.infinity,
+                                                            height: 19.99,
+                                                            clipBehavior: Clip.antiAlias,
+                                                            decoration: BoxDecoration(),
+                                                            child: Stack(),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                        Positioned(
+                                            left: 293.32,
+                                            top: 18,
+                                            child: Container(
+                                                width: 19.99,
+                                                height: 19.99,
+                                                child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.start,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Container(
+                                                            width: double.infinity,
+                                                            height: 19.99,
+                                                            clipBehavior: Clip.antiAlias,
+                                                            decoration: BoxDecoration(),
+                                                            child: Stack(),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            Positioned(
+                left: 17,
+                top: 702.97,
+                child: Container(
+                    width: 329.30,
+                    height: 55.99,
+                    decoration: ShapeDecoration(
+                        color: Colors.black,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                        ),
+                        shadows: [
+                            BoxShadow(
+                                color: Color(0x23000000),
+                                blurRadius: 54,
+                                offset: Offset(0, 6),
+                                spreadRadius: 0,
+                            )
+                        ],
+                    ),
+                    child: Stack(
+                        children: [
+                            Positioned(
+                                left: 135,
+                                top: 15,
+                                child: Container(
+                                    width: 54,
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        spacing: 32,
+                                        children: [
+                                            Text(
+                                                '开始',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontFamily: 'Inter',
+                                                    fontWeight: FontWeight.w600,
+                                                    height: 1.50,
+                                                    letterSpacing: -0.31,
+                                                ),
+                                            ),
+                                            Container(
+                                                width: 19.99,
+                                                height: 19.99,
+                                                clipBehavior: Clip.antiAlias,
+                                                decoration: BoxDecoration(),
+                                                child: Stack(),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            Positioned(
+                left: 5,
+                top: 122,
+                child: Container(
+                    width: 350,
+                    height: 400,
+                    child: Stack(
+                        children: [
+                            Positioned(
+                                left: 0,
+                                top: 0,
+                                child: Container(
+                                    width: 350,
+                                    height: 400,
+                                    decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                            image: NetworkImage("https://placehold.co/350x400"),
+                                            fit: BoxFit.cover,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ],
+    ),
+)
