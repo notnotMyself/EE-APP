@@ -1,5 +1,6 @@
-package com.oppo.ee.ai_agent_app
+package ee_ai_agent
 
 import io.flutter.embedding.android.FlutterActivity
 
 class MainActivity: FlutterActivity()
+

@@ -26,7 +26,7 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    namespace = "com.ee.preview"
+    namespace = "ee_ai_agent"
     compileSdk = 35
     ndkVersion = "25.1.8937393"
 
@@ -40,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.ee.preview"
+        applicationId = "ee_ai_agent"
         minSdk = 21
         targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
