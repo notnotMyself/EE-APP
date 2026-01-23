@@ -35,7 +35,7 @@ dependencies:
 
   # 推送通知
   jpush_flutter: ^3.0.0
-  flutter_local_notifications: ^16.3.0
+  flutter_local_notifications: ^17.0.0
   timezone: ^0.9.2
 
   # A2UI 动态组件
