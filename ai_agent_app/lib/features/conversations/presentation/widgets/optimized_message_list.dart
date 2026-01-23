@@ -12,7 +12,7 @@ import '../state/conversation_state.dart';
 import 'tool_execution_card.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'OPPO Sans';
+const String _oppoSansFamily = 'PingFang SC';
 
 /// 优化的消息列表组件
 ///

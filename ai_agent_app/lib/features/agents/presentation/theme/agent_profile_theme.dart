@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// OPPO Sans 字体家族名称
-const String oppoSansFamily = 'OPPO Sans';
+const String oppoSansFamily = 'PingFang SC';
 
 /// AI员工详情页面的设计规范
 /// 基于 Figma 设计稿提取

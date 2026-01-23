@@ -5,7 +5,7 @@ import 'agent_avatar.dart';
 import 'personality_selector.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'OPPO Sans';
+const String _oppoSansFamily = 'PingFang SC';
 
 /// AI员工介绍卡片
 ///

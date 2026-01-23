@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../agents/presentation/theme/agent_profile_theme.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'OPPO Sans';
+const String _oppoSansFamily = 'PingFang SC';
 
 /// Profile page - shows user information, subscriptions, and settings
 class ProfilePage extends ConsumerWidget {
