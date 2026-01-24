@@ -171,7 +171,14 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   String _getUserDisplayName() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return '用户';
-    
+
+    // 优先使用 user_metadata 中的 username
+    final username = user.userMetadata?['username'] as String?;
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+
+    // 回退到 email 前缀
     final email = user.email ?? '';
     if (email.isEmpty || !email.contains('@')) {
       return '用户';

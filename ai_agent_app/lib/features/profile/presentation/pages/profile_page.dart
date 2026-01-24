@@ -86,10 +86,6 @@ class ProfilePage extends ConsumerWidget {
                   _buildUserProfileCard(context, user),
                   const SizedBox(height: 20),
 
-                  // Stats Card
-                  _buildStatsCard(context),
-                  const SizedBox(height: 20),
-
                   // Menu Section
                   _buildMenuSection(context),
                   const SizedBox(height: 20),
@@ -108,7 +104,8 @@ class ProfilePage extends ConsumerWidget {
 
   Widget _buildUserProfileCard(BuildContext context, User? user) {
     final email = user?.email ?? '未登录';
-    final initial = email.isNotEmpty ? email[0].toUpperCase() : 'U';
+    final displayName = _getDisplayName(user);
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -168,7 +165,7 @@ class ProfilePage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getDisplayName(email),
+                  displayName,
                   style: TextStyle(
                     fontFamily: _oppoSansFamily,
                     fontSize: 20,
@@ -515,7 +512,17 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  String _getDisplayName(String email) {
+  String _getDisplayName(User? user) {
+    if (user == null) return '用户';
+
+    // 优先使用 user_metadata 中的 username
+    final username = user.userMetadata?['username'] as String?;
+    if (username != null && username.isNotEmpty) {
+      return username;
+    }
+
+    // 回退到 email 前缀
+    final email = user.email ?? '';
     if (email.isEmpty || !email.contains('@')) {
       return '用户';
     }
