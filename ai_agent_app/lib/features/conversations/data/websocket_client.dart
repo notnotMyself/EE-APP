@@ -220,18 +220,31 @@ class ConversationWebSocketClient {
       onMessage?.call(message);
     } catch (e, stackTrace) {
       // 安全地记录错误，避免 null 值导致 logger 崩溃
-      _logger.w('Failed to parse WebSocket message: ${e.toString()}');
-      // 在调试模式下打印堆栈
-      if (const bool.fromEnvironment('dart.vm.product') == false) {
-        _logger.d('Stack trace: ${stackTrace.toString()}');
+      final errorMsg = e?.toString() ?? 'Unknown error';
+      final stackMsg = stackTrace?.toString() ?? 'No stack trace';
+
+      try {
+        _logger.w('Failed to parse WebSocket message: $errorMsg');
+        // 在调试模式下打印堆栈
+        if (const bool.fromEnvironment('dart.vm.product') == false) {
+          _logger.d('Stack trace: $stackMsg');
+        }
+      } catch (logError) {
+        // 如果 logger 也失败了，使用 print 作为后备
+        print('Failed to log WebSocket error: $errorMsg');
       }
     }
   }
 
   void _handleError(dynamic error) {
     // 安全地记录错误
-    _logger.e('WebSocket error: ${error?.toString() ?? "Unknown error"}');
-    onError?.call('WebSocket错误: ${error?.toString() ?? "未知错误"}');
+    final errorMsg = error?.toString() ?? "Unknown error";
+    try {
+      _logger.e('WebSocket error: $errorMsg');
+    } catch (logError) {
+      print('Failed to log WebSocket error: $errorMsg');
+    }
+    onError?.call('WebSocket错误: $errorMsg');
     _disconnect(scheduleReconnect: true);
   }
 
@@ -289,7 +302,12 @@ class ConversationWebSocketClient {
     try {
       _channel!.sink.add(jsonEncode(data));
     } catch (e) {
-      _logger.e('Failed to send message: ${e.toString()}');
+      final errorMsg = e?.toString() ?? 'Unknown error';
+      try {
+        _logger.e('Failed to send message: $errorMsg');
+      } catch (logError) {
+        print('Failed to log send error: $errorMsg');
+      }
     }
   }
 

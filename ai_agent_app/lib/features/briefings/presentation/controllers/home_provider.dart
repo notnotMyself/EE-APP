@@ -28,6 +28,9 @@ final visibleAgentSecretariesProvider = FutureProvider<List<Map<String, dynamic>
     final agent = subscription.agent;
     if (agent == null) continue;
 
+    // 跳过 general (小知)，因为已经在上面手动添加了"全部"入口
+    if (agent.role == 'general') continue;
+
     // 根据 Agent.role 查找对应的视觉主题（Secretary）
     final secretary = secretariesData.firstWhere(
       (s) => s.mappedAgentRole == agent.role,
