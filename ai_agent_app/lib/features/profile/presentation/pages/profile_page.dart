@@ -55,25 +55,7 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ),
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: AgentProfileTheme.cardBackground,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.settings_outlined,
-                    color: AgentProfileTheme.titleColor,
-                  ),
-                  onPressed: () {
-                    // TODO: Navigate to settings
-                  },
-                ),
-              ),
-            ],
+            // 移除了设置按钮
           ),
 
           // 内容区域

@@ -8,11 +8,13 @@ class BriefingCardStack extends StatefulWidget {
   const BriefingCardStack({
     super.key,
     required this.briefings,
+    required this.dismissedIds,
     required this.onCardDismissed,
     required this.onCardAction,
   });
 
   final List<Briefing> briefings;
+  final Set<String> dismissedIds;
   final Function(Briefing briefing) onCardDismissed;
   final Function(Briefing briefing) onCardAction;
 
@@ -26,12 +28,9 @@ class _BriefingCardStackState extends State<BriefingCardStack> with TickerProvid
   AnimationController? _slideBackController;
   AnimationController? _dismissController;
 
-  // 被移除的卡片ID列表，用于保持状态直到重新加载
-  final Set<String> _dismissedIds = {};
-
   // 获取当前可见的卡片列表（过滤掉已移除的）
   List<Briefing> get _visibleBriefings => widget.briefings
-      .where((b) => !_dismissedIds.contains(b.id))
+      .where((b) => !widget.dismissedIds.contains(b.id))
       .toList();
 
   @override
@@ -40,6 +39,8 @@ class _BriefingCardStackState extends State<BriefingCardStack> with TickerProvid
     _dismissController?.dispose();
     super.dispose();
   }
+
+  // 移除 didUpdateWidget - 让 _dismissedIds 保持状态，直到 widget 重新创建（key 变化）
 
   void _onPanStart(DragStartDetails details) {
     if (_slideBackController?.isAnimating ?? false) {
@@ -120,7 +121,6 @@ class _BriefingCardStackState extends State<BriefingCardStack> with TickerProvid
         widget.onCardDismissed(currentTop);
 
         setState(() {
-          _dismissedIds.add(currentTop.id);
           _dragOffset = Offset.zero;
         });
 
@@ -179,6 +179,13 @@ class _BriefingCardStackState extends State<BriefingCardStack> with TickerProvid
       transform.scale(scale);
     }
 
+    // 动态计算卡片高度：屏幕高度 - 顶部空间 - 底部按钮空间
+    final screenHeight = MediaQuery.of(context).size.height;
+    final topSpace = 200.0; // 顶部 Header + Avatar 区域
+    final bottomSpace = 120.0; // 底部聊天栏
+    final maxCardHeight = screenHeight - topSpace - bottomSpace;
+    final cardHeight = math.min(480.0, maxCardHeight); // 最大 480，但不超过可用空间
+
     return Transform(
       transform: transform,
       alignment: Alignment.bottomCenter,
@@ -187,21 +194,21 @@ class _BriefingCardStackState extends State<BriefingCardStack> with TickerProvid
         onPanUpdate: isTop ? _onPanUpdate : null,
         onPanEnd: isTop ? _onPanEnd : null,
         child: SizedBox(
-           height: 480,
-           width: MediaQuery.of(context).size.width * 0.92,
-           child: BriefingStackCard(
-             briefing: item,
-             onTap: () {
-               if (isTop) {
-                 widget.onCardAction(item);
-               }
-             },
-             onAction: () {
-               if (isTop) {
-                 widget.onCardAction(item);
-               }
-             },
-           ),
+          height: cardHeight,
+          width: MediaQuery.of(context).size.width * 0.92,
+          child: BriefingStackCard(
+            briefing: item,
+            onTap: () {
+              if (isTop) {
+                widget.onCardAction(item);
+              }
+            },
+            onAction: () {
+              if (isTop) {
+                widget.onCardAction(item);
+              }
+            },
+          ),
         ),
       ),
     );

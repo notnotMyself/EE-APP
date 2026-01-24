@@ -101,3 +101,29 @@ final isAgentSubscribedProvider =
   final subscriptions = await ref.watch(userSubscriptionsProvider.future);
   return subscriptions.any((sub) => sub.agentId == agentId);
 });
+
+/// Agent.role → Agent.id (UUID) 映射
+/// 用于根据 Agent 的 role 字段查找对应的 UUID
+final agentRoleToIdProvider = FutureProvider<Map<String, String>>((ref) async {
+  final agents = await ref.watch(activeAgentsProvider.future);
+  return {
+    for (var agent in agents)
+      agent.role: agent.id,
+  };
+});
+
+/// 检查用户是否订阅了指定 role 的 Agent
+/// 通过 role → UUID → 订阅状态 的映射链查询
+final isAgentRoleSubscribedProvider =
+    FutureProvider.family<bool, String?>((ref, agentRole) async {
+  if (agentRole == null) return false;
+
+  // 1. 获取 role → UUID 映射
+  final roleToIdMap = await ref.watch(agentRoleToIdProvider.future);
+  final agentId = roleToIdMap[agentRole];
+
+  if (agentId == null) return false;
+
+  // 2. 检查是否订阅该 UUID
+  return ref.watch(isAgentSubscribedProvider(agentId).future);
+});

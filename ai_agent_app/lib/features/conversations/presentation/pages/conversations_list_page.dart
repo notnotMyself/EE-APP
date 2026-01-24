@@ -80,31 +80,7 @@ class _ConversationsListPageState extends ConsumerState<ConversationsListPage> {
                       ),
               ),
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: AgentProfileTheme.cardBackground,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                    color: AgentProfileTheme.titleColor,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = !_isSearching;
-                      if (!_isSearching) {
-                        _searchController.clear();
-                        _searchQuery = '';
-                      }
-                    });
-                  },
-                ),
-              ),
-            ],
+            // 移除了搜索按钮
           ),
 
           // 内容区域
@@ -457,29 +433,7 @@ class _ConversationCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AgentProfileTheme.accentBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          conversation.agentRole,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AgentProfileTheme.accentBlue,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // 移除了显示技术名称（agentRole）的部分
                   if (conversation.lastMessageContent != null) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -510,8 +464,19 @@ class _ConversationCard extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    final isChrisChen = conversation.agentRole == 'design_validator' ||
-        conversation.agentName.contains('Chris');
+    // 根据 Agent role 映射到对应的头像
+    String? roleAvatar;
+    switch (conversation.agentRole) {
+      case 'design_validator':
+        roleAvatar = AgentProfileTheme.chrisChenAvatar;
+        break;
+      case 'ai_news_crawler':
+        roleAvatar = 'assets/images/secretary-girl-avatar.png'; // 码码
+        break;
+      case 'dev_efficiency_analyst':
+        roleAvatar = 'assets/images/secretary-woman-avatar.png'; // 商商
+        break;
+    }
 
     return Container(
       width: 52,
@@ -528,9 +493,9 @@ class _ConversationCard extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: isChrisChen
+      child: roleAvatar != null
           ? Image.asset(
-              AgentProfileTheme.chrisChenAvatar,
+              roleAvatar,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _buildAvatarFallback(),
             )

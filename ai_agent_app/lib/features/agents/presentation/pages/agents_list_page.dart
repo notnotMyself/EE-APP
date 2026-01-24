@@ -51,25 +51,7 @@ class AgentsListPage extends ConsumerWidget {
                 ),
               ),
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: AgentProfileTheme.cardBackground,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1),
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.search_rounded,
-                    color: AgentProfileTheme.titleColor,
-                  ),
-                  onPressed: () {
-                    // TODO: Implement search
-                  },
-                ),
-              ),
-            ],
+            // 移除了搜索按钮
           ),
 
           // 内容区域
@@ -298,25 +280,6 @@ class _AgentCard extends ConsumerWidget {
                           color: AgentProfileTheme.titleColor,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AgentProfileTheme.accentBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          agent.role,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AgentProfileTheme.accentBlue,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -356,39 +319,6 @@ class _AgentCard extends ConsumerWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-
-            // Data Sources
-            if (agent.dataSources != null && agent.dataSources!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: agent.dataSources!.keys
-                    .take(3)
-                    .map((source) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            source,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AgentProfileTheme.labelColor,
-                            ),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ],
 
             const SizedBox(height: 16),
 
@@ -438,8 +368,19 @@ class _AgentCard extends ConsumerWidget {
   }
 
   Widget _buildAvatar() {
-    final isChrisChen =
-        agent.role == 'design_validator' || agent.name.contains('Chris');
+    // 根据 Agent role 映射到对应的头像
+    String? roleAvatar;
+    switch (agent.role) {
+      case 'design_validator':
+        roleAvatar = AgentProfileTheme.chrisChenAvatar;
+        break;
+      case 'ai_news_crawler':
+        roleAvatar = 'assets/images/secretary-girl-avatar.png'; // 码码
+        break;
+      case 'dev_efficiency_analyst':
+        roleAvatar = 'assets/images/secretary-woman-avatar.png'; // 商商
+        break;
+    }
 
     return Container(
       width: 56,
@@ -456,9 +397,9 @@ class _AgentCard extends ConsumerWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: isChrisChen
+      child: roleAvatar != null
           ? Image.asset(
-              AgentProfileTheme.chrisChenAvatar,
+              roleAvatar,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => _buildAvatarFallback(),
             )

@@ -10,7 +10,6 @@ import '../widgets/view_toggle.dart';
 import '../widgets/role_dial.dart';
 import '../widgets/avatar_display.dart';
 import '../widgets/bottom_chat_bar.dart';
-import '../../data/secretaries_data.dart';
 import 'briefing_detail_page.dart';
 
 /// 信息流首页 - 新版 UI
@@ -20,9 +19,12 @@ class FeedHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final briefingsAsync = ref.watch(briefingsProvider);
+    final cachedBriefings = briefingsAsync.valueOrNull?.items;
     final viewMode = ref.watch(homeViewModeProvider);
-    final activeSecretary = ref.watch(activeSecretaryProvider);
+    final activeAgentData = ref.watch(activeAgentSecretaryProvider);
     final activeSecretaryIndex = ref.watch(activeSecretaryIndexProvider);
+    final visibleAgentsAsync = ref.watch(visibleAgentSecretariesProvider);
+    final cachedVisibleAgents = visibleAgentsAsync.valueOrNull;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -40,20 +42,82 @@ class FeedHomePage extends ConsumerWidget {
         ),
         child: SafeArea(
           bottom: false,
-          child: briefingsAsync.when(
-            data: (response) => _buildContent(
+          child: visibleAgentsAsync.when(
+            data: (visibleAgents) => _buildContentFromAgents(
               context,
               ref,
-              response.items,
+              visibleAgents,
+              briefingsAsync,
+              cachedBriefings,
               viewMode,
-              activeSecretary,
+              activeAgentData,
               activeSecretaryIndex,
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () {
+              if (cachedVisibleAgents != null) {
+                return _buildContentFromAgents(
+                  context,
+                  ref,
+                  cachedVisibleAgents,
+                  briefingsAsync,
+                  cachedBriefings,
+                  viewMode,
+                  activeAgentData,
+                  activeSecretaryIndex,
+                );
+              }
+              return const Center(child: CircularProgressIndicator());
+            },
             error: (error, stack) => _buildErrorState(context, ref, error),
+            skipLoadingOnRefresh: true,
+            skipLoadingOnReload: true,
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildContentFromAgents(
+    BuildContext context,
+    WidgetRef ref,
+    List<Map<String, dynamic>> visibleAgents,
+    AsyncValue<BriefingListResponse> briefingsAsync,
+    List<Briefing>? cachedBriefings,
+    ViewMode viewMode,
+    Map<String, dynamic>? activeAgentData,
+    int activeSecretaryIndex,
+  ) {
+    if (visibleAgents.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    return briefingsAsync.when(
+      data: (response) => _buildContent(
+        context,
+        ref,
+        response.items,
+        viewMode,
+        activeAgentData ?? visibleAgents.first,
+        activeSecretaryIndex,
+        visibleAgents,
+      ),
+      loading: () {
+        if (cachedBriefings != null) {
+          return _buildContent(
+            context,
+            ref,
+            cachedBriefings,
+            viewMode,
+            activeAgentData ?? visibleAgents.first,
+            activeSecretaryIndex,
+            visibleAgents,
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+      error: (error, stack) => _buildErrorState(context, ref, error),
+      skipLoadingOnRefresh: true,
+      skipLoadingOnReload: true,
     );
   }
 
@@ -62,13 +126,23 @@ class FeedHomePage extends ConsumerWidget {
     WidgetRef ref,
     List<Briefing> allBriefings,
     ViewMode viewMode,
-    Secretary activeSecretary,
+    Map<String, dynamic> activeAgentData,
     int activeSecretaryIndex,
+    List<Map<String, dynamic>> visibleAgents,
   ) {
-    // Filter briefings based on active secretary
-    final briefings = activeSecretary.id == 'general'
-        ? allBriefings
-        : allBriefings.where((b) => b.agentId == activeSecretary.id).toList();
+    // 使用 activeAgentIdProvider 获取当前 Agent UUID
+    final agentId = ref.watch(activeAgentIdProvider);
+    final agentKey = agentId ?? 'all';
+    final dismissedIds = ref.watch(dismissedBriefingIdsProvider(agentKey));
+
+    // 提取显示数据
+    final displayName = activeAgentData['name'] as String;
+    final secretary = activeAgentData['secretary'] as Secretary;
+
+    // 修复 Bug：使用 UUID 而非 secretary.id 过滤
+    final briefings = agentId == null
+        ? allBriefings  // general: 显示所有简报
+        : allBriefings.where((b) => b.agentId == agentId).toList();
 
     return Stack(
       children: [
@@ -94,7 +168,7 @@ class FeedHomePage extends ConsumerWidget {
                               ),
                         ),
                         Text(
-                          '${activeSecretary.name} has ${briefings.length} updates',
+                          '$displayName has ${briefings.length} updates',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.black54,
                                 fontWeight: FontWeight.w500,
@@ -140,14 +214,14 @@ class FeedHomePage extends ConsumerWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Avatar (Left)
-                            AvatarDisplay(secretary: activeSecretary),
+                            // Avatar (Left) - 使用 Secretary 提供视觉主题
+                            AvatarDisplay(secretary: secretary),
 
                             const Spacer(),
 
-                            // Role Dial (Right)
+                            // Role Dial (Right) - 传入动态列表
                             RoleDial(
-                              secretaries: secretariesData,
+                              visibleAgents: visibleAgents,
                               activeIndex: activeSecretaryIndex,
                               onSelect: (index) => ref
                                   .read(activeSecretaryIndexProvider.notifier)
@@ -163,7 +237,13 @@ class FeedHomePage extends ConsumerWidget {
             // Content Area
             Expanded(
               child: viewMode == ViewMode.cards
-                  ? _buildCardsView(context, ref, briefings)
+                  ? _buildCardsView(
+                      context,
+                      ref,
+                      briefings,
+                      agentKey,
+                      dismissedIds,
+                    )
                   : _buildGridView(context, ref, briefings),
             ),
           ],
@@ -176,7 +256,7 @@ class FeedHomePage extends ConsumerWidget {
           bottom: 0,
           child: BottomChatBar(
             onSend: (message) {
-              _onChatSend(context, ref, message, activeSecretary);
+              _onChatSend(context, ref, message, activeAgentData);
             },
           ),
         ),
@@ -188,6 +268,8 @@ class FeedHomePage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<Briefing> briefings,
+    String agentKey,
+    Set<String> dismissedIds,
   ) {
     if (briefings.isEmpty) {
       return _buildEmptyState(context);
@@ -196,10 +278,20 @@ class FeedHomePage extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: BriefingCardStack(
+        // 使用 agentId 作为 key，确保切换 agent 时重置状态，但数据刷新时保持状态
+        key: ValueKey('card-stack-$agentKey'),
         briefings: briefings,
+        dismissedIds: dismissedIds,
         onCardDismissed: (briefing) {
           // Mark as read when dismissed
-          ref.read(briefingControllerProvider.notifier).markAsRead(briefing.id);
+          ref.read(dismissedBriefingIdsProvider(agentKey).notifier).add(briefing.id);
+          ref
+              .read(briefingControllerProvider.notifier)
+              .markAsRead(
+                briefing.id,
+                refreshList: false,
+                refreshUnread: false,
+              );
         },
         onCardAction: (briefing) {
           _onBriefingTap(context, ref, briefing);
@@ -314,18 +406,19 @@ class FeedHomePage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String message,
-    Secretary secretary,
+    Map<String, dynamic> agentData,
   ) {
     // Navigate to conversations page with a new conversation
+    final displayName = agentData['name'] as String;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${secretary.name} is processing: "$message"'),
+        content: Text('$displayName is processing: "$message"'),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
       ),
     );
     // TODO: Create new conversation and navigate to chat
-    // context.go('/conversations/new?agent=${secretary.id}&message=$message');
+    // context.go('/conversations/new?agent=${agentData['agent']?.id}&message=$message');
   }
 
   String _getGreeting() {

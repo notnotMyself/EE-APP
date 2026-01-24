@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import '../../domain/models/secretary.dart';
 
 class RoleDial extends StatelessWidget {
-  final List<Secretary> secretaries;
+  final List<Map<String, dynamic>> visibleAgents;
   final int activeIndex;
   final ValueChanged<int> onSelect;
 
   const RoleDial({
     super.key,
-    required this.secretaries,
+    required this.visibleAgents,
     required this.activeIndex,
     required this.onSelect,
   });
@@ -31,8 +31,8 @@ class RoleDial extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(secretaries.length, (index) {
-          final isLast = index == secretaries.length - 1;
+        children: List.generate(visibleAgents.length, (index) {
+          final isLast = index == visibleAgents.length - 1;
           return Padding(
             padding: EdgeInsets.only(bottom: isLast ? 0 : 6),
             child: _buildRoleButton(context, index),
@@ -44,7 +44,8 @@ class RoleDial extends StatelessWidget {
 
   Widget _buildRoleButton(BuildContext context, int index) {
     final isActive = index == activeIndex;
-    final secretary = secretaries[index];
+    final agentData = visibleAgents[index];
+    final secretary = agentData['secretary'] as Secretary;
 
     return GestureDetector(
       onTap: () => onSelect(index),

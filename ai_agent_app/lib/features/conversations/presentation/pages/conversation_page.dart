@@ -212,20 +212,11 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.agent.name),
-            Row(
-              children: [
-                Text(
-                  widget.agent.role,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                if (_currentConversationId != null) ...[
-                  const SizedBox(width: 8),
-                  ConnectionStatusIndicator(
-                    conversationId: _currentConversationId!,
-                  ),
-                ],
-              ],
-            ),
+            // 只显示连接状态，移除技术名称（agent.role）
+            if (_currentConversationId != null)
+              ConnectionStatusIndicator(
+                conversationId: _currentConversationId!,
+              ),
           ],
         ),
       ),

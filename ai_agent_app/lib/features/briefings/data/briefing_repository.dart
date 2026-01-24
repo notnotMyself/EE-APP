@@ -31,7 +31,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return BriefingListResponse.fromJson(data);
       } else {
         throw Exception('获取简报列表失败: ${response.body}');
@@ -54,7 +55,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return BriefingUnreadCount.fromJson(data);
       } else {
         throw Exception('获取未读数量失败: ${response.body}');
@@ -75,7 +77,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return Briefing.fromJson(data);
       } else {
         throw Exception('获取简报详情失败: ${response.body}');
@@ -102,7 +105,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
       } else if (response.statusCode == 404) {
         return null;
       } else {
@@ -124,7 +128,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return Briefing.fromJson(data);
       } else {
         throw Exception('标记已读失败: ${response.body}');
@@ -154,7 +159,8 @@ class BriefingRepository {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        // 明确使用 UTF-8 解码
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return StartConversationResponse.fromJson(data);
       } else {
         throw Exception('开始对话失败: ${response.body}');

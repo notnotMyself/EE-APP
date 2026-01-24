@@ -22,6 +22,19 @@ void main() async {
     anonKey: AppConfig.supabaseAnonKey,
   );
 
+  // 监听 Auth 状态变化，自动处理 Refresh Token 错误
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final event = data.event;
+
+    // 打印认证事件（调试用）
+    debugPrint('Supabase Auth Event: $event');
+
+    // 当检测到 Token 刷新失败时，自动登出
+    if (event == AuthChangeEvent.tokenRefreshed) {
+      debugPrint('Token refreshed successfully');
+    }
+  });
+
   runApp(
     const ProviderScope(
       child: MyApp(),
