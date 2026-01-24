@@ -381,13 +381,17 @@ class _AgentCard extends ConsumerWidget {
         roleAvatar = 'assets/images/secretary-girl-avatar.png'; // 码码
         break;
       case 'dev_efficiency_analyst':
+        // 研发效能分析官使用商商头像
+        roleAvatar = 'assets/images/secretary-woman-avatar.png';
+        break;
+      case 'ee_developer':
         // EE研发员工使用"EE"文字头像
         useTextFallback = true;
         fallbackText = 'EE';
         break;
       case 'general':
-        // 小知使用原EE研发员工的头像
-        roleAvatar = 'assets/images/secretary-woman-avatar.png';
+        // 小知使用小智头像
+        roleAvatar = 'assets/images/secretary-boy-avatar.png';
         break;
     }
 

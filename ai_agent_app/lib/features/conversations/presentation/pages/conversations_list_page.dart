@@ -467,6 +467,9 @@ class _ConversationCard extends StatelessWidget {
   Widget _buildAvatar() {
     // 根据 Agent role 映射到对应的头像
     String? roleAvatar;
+    bool useTextFallback = false;
+    String? fallbackText;
+
     switch (conversation.agentRole) {
       case 'design_validator':
         roleAvatar = AgentProfileTheme.chrisChenAvatar;
@@ -476,6 +479,15 @@ class _ConversationCard extends StatelessWidget {
         break;
       case 'dev_efficiency_analyst':
         roleAvatar = 'assets/images/secretary-woman-avatar.png'; // 商商
+        break;
+      case 'ee_developer':
+        // EE研发员工使用"EE"文字头像
+        useTextFallback = true;
+        fallbackText = 'EE';
+        break;
+      case 'general':
+        // 小知使用小智头像
+        roleAvatar = 'assets/images/secretary-boy-avatar.png';
         break;
     }
 
@@ -494,23 +506,29 @@ class _ConversationCard extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: roleAvatar != null
-          ? Image.asset(
-              roleAvatar,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(),
-            )
-          : conversation.agentAvatarUrl != null
-              ? Image.network(
-                  conversation.agentAvatarUrl!,
+      child: useTextFallback
+          ? _buildAvatarFallback(customText: fallbackText)
+          : roleAvatar != null
+              ? Image.asset(
+                  roleAvatar,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _buildAvatarFallback(),
                 )
-              : _buildAvatarFallback(),
+              : conversation.agentAvatarUrl != null
+                  ? Image.network(
+                      conversation.agentAvatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildAvatarFallback(),
+                    )
+                  : _buildAvatarFallback(),
     );
   }
 
-  Widget _buildAvatarFallback() {
+  Widget _buildAvatarFallback({String? customText}) {
+    final displayText = customText ??
+        (conversation.agentName.isNotEmpty
+            ? conversation.agentName[0].toUpperCase()
+            : '?');
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -524,9 +542,7 @@ class _ConversationCard extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          conversation.agentName.isNotEmpty
-              ? conversation.agentName[0].toUpperCase()
-              : '?',
+          displayText,
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w600,

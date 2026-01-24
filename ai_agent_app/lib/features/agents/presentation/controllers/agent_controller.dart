@@ -21,8 +21,8 @@ final activeAgentsProvider = FutureProvider<List<Agent>>((ref) async {
   const restrictedEmail = '1091201603@qq.com';
 
   final filteredAgents = agents.where((agent) {
-    // dev_efficiency_analyst 只对特定用户可见
-    if (agent.role == 'dev_efficiency_analyst') {
+    // ee_developer 只对特定用户可见
+    if (agent.role == 'ee_developer') {
       return userEmail == restrictedEmail;
     }
     return true;
