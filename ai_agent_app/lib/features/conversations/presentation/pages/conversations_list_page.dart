@@ -5,9 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../data/conversation_repository.dart';
 import '../../domain/models/conversation_summary.dart';
-import '../pages/conversation_page.dart';
 import '../../../agents/domain/models/agent.dart';
 import '../../../agents/presentation/theme/agent_profile_theme.dart';
+import '../../../agents/presentation/pages/agent_profile_page.dart';
 
 /// Provider for conversation summaries
 final conversationSummariesProvider =
@@ -360,11 +360,12 @@ class _ConversationsListPageState extends ConsumerState<ConversationsListPage> {
       role: conversation.agentRole,
       avatarUrl: conversation.agentAvatarUrl,
     );
+    // 使用 AgentProfilePage 以保持 UI 一致性
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ConversationPage(
+        builder: (context) => AgentProfilePage(
           agent: agent,
-          conversationId: conversation.id,
+          initialConversationId: conversation.id,
         ),
       ),
     );

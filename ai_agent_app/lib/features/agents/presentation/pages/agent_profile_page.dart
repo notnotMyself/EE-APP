@@ -30,10 +30,12 @@ import '../widgets/voice_input_dialog.dart';
 /// 当用户开始对话后，页面会转换为对话模式，但保持设计风格一致
 class AgentProfilePage extends ConsumerStatefulWidget {
   final Agent agent;
+  final String? initialConversationId;
 
   const AgentProfilePage({
     super.key,
     required this.agent,
+    this.initialConversationId,
   });
 
   @override
@@ -86,7 +88,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 加载或创建会话
   ///
-  /// 优先加载该 AI 员工的最新对话，如果没有则创建新会话
+  /// 优先使用 initialConversationId，否则加载该 AI 员工的最新对话，如果没有则创建新会话
   Future<void> _loadOrCreateConversation() async {
     // 检查是否已经有会话ID
     if (_conversationId != null) return;
@@ -99,34 +101,40 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     }
 
     try {
-      debugPrint('⚡ 开始加载 ${widget.agent.name} 的最新会话...');
+      debugPrint('⚡ 开始加载 ${widget.agent.name} 的会话...');
       final startTime = DateTime.now();
-
-      // 1. 先尝试获取该 Agent 的最新对话
-      final conversations = await ref
-          .read(conversationControllerProvider.notifier)
-          .getAgentConversations(widget.agent.id);
 
       String? conversationId;
 
-      if (conversations.isNotEmpty) {
-        // 有历史对话，使用最新的一个
-        final latestConversation = conversations.first; // 已按时间排序，最新的在前
-        conversationId = latestConversation.id;
-        debugPrint('📂 找到最新会话: $conversationId');
+      // 优先使用 initialConversationId
+      if (widget.initialConversationId != null) {
+        conversationId = widget.initialConversationId;
+        debugPrint('📂 使用指定会话: $conversationId');
       } else {
-        // 没有历史对话，创建新会话
-        debugPrint('📝 没有历史会话，创建新会话...');
-        final newConversation = await ref
+        // 1. 先尝试获取该 Agent 的最新对话
+        final conversations = await ref
             .read(conversationControllerProvider.notifier)
-            .createNewConversation(widget.agent.id);
+            .getAgentConversations(widget.agent.id);
 
-        if (newConversation == null) {
-          debugPrint('⚠️ 会话创建失败(将在发送时重试)');
-          return;
+        if (conversations.isNotEmpty) {
+          // 有历史对话，使用最新的一个
+          final latestConversation = conversations.first; // 已按时间排序，最新的在前
+          conversationId = latestConversation.id;
+          debugPrint('📂 找到最新会话: $conversationId');
+        } else {
+          // 没有历史对话，创建新会话
+          debugPrint('📝 没有历史会话，创建新会话...');
+          final newConversation = await ref
+              .read(conversationControllerProvider.notifier)
+              .createNewConversation(widget.agent.id);
+
+          if (newConversation == null) {
+            debugPrint('⚠️ 会话创建失败(将在发送时重试)');
+            return;
+          }
+          conversationId = newConversation.id;
+          debugPrint('✅ 新会话创建完成: $conversationId');
         }
-        conversationId = newConversation.id;
-        debugPrint('✅ 新会话创建完成: $conversationId');
       }
 
       final loadDuration = DateTime.now().difference(startTime);

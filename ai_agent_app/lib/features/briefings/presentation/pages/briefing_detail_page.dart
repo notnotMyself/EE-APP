@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/briefing.dart';
 import '../controllers/briefing_controller.dart';
 import '../../../conversations/presentation/pages/conversation_page.dart';
 import '../../../agents/data/agent_repository.dart';
+import '../../../agents/presentation/theme/agent_profile_theme.dart';
 import '../../data/briefing_repository.dart';
 import '../widgets/dynamic_briefing_renderer.dart';
 
@@ -373,6 +375,7 @@ class _BriefingDetailPageState extends ConsumerState<BriefingDetailPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: AgentProfileTheme.backgroundColor,
       appBar: _buildAppBar(context, theme),
       body: Stack(
         children: [
@@ -394,8 +397,10 @@ class _BriefingDetailPageState extends ConsumerState<BriefingDetailPage> {
                       // 标题
                       Text(
                         widget.briefing.title,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: AgentProfileTheme.titleColor,
                         ),
                       ),
                       const SizedBox(height: 12),
