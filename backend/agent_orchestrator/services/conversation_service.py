@@ -887,6 +887,12 @@ class ConversationService:
                     attachments=attachments,
                 )
 
+                # 1.5 自动生成对话标题（基于第一条用户消息）
+                await self._auto_generate_conversation_title(
+                    conversation_id=conversation_id,
+                    user_message=user_message,
+                )
+
                 # 2. 根据是否为任务选择执行流程
                 if task_intent and self.task_executor:
                     # 2a. 执行任务
@@ -1165,4 +1171,47 @@ class ConversationService:
             f"Completed WS message exchange in conversation {conversation['id']}, "
             f"assistant response length: {len(ws_writer.accumulated_content)}"
         )
+
+    async def _auto_generate_conversation_title(
+        self, conversation_id: str, user_message: str
+    ) -> None:
+        """自动生成对话标题（基于第一条用户消息）
+        
+        仅在对话只有1条用户消息时更新标题，避免覆盖用户自定义标题。
+        
+        Args:
+            conversation_id: 对话ID
+            user_message: 用户消息内容
+        """
+        try:
+            # 查询该对话的用户消息数量
+            result = (
+                self.supabase_client.table("messages")
+                .select("id", count="exact")
+                .eq("conversation_id", conversation_id)
+                .eq("role", "user")
+                .execute()
+            )
+            
+            message_count = result.count if hasattr(result, 'count') else len(result.data)
+            
+            # 只在第一条用户消息时自动生成标题
+            if message_count == 1:
+                # 生成标题：取前30个字符
+                title = ' '.join(user_message.split())  # 去除多余空白
+                if len(title) > 30:
+                    title = title[:30] + "..."
+                
+                # 更新对话标题
+                self.supabase_client.table("conversations").update(
+                    {"title": title}
+                ).eq("id", conversation_id).execute()
+                
+                logger.info(
+                    f"Auto-generated conversation title: {title} "
+                    f"(conversation_id={conversation_id})"
+                )
+        except Exception as e:
+            # 标题生成失败不应影响对话流程
+            logger.warning(f"Failed to auto-generate conversation title: {e}")
 
