@@ -33,27 +33,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // 已登录但在登录/注册页，需要检查是否需要同意条款
+      // 已登录但在登录/注册页，跳转到主页
       if (isAuthenticated && isAuthPage) {
+        // TODO: 暂时隐藏隐私策略确认，等有必要时再启用
         // 检查用户是否需要同意服务条款
-        final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
-
-        if (needsConsent) {
-          return '/terms';
-        }
+        // final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
+        //
+        // if (needsConsent) {
+        //   return '/terms';
+        // }
 
         // TODO: 实现首次登录显示欢迎页的逻辑（使用 SharedPreferences）
         return '/feed';
       }
 
+      // TODO: 暂时隐藏隐私策略检查
       // 已登录且在其他页面（非条款页），检查是否需要同意条款
-      if (isAuthenticated && !isTermsPage && !isAuthPage) {
-        final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
-
-        if (needsConsent) {
-          return '/terms';
-        }
-      }
+      // if (isAuthenticated && !isTermsPage && !isAuthPage) {
+      //   final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
+      //
+      //   if (needsConsent) {
+      //     return '/terms';
+      //   }
+      // }
 
       return null;
     },
