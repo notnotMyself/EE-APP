@@ -450,8 +450,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
           const SizedBox(height: 40),
 
-          // 快捷功能按钮（键盘弹起时隐藏）
-          if (!isKeyboardVisible) ...[
+          // 快捷功能按钮（仅 Chris Chen / design_validator 显示，键盘弹起时隐藏）
+          if (!isKeyboardVisible && widget.agent.role == 'design_validator') ...[
             QuickActionRow(
               actions: QuickActions.defaults,
               onActionTap: _onQuickActionTap,
