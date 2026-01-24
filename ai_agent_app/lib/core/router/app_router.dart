@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../layout/main_scaffold.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
+import '../../features/auth/presentation/pages/terms_agreement_page.dart';
+import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/agents/presentation/pages/agents_list_page.dart';
 import '../../features/briefings/presentation/pages/briefings_feed_page.dart';
@@ -15,24 +17,42 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final supabase = Supabase.instance.client;
+  final authController = ref.read(authControllerProvider.notifier);
 
   return GoRouter(
     initialLocation: '/login',
-    redirect: (context, state) {
+    redirect: (context, state) async {
       final isAuthenticated = supabase.auth.currentUser != null;
       final location = state.matchedLocation;
       final isAuthPage = location == '/login' || location == '/register';
       final isWelcomePage = location == '/welcome';
+      final isTermsPage = location == '/terms';
 
       // 未登录且不在登录/注册页，跳转到登录页
       if (!isAuthenticated && !isAuthPage) {
         return '/login';
       }
 
-      // 已登录但在登录/注册页，跳转到信息流页面
-      // TODO: 实现首次登录显示欢迎页的逻辑（使用 SharedPreferences）
+      // 已登录但在登录/注册页，需要检查是否需要同意条款
       if (isAuthenticated && isAuthPage) {
+        // 检查用户是否需要同意服务条款
+        final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
+
+        if (needsConsent) {
+          return '/terms';
+        }
+
+        // TODO: 实现首次登录显示欢迎页的逻辑（使用 SharedPreferences）
         return '/feed';
+      }
+
+      // 已登录且在其他页面（非条款页），检查是否需要同意条款
+      if (isAuthenticated && !isTermsPage && !isAuthPage) {
+        final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
+
+        if (needsConsent) {
+          return '/terms';
+        }
       }
 
       return null;
@@ -46,6 +66,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const TermsAgreementPage(),
       ),
       GoRoute(
         path: '/welcome',

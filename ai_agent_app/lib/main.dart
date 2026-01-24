@@ -5,9 +5,13 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/error/error_handler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化全局错误处理
+  GlobalErrorHandler.initialize();
 
   // 初始化 timeago 中文语言
   timeago.setLocaleMessages('zh', timeago.ZhMessages());

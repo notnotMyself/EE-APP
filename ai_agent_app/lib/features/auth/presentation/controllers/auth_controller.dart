@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/legal_repository.dart';
+import '../../domain/models/consent_status.dart';
 
 /// Auth状态Provider
 final authStateProvider = StreamProvider<AuthState>((ref) {
@@ -14,11 +16,34 @@ final currentUserProvider = Provider<User?>((ref) {
 
 /// Auth Controller
 class AuthController extends StateNotifier<AsyncValue<void>> {
-  AuthController() : super(const AsyncValue.data(null));
+  AuthController(this._legalRepository) : super(const AsyncValue.data(null));
 
   final _supabase = Supabase.instance.client;
+  final LegalRepository _legalRepository;
 
-  /// 注册
+  /// 注册（带用户名）
+  Future<void> signUpWithUsername({
+    required String email,
+    required String username,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'username': username,  // 存入 raw_user_meta_data
+        },
+      );
+
+      if (response.user == null) {
+        throw Exception('注册失败，请重试');
+      }
+    });
+  }
+
+  /// 注册（不带用户名，保留向后兼容）
   Future<void> signUp({
     required String email,
     required String password,
@@ -65,10 +90,41 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
       await _supabase.auth.resetPasswordForEmail(email);
     });
   }
+
+  /// 检查用户同意状态
+  ///
+  /// 返回是否需要跳转到服务条款页面
+  /// 如果返回true，表示用户需要同意服务条款
+  Future<bool> checkAndNavigateToTermsIfNeeded() async {
+    try {
+      // 检查用户是否已登录
+      if (_supabase.auth.currentUser == null) {
+        return false;
+      }
+
+      // 检查用户同意状态
+      final consentStatus = await _legalRepository.checkConsentStatus();
+
+      // 返回是否需要同意
+      return consentStatus.needsConsent;
+    } catch (e) {
+      // 如果检查失败，保守起见要求用户同意
+      // 在生产环境中，可以根据具体错误类型决定是否要求同意
+      return true;
+    }
+  }
+
+  /// 获取用户同意状态详情
+  ///
+  /// 返回详细的同意状态信息，包括各个文档的同意情况
+  Future<ConsentStatus> getConsentStatus() async {
+    return await _legalRepository.checkConsentStatus();
+  }
 }
 
 /// Auth Controller Provider
 final authControllerProvider =
     StateNotifierProvider<AuthController, AsyncValue<void>>((ref) {
-  return AuthController();
+  final legalRepository = LegalRepository();
+  return AuthController(legalRepository);
 });

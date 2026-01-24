@@ -7,6 +7,7 @@ from .scheduled_jobs import router as scheduled_jobs_router
 from .conversations import router as conversations_router
 from .profile import router as profile_router
 from .notifications import router as notifications_router
+from .legal import router as legal_router
 
 __all__ = [
     "briefings_router",
@@ -14,4 +15,5 @@ __all__ = [
     "conversations_router",
     "profile_router",
     "notifications_router",
+    "legal_router",
 ]
