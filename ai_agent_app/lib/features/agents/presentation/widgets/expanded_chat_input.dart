@@ -179,16 +179,32 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
       },
       child: Container(
         height: AgentProfileTheme.inputHeight,
-        decoration: AgentProfileTheme.cardDecoration,
+        decoration: ShapeDecoration(
+          color: AgentProfileTheme.cardBackground,
+          shape: RoundedRectangleBorder(
+            // 移除边框，使用更淡的阴影
+            borderRadius: BorderRadius.circular(100),
+          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x0A000000), // 更淡的阴影
+              blurRadius: 8,
+              offset: Offset(0, 2),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
         padding: const EdgeInsets.only(left: 24, right: 10),
         child: Row(
           children: [
             Expanded(
               child: Opacity(
-                opacity: 0.6,
+                opacity: 0.4, // 降低透明度，使提示文字更淡
                 child: Text(
                   widget.hintText,
                   style: AgentProfileTheme.inputHintStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ),
