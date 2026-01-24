@@ -25,8 +25,24 @@ class AgentProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isChrisChen = agent.role == 'design_validator' ||
-        agent.name.contains('Chris');
+    // 根据 Agent role 映射到对应的头像
+    String? roleAvatar;
+    switch (agent.role) {
+      case 'design_validator':
+        roleAvatar = AgentProfileTheme.chrisChenAvatar;
+        break;
+      case 'ai_news_crawler':
+        roleAvatar = 'assets/images/secretary-girl-avatar.png'; // 码码
+        break;
+      case 'dev_efficiency_analyst':
+        // EE研发员工使用fallback显示"EE"文字
+        roleAvatar = null;
+        break;
+      case 'general':
+        // 小知使用原EE研发员工的头像
+        roleAvatar = 'assets/images/secretary-woman-avatar.png';
+        break;
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -36,8 +52,8 @@ class AgentProfileCard extends StatelessWidget {
         // 头像
         AgentAvatar(
           avatarUrl: agent.avatarUrl,
-          assetPath: isChrisChen ? AgentProfileTheme.chrisChenAvatar : null,
-          fallbackText: agent.name,
+          assetPath: roleAvatar,
+          fallbackText: agent.role == 'dev_efficiency_analyst' ? 'EE' : agent.name,
         ),
 
         const SizedBox(height: 14),
@@ -69,50 +85,56 @@ class AgentProfileCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 描述文字 + 分隔点 + 个性名称
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 描述（完整显示）
-              Text(
-                agent.description,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.black.withOpacity(0.54),
-                  fontSize: 14,
-                  fontFamily: _oppoSansFamily,
-                  fontWeight: FontWeight.w400,
-                  height: 1.43,
+          // 描述文字 + 分隔点 + 个性名称（使用 Flexible 避免溢出）
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 描述（限制最大宽度避免溢出）
+                Flexible(
+                  child: Text(
+                    agent.description,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.54),
+                      fontSize: 14,
+                      fontFamily: _oppoSansFamily,
+                      fontWeight: FontWeight.w400,
+                      height: 1.43,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              // 分隔点
-              Container(
-                width: 4,
-                height: 4,
-                decoration: const ShapeDecoration(
-                  color: Color(0xFF393939),
-                  shape: OvalBorder(),
+                const SizedBox(width: 4),
+                // 分隔点
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: const ShapeDecoration(
+                    color: Color(0xFF393939),
+                    shape: OvalBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              // 个性名称
-              Text(
-                personalityName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: selectedPersonality != null
-                      ? const Color(0xFF0066FF)
-                      : Colors.black.withOpacity(0.54),
-                  fontSize: 14,
-                  fontFamily: _oppoSansFamily,
-                  fontWeight: FontWeight.w400,
-                  height: 1.43,
+                const SizedBox(width: 4),
+                // 个性名称
+                Text(
+                  personalityName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selectedPersonality != null
+                        ? const Color(0xFF0066FF)
+                        : Colors.black.withOpacity(0.54),
+                    fontSize: 14,
+                    fontFamily: _oppoSansFamily,
+                    fontWeight: FontWeight.w400,
+                    height: 1.43,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(width: 2),
           // 下拉图标

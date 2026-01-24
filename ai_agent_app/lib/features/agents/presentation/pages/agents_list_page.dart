@@ -370,6 +370,9 @@ class _AgentCard extends ConsumerWidget {
   Widget _buildAvatar() {
     // 根据 Agent role 映射到对应的头像
     String? roleAvatar;
+    bool useTextFallback = false;
+    String? fallbackText;
+
     switch (agent.role) {
       case 'design_validator':
         roleAvatar = AgentProfileTheme.chrisChenAvatar;
@@ -378,7 +381,13 @@ class _AgentCard extends ConsumerWidget {
         roleAvatar = 'assets/images/secretary-girl-avatar.png'; // 码码
         break;
       case 'dev_efficiency_analyst':
-        roleAvatar = 'assets/images/secretary-woman-avatar.png'; // 商商
+        // EE研发员工使用"EE"文字头像
+        useTextFallback = true;
+        fallbackText = 'EE';
+        break;
+      case 'general':
+        // 小知使用原EE研发员工的头像
+        roleAvatar = 'assets/images/secretary-woman-avatar.png';
         break;
     }
 
@@ -397,23 +406,28 @@ class _AgentCard extends ConsumerWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: roleAvatar != null
-          ? Image.asset(
-              roleAvatar,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => _buildAvatarFallback(),
-            )
-          : agent.avatarUrl != null
-              ? Image.network(
-                  agent.avatarUrl!,
+      child: useTextFallback
+          ? _buildAvatarFallback(customText: fallbackText)
+          : roleAvatar != null
+              ? Image.asset(
+                  roleAvatar,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => _buildAvatarFallback(),
                 )
-              : _buildAvatarFallback(),
+              : agent.avatarUrl != null
+                  ? Image.network(
+                      agent.avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildAvatarFallback(),
+                    )
+                  : _buildAvatarFallback(),
     );
   }
 
-  Widget _buildAvatarFallback() {
+  Widget _buildAvatarFallback({String? customText}) {
+    final displayText = customText ??
+        (agent.name.isNotEmpty ? agent.name[0].toUpperCase() : '?');
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -427,7 +441,7 @@ class _AgentCard extends ConsumerWidget {
       ),
       child: Center(
         child: Text(
-          agent.name.isNotEmpty ? agent.name[0].toUpperCase() : '?',
+          displayText,
           style: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.w600,
