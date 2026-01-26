@@ -452,7 +452,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   /// 输入区域
   Widget _buildInputArea() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: TextField(
         controller: _controller,
         focusNode: _focusNode,
@@ -461,7 +461,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           color: Colors.black,
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          height: 1,
+          height: 1.4, // 修复: 使用合理的行高，避免在某些设备上文字被裁剪
         ),
         decoration: InputDecoration(
           hintText: widget.hintText,
@@ -469,10 +469,12 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
             color: Colors.black.withOpacity(0.4),
             fontSize: 16,
             fontWeight: FontWeight.w400,
+            height: 1.4, // 保持提示文字行高一致
           ),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          isDense: true,
+          // 修复: 添加适当的内边距，避免文字被裁剪
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          isDense: false, // 修复: 不使用 isDense，让输入框有正常高度
         ),
         maxLines: 3,
         minLines: 1,

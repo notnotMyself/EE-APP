@@ -116,24 +116,39 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
       // 等待一小段时间，让后端有机会保存消息
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final messages = await _repository.getMessages(conversationId);
-
-      // 检查是否有新的 assistant 消息（后端可能已经保存了完整回复）
+      final serverMessages = await _repository.getMessages(conversationId);
       final currentMessages = state.messages;
-      final lastCurrentMsg = currentMessages.isNotEmpty ? currentMessages.last : null;
-      final lastNewMsg = messages.isNotEmpty ? messages.last : null;
 
-      // 如果最新消息是 assistant 且内容更长，说明后端有更完整的版本
-      if (lastNewMsg != null &&
-          lastNewMsg.role == 'assistant' &&
-          (lastCurrentMsg == null ||
-              lastCurrentMsg.role != 'assistant' ||
-              lastNewMsg.content.length > lastCurrentMsg.content.length)) {
-        state = state.copyWith(
-          messages: messages,
-          streamingState: const StreamingState.completed(),
-        );
+      // 使用消息内容去重：基于 role + content 的组合去重
+      // 因为本地生成的消息 ID 和服务端的不同
+      final Set<String> existingKeys = {};
+      final List<Message> mergedMessages = [];
+
+      // 先处理服务端消息（权威来源）
+      for (final msg in serverMessages) {
+        final key = '${msg.role}:${msg.content.trim()}';
+        if (!existingKeys.contains(key)) {
+          existingKeys.add(key);
+          mergedMessages.add(msg);
+        }
       }
+
+      // 检查本地是否有服务端没有的消息（可能是还未同步的）
+      for (final msg in currentMessages) {
+        final key = '${msg.role}:${msg.content.trim()}';
+        if (!existingKeys.contains(key)) {
+          existingKeys.add(key);
+          mergedMessages.add(msg);
+        }
+      }
+
+      // 按时间排序
+      mergedMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+      state = state.copyWith(
+        messages: mergedMessages,
+        streamingState: const StreamingState.completed(),
+      );
     } catch (e) {
       // 重新加载失败不影响正常使用
     }
@@ -392,20 +407,34 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
     final fullContent = existingContent + bufferedContent;
 
     if (fullContent.isNotEmpty) {
-      final newMessage = Message(
-        id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
-        conversationId: conversationId,
-        role: 'assistant',
-        content: fullContent,
-        createdAt: DateTime.now(),
+      // 去重检查：检查是否已存在相同内容的 assistant 消息
+      final trimmedContent = fullContent.trim();
+      final isDuplicate = state.messages.any(
+        (msg) => msg.role == 'assistant' && msg.content.trim() == trimmedContent,
       );
 
-      // 单次原子状态更新：添加消息 + 完成流式 + 重置工具
-      state = state.copyWith(
-        messages: [...state.messages, newMessage],
-        streamingState: const StreamingState.completed(),
-        toolState: const ToolExecutionState.idle(),
-      );
+      if (!isDuplicate) {
+        final newMessage = Message(
+          id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
+          conversationId: conversationId,
+          role: 'assistant',
+          content: fullContent,
+          createdAt: DateTime.now(),
+        );
+
+        // 单次原子状态更新：添加消息 + 完成流式 + 重置工具
+        state = state.copyWith(
+          messages: [...state.messages, newMessage],
+          streamingState: const StreamingState.completed(),
+          toolState: const ToolExecutionState.idle(),
+        );
+      } else {
+        // 消息已存在，只重置状态
+        state = state.copyWith(
+          streamingState: const StreamingState.completed(),
+          toolState: const ToolExecutionState.idle(),
+        );
+      }
     } else {
       // 即使没有内容，也要重置状态
       state = state.copyWith(

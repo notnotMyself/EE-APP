@@ -184,24 +184,25 @@ class _LoginPageState extends ConsumerState<LoginPage>
                   Positioned(
                     left: 17,
                     right: 17,
-                    bottom: 100,
+                    bottom: 130, // 调整位置，给按钮区域留出空间
                     child: _buildInputSection(isLoading),
                   ),
 
-                  // 登录按钮
+                  // 底部按钮区域（登录按钮 + 切换链接）
                   Positioned(
                     left: 17,
                     right: 17,
-                    bottom: 30,
-                    child: _buildLoginButton(isLoading),
-                  ),
-
-                  // 登录/注册切换链接
-                  Positioned(
-                    left: 17,
-                    right: 17,
-                    bottom: 8,
-                    child: _buildToggleLink(),
+                    bottom: 24,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 登录按钮
+                        _buildLoginButton(isLoading),
+                        const SizedBox(height: 12),
+                        // 登录/注册切换链接
+                        _buildToggleLink(),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -464,46 +465,39 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   /// 登录/注册切换链接
   Widget _buildToggleLink() {
-    return Center(
-      child: TextButton(
-        onPressed: () {
-          setState(() {
-            _isRegistering = !_isRegistering;
-          });
-        },
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        ),
-        child: RichText(
-          text: TextSpan(
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: _oppoSansFamily,
-              fontWeight: FontWeight.w500,
-              color: _AppDesign.subtitleColor,
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isRegistering = !_isRegistering;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _isRegistering ? '已有账号？' : '没有账号？',
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: _oppoSansFamily,
+                fontWeight: FontWeight.w400,
+                color: _AppDesign.subtitleColor,
+                height: 1.5,
+              ),
             ),
-            children: _isRegistering
-                ? [
-                    const TextSpan(text: '已有账号？'),
-                    TextSpan(
-                      text: '返回登录',
-                      style: TextStyle(
-                        color: Colors.blue.shade600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ]
-                : [
-                    const TextSpan(text: '没有账号？'),
-                    TextSpan(
-                      text: '立即注册',
-                      style: TextStyle(
-                        color: Colors.blue.shade600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-          ),
+            Text(
+              _isRegistering ? '返回登录' : '立即注册',
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: _oppoSansFamily,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue.shade600,
+                height: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
