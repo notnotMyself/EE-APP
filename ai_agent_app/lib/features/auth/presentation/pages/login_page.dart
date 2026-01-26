@@ -88,11 +88,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
-                '注册成功！请检查邮箱验证链接',
+                '注册成功！请在手机上打开邮箱，点击验证链接完成注册',
                 style: TextStyle(fontFamily: _oppoSansFamily),
               ),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
