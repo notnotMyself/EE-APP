@@ -72,5 +72,19 @@
 	<!-- 相册权限（选择图片） -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要相册权限以支持选择图片上传设计稿</string>
+	<!-- Deep Link / URL Scheme for Supabase Auth -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.ee.aiagent.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>eeapp</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
