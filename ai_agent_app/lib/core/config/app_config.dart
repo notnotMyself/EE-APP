@@ -16,8 +16,7 @@ class AppConfig {
   static String get apiBaseUrl {
     switch (environment) {
       case 'prod':
-        // TODO: 替换为生产环境的实际URL
-        return 'https://api.ee.production.com';
+        return 'https://super-niuma-cn.allawntech.com';
       case 'test':
         // TODO: 替换为测试环境的实际URL
         return 'https://api.ee.test.com';

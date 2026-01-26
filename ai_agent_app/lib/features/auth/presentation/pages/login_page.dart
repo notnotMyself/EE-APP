@@ -30,7 +30,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isRegistering = false; // 切换登录/注册模式
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -58,6 +60,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _usernameController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -66,27 +69,64 @@ class _LoginPageState extends ConsumerState<LoginPage>
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authControllerProvider.notifier).signIn(
-            email: _emailController.text.trim(),
-            password: _passwordController.text,
+      if (_isRegistering) {
+        // 注册逻辑
+        await ref.read(authControllerProvider.notifier).signUpWithUsername(
+              email: _emailController.text.trim(),
+              username: _usernameController.text.trim(),
+              password: _passwordController.text,
+            );
+
+        // 检查是否有错误
+        final authState = ref.read(authControllerProvider);
+        if (authState.hasError) {
+          throw authState.error!;
+        }
+
+        // 注册成功提示
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                '注册成功！请检查邮箱验证链接',
+                style: TextStyle(fontFamily: _oppoSansFamily),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           );
+          // 切换回登录模式
+          setState(() {
+            _isRegistering = false;
+          });
+        }
+      } else {
+        // 登录逻辑
+        await ref.read(authControllerProvider.notifier).signIn(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
 
-      // 检查是否有错误
-      final authState = ref.read(authControllerProvider);
-      if (authState.hasError) {
-        throw authState.error!;
-      }
+        // 检查是否有错误
+        final authState = ref.read(authControllerProvider);
+        if (authState.hasError) {
+          throw authState.error!;
+        }
 
-      // 登录成功，跳转到信息流页面
-      if (mounted) {
-        context.go('/feed');
+        // 登录成功，跳转到信息流页面
+        if (mounted) {
+          context.go('/feed');
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '登录失败: ${e.toString()}',
+              '${_isRegistering ? "注册" : "登录"}失败: ${e.toString()}',
               style: const TextStyle(fontFamily: _oppoSansFamily),
             ),
             backgroundColor: _AppDesign.errorRed,
@@ -154,6 +194,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     bottom: 30,
                     child: _buildLoginButton(isLoading),
                   ),
+
+                  // 登录/注册切换链接
+                  Positioned(
+                    left: 17,
+                    right: 17,
+                    bottom: 8,
+                    child: _buildToggleLink(),
+                  ),
                 ],
               ),
             ),
@@ -184,7 +232,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         const SizedBox(height: 8),
         // 副标题
         Text(
-          '让每个人都能雇得起员工',
+          '让每个人都组建AI团队',
           style: TextStyle(
             color: _AppDesign.subtitleColor,
             fontSize: 14,
@@ -217,10 +265,33 @@ class _LoginPageState extends ConsumerState<LoginPage>
             if (!value.contains('@')) {
               return '请输入有效的邮箱地址';
             }
+            // 注册模式下检查邮箱后缀
+            if (_isRegistering && !value.trim().toLowerCase().endsWith('@oppo.com')) {
+              return '只允许使用@oppo.com邮箱注册';
+            }
             return null;
           },
         ),
         const SizedBox(height: 10),
+        // 用户名输入框（仅注册模式显示）
+        if (_isRegistering) ...[
+          _buildInputField(
+            controller: _usernameController,
+            hintText: '用户名',
+            icon: Icons.badge_outlined,
+            enabled: !isLoading,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '请输入用户名';
+              }
+              if (value.length < 2) {
+                return '用户名至少2个字符';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 10),
+        ],
         // 密码输入框
         _buildInputField(
           controller: _passwordController,
@@ -365,7 +436,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '开始',
+                        _isRegistering ? '注册' : '开始',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,
@@ -384,6 +455,53 @@ class _LoginPageState extends ConsumerState<LoginPage>
                       ),
                     ],
                   ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 登录/注册切换链接
+  Widget _buildToggleLink() {
+    return Center(
+      child: TextButton(
+        onPressed: () {
+          setState(() {
+            _isRegistering = !_isRegistering;
+          });
+        },
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: _oppoSansFamily,
+              fontWeight: FontWeight.w500,
+              color: _AppDesign.subtitleColor,
+            ),
+            children: _isRegistering
+                ? [
+                    const TextSpan(text: '已有账号？'),
+                    TextSpan(
+                      text: '返回登录',
+                      style: TextStyle(
+                        color: Colors.blue.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ]
+                : [
+                    const TextSpan(text: '没有账号？'),
+                    TextSpan(
+                      text: '立即注册',
+                      style: TextStyle(
+                        color: Colors.blue.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
           ),
         ),
       ),

@@ -9,7 +9,6 @@ import '../widgets/briefing_card.dart';
 import '../widgets/view_toggle.dart';
 import '../widgets/role_dial.dart';
 import '../widgets/avatar_display.dart';
-import '../widgets/bottom_chat_bar.dart';
 import 'briefing_detail_page.dart';
 
 /// 信息流首页 - 新版 UI
@@ -248,18 +247,6 @@ class FeedHomePage extends ConsumerWidget {
             ),
           ],
         ),
-
-        // Bottom Chat Bar - positioned above bottom navigation bar
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: BottomChatBar(
-            onSend: (message) {
-              _onChatSend(context, ref, message, activeAgentData);
-            },
-          ),
-        ),
       ],
     );
   }
@@ -315,7 +302,7 @@ class FeedHomePage extends ConsumerWidget {
         ref.invalidate(briefingUnreadCountProvider);
       },
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 100),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
         itemCount: briefings.length,
         itemBuilder: (context, index) {
           return BriefingCard(
@@ -400,25 +387,6 @@ class FeedHomePage extends ConsumerWidget {
         builder: (context) => BriefingDetailPage(briefing: briefing),
       ),
     );
-  }
-
-  void _onChatSend(
-    BuildContext context,
-    WidgetRef ref,
-    String message,
-    Map<String, dynamic> agentData,
-  ) {
-    // Navigate to conversations page with a new conversation
-    final displayName = agentData['name'] as String;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$displayName is processing: "$message"'),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
-      ),
-    );
-    // TODO: Create new conversation and navigate to chat
-    // context.go('/conversations/new?agent=${agentData['agent']?.id}&message=$message');
   }
 
   String _getGreeting() {
