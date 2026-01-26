@@ -470,6 +470,13 @@ class AgentSDKService:
 
         # 纯文本请求：使用 Agent SDK（支持工具调用）
         options = self._get_agent_options(agent_role, mcp_servers)
+        
+        # 调试日志：打印环境配置
+        env_dict = options.env or {}
+        logger.info(f"[DEBUG] Agent query starting for role={agent_role}")
+        logger.info(f"[DEBUG] ANTHROPIC_BASE_URL={env_dict.get('ANTHROPIC_BASE_URL', 'NOT SET')}")
+        logger.info(f"[DEBUG] ANTHROPIC_AUTH_TOKEN={'SET (' + str(len(env_dict.get('ANTHROPIC_AUTH_TOKEN', ''))) + ' chars)' if env_dict.get('ANTHROPIC_AUTH_TOKEN') else 'NOT SET'}")
+        logger.info(f"[DEBUG] Model={options.model}, CWD={options.cwd}")
 
         try:
             async for message in query(prompt=prompt, options=options):

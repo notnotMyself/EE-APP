@@ -10,15 +10,32 @@ from typing import Dict, List, Optional
 
 
 def _load_claude_settings() -> Dict[str, str]:
-    """从 ~/.claude/settings.json 加载环境变量配置"""
-    settings_path = Path.home() / ".claude" / "settings.json"
-    if settings_path.exists():
-        try:
-            with open(settings_path, "r") as f:
-                settings = json.load(f)
-                return settings.get("env", {})
-        except (json.JSONDecodeError, IOError):
-            pass
+    """从 ~/.claude/settings.json 加载环境变量配置
+    
+    检查多个可能的路径，以适应不同的部署环境。
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # 检查多个可能的路径
+    possible_paths = [
+        Path.home() / ".claude" / "settings.json",  # 标准路径
+        Path("/home/ops/.claude/settings.json"),     # 服务器固定路径
+        Path("/root/.claude/settings.json"),         # root 用户
+    ]
+    
+    for settings_path in possible_paths:
+        if settings_path.exists():
+            try:
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+                    env = settings.get("env", {})
+                    logger.info(f"Loaded Claude settings from {settings_path}, keys: {list(env.keys())}")
+                    return env
+            except (json.JSONDecodeError, IOError) as e:
+                logger.warning(f"Failed to load {settings_path}: {e}")
+    
+    logger.warning(f"No Claude settings found. Checked: {[str(p) for p in possible_paths]}")
     return {}
 
 
@@ -209,6 +226,12 @@ class AgentSDKConfig:
             env["ANTHROPIC_BASE_URL"] = self.anthropic_base_url
         if self.anthropic_auth_token:
             env["ANTHROPIC_AUTH_TOKEN"] = self.anthropic_auth_token
+        
+        # 传递模型配置（重要！CLI 需要正确的模型名）
+        anthropic_model = os.getenv("ANTHROPIC_MODEL", "saas/claude-sonnet-4.5")
+        env["ANTHROPIC_MODEL"] = anthropic_model
+        # Claude CLI 可能使用 CLAUDE_MODEL 变量
+        env["CLAUDE_MODEL"] = anthropic_model
         
         return env
 
