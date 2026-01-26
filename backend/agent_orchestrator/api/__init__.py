@@ -8,6 +8,7 @@ from .conversations import router as conversations_router
 from .profile import router as profile_router
 from .notifications import router as notifications_router
 from .legal import router as legal_router
+from .app_version import router as app_version_router
 
 __all__ = [
     "briefings_router",
@@ -16,4 +17,5 @@ __all__ = [
     "profile_router",
     "notifications_router",
     "legal_router",
+    "app_version_router",
 ]

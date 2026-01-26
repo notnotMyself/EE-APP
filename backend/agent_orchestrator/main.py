@@ -61,6 +61,7 @@ from api import (
     profile_router,
     notifications_router,
     legal_router,
+    app_version_router,
 )
 from api.briefings import set_briefing_service
 from api.scheduled_jobs import set_scheduler_service, set_supabase_client as set_jobs_supabase
@@ -417,6 +418,7 @@ app.include_router(profile_router)
 app.include_router(notifications_router)
 app.include_router(legal_router)  # Legal API路由
 app.include_router(websocket_router)  # WebSocket对话路由
+app.include_router(app_version_router, prefix="/api/v1")  # App版本更新路由
 
 # Agent Management API
 from api.agent_management import router as agent_management_router
