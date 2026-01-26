@@ -42,7 +42,7 @@ jobs:
 
       - name: Build APK
         working-directory: ./ai_agent_app
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=ENV=prod
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
