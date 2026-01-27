@@ -10,13 +10,30 @@ import '../widgets/view_toggle.dart';
 import '../widgets/role_dial.dart';
 import '../widgets/avatar_display.dart';
 import 'briefing_detail_page.dart';
+import '../../../app_update/services/app_update_service.dart';
 
 /// 信息流首页 - 新版 UI
-class FeedHomePage extends ConsumerWidget {
+class FeedHomePage extends ConsumerStatefulWidget {
   const FeedHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FeedHomePage> createState() => _FeedHomePageState();
+}
+
+class _FeedHomePageState extends ConsumerState<FeedHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // 延迟执行更新检查，避免在 build 阶段调用
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AppUpdateService.checkUpdateOnStartup(context, ref, silent: true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final briefingsAsync = ref.watch(briefingsProvider);
     final cachedBriefings = briefingsAsync.valueOrNull?.items;
     final viewMode = ref.watch(homeViewModeProvider);

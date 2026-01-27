@@ -2,7 +2,8 @@
 class AppConfig {
   // 环境配置 - 通过编译时环境变量设置
   // 使用方式: flutter run --dart-define=ENV=prod
-  static const String environment = String.fromEnvironment('ENV', defaultValue: 'dev');
+  // 默认使用生产环境，连接到公网后端
+  static const String environment = String.fromEnvironment('ENV', defaultValue: 'prod');
 
   // Supabase配置
   static const String supabaseUrl = 'https://dwesyojvzbltqtgtctpt.supabase.co';
