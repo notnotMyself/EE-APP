@@ -52,6 +52,11 @@ dependencies:
   shared_preferences: ^2.2.2
   connectivity_plus: ^5.0.2
 
+  # 应用更新
+  package_info_plus: ^8.0.0
+  path_provider: ^2.1.4
+  open_file: ^3.3.2
+
   # 文件和媒体选择
   image_picker: ^1.0.7
   file_picker: ^6.1.1
