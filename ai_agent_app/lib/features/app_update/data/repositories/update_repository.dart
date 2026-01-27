@@ -28,17 +28,26 @@ class UpdateRepository {
   Future<CheckUpdateResponse> checkUpdate() async {
     try {
       final currentVersion = await getCurrentVersionCode();
+      print('🔍 [UpdateRepository] Current version code: $currentVersion');
+
+      final apiUrl = '${AppConfig.apiUrl}/app/version/latest';
+      print('🔍 [UpdateRepository] API URL: $apiUrl');
 
       final response = await _dio.get(
-        '${AppConfig.apiUrl}/app/version/latest',
+        apiUrl,
         queryParameters: {
           'current_version': currentVersion,
           'region': 'cn', // 可以根据地区动态设置
         },
       );
 
-      return CheckUpdateResponse.fromJson(response.data);
+      print('🔍 [UpdateRepository] API Response: ${response.data}');
+      final result = CheckUpdateResponse.fromJson(response.data);
+      print('🔍 [UpdateRepository] Has update: ${result.hasUpdate}');
+
+      return result;
     } catch (e) {
+      print('❌ [UpdateRepository] Check update failed: $e');
       throw Exception('检查更新失败: $e');
     }
   }

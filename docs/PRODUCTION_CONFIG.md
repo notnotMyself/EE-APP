@@ -418,6 +418,50 @@ supabase db push
 supabase db diff
 ```
 
+### Q6: 生产环境 WebSocket 连接返回 404？
+
+**A**: 这是典型的反向代理未开启 WebSocket 升级导致的表现。后端只注册了 WebSocket 路由，若代理未透传 `Upgrade`/`Connection` 头，请求会退化成普通 `GET`，最终返回 404。
+
+**Nginx 示例配置**（按需调整域名与上游）:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 443 ssl;
+    server_name api.eeplatform.com;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket: /api/v1/chat/... 和 /api/v1/conversations/.../ws
+    location /api/v1/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600;
+    }
+}
+```
+
+**排查要点**:
+- 客户端必须使用 `ws://` 或 `wss://`，且路径包含 `/api/v1/.../ws`
+- 代理需透传 `Upgrade` 与 `Connection` 头
+- 使用 Ingress 时，确保开启 WebSocket 支持并提高 `proxy-read-timeout`
+
 ### Q6: 后端服务崩溃如何处理？
 
 **A**:
