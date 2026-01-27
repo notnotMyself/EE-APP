@@ -20,15 +20,15 @@ class DownloadSource with _$DownloadSource {
 @freezed
 class AppVersionInfo with _$AppVersionInfo {
   const factory AppVersionInfo({
-    required int versionCode,
-    required String versionName,
-    required String apkUrl,
-    required int apkSize,
-    String? apkMd5,
-    required String releaseNotes,
-    @Default(false) bool forceUpdate,
-    @Default([]) List<DownloadSource> downloadSources,
-    DateTime? publishedAt,
+    @JsonKey(name: 'version_code') required int versionCode,
+    @JsonKey(name: 'version_name') required String versionName,
+    @JsonKey(name: 'apk_url') required String apkUrl,
+    @JsonKey(name: 'apk_size') required int apkSize,
+    @JsonKey(name: 'apk_md5') String? apkMd5,
+    @JsonKey(name: 'release_notes') required String releaseNotes,
+    @JsonKey(name: 'force_update') @Default(false) bool forceUpdate,
+    @JsonKey(name: 'download_sources') @Default([]) List<DownloadSource> downloadSources,
+    @JsonKey(name: 'published_at') DateTime? publishedAt,
   }) = _AppVersionInfo;
 
   factory AppVersionInfo.fromJson(Map<String, dynamic> json) =>
@@ -39,8 +39,8 @@ class AppVersionInfo with _$AppVersionInfo {
 @freezed
 class CheckUpdateResponse with _$CheckUpdateResponse {
   const factory CheckUpdateResponse({
-    required bool hasUpdate,
-    AppVersionInfo? latestVersion,
+    @JsonKey(name: 'has_update') required bool hasUpdate,
+    @JsonKey(name: 'latest_version') AppVersionInfo? latestVersion,
     required String message,
   }) = _CheckUpdateResponse;
 

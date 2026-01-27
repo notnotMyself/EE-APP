@@ -23,51 +23,51 @@ Map<String, dynamic> _$$DownloadSourceImplToJson(
 
 _$AppVersionInfoImpl _$$AppVersionInfoImplFromJson(Map<String, dynamic> json) =>
     _$AppVersionInfoImpl(
-      versionCode: (json['versionCode'] as num).toInt(),
-      versionName: json['versionName'] as String,
-      apkUrl: json['apkUrl'] as String,
-      apkSize: (json['apkSize'] as num).toInt(),
-      apkMd5: json['apkMd5'] as String?,
-      releaseNotes: json['releaseNotes'] as String,
-      forceUpdate: json['forceUpdate'] as bool? ?? false,
-      downloadSources: (json['downloadSources'] as List<dynamic>?)
+      versionCode: (json['version_code'] as num).toInt(),
+      versionName: json['version_name'] as String,
+      apkUrl: json['apk_url'] as String,
+      apkSize: (json['apk_size'] as num).toInt(),
+      apkMd5: json['apk_md5'] as String?,
+      releaseNotes: json['release_notes'] as String,
+      forceUpdate: json['force_update'] as bool? ?? false,
+      downloadSources: (json['download_sources'] as List<dynamic>?)
               ?.map((e) => DownloadSource.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      publishedAt: json['publishedAt'] == null
+      publishedAt: json['published_at'] == null
           ? null
-          : DateTime.parse(json['publishedAt'] as String),
+          : DateTime.parse(json['published_at'] as String),
     );
 
 Map<String, dynamic> _$$AppVersionInfoImplToJson(
         _$AppVersionInfoImpl instance) =>
     <String, dynamic>{
-      'versionCode': instance.versionCode,
-      'versionName': instance.versionName,
-      'apkUrl': instance.apkUrl,
-      'apkSize': instance.apkSize,
-      'apkMd5': instance.apkMd5,
-      'releaseNotes': instance.releaseNotes,
-      'forceUpdate': instance.forceUpdate,
-      'downloadSources': instance.downloadSources,
-      'publishedAt': instance.publishedAt?.toIso8601String(),
+      'version_code': instance.versionCode,
+      'version_name': instance.versionName,
+      'apk_url': instance.apkUrl,
+      'apk_size': instance.apkSize,
+      'apk_md5': instance.apkMd5,
+      'release_notes': instance.releaseNotes,
+      'force_update': instance.forceUpdate,
+      'download_sources': instance.downloadSources,
+      'published_at': instance.publishedAt?.toIso8601String(),
     };
 
 _$CheckUpdateResponseImpl _$$CheckUpdateResponseImplFromJson(
         Map<String, dynamic> json) =>
     _$CheckUpdateResponseImpl(
-      hasUpdate: json['hasUpdate'] as bool,
-      latestVersion: json['latestVersion'] == null
+      hasUpdate: json['has_update'] as bool,
+      latestVersion: json['latest_version'] == null
           ? null
           : AppVersionInfo.fromJson(
-              json['latestVersion'] as Map<String, dynamic>),
+              json['latest_version'] as Map<String, dynamic>),
       message: json['message'] as String,
     );
 
 Map<String, dynamic> _$$CheckUpdateResponseImplToJson(
         _$CheckUpdateResponseImpl instance) =>
     <String, dynamic>{
-      'hasUpdate': instance.hasUpdate,
-      'latestVersion': instance.latestVersion,
+      'has_update': instance.hasUpdate,
+      'latest_version': instance.latestVersion,
       'message': instance.message,
     };

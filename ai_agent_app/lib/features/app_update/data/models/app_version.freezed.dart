@@ -207,15 +207,24 @@ AppVersionInfo _$AppVersionInfoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AppVersionInfo {
+  @JsonKey(name: 'version_code')
   int get versionCode => throw _privateConstructorUsedError;
+  @JsonKey(name: 'version_name')
   String get versionName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'apk_url')
   String get apkUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'apk_size')
   int get apkSize => throw _privateConstructorUsedError;
+  @JsonKey(name: 'apk_md5')
   String? get apkMd5 => throw _privateConstructorUsedError;
+  @JsonKey(name: 'release_notes')
   String get releaseNotes => throw _privateConstructorUsedError;
+  @JsonKey(name: 'force_update')
   bool get forceUpdate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'download_sources')
   List<DownloadSource> get downloadSources =>
       throw _privateConstructorUsedError;
+  @JsonKey(name: 'published_at')
   DateTime? get publishedAt => throw _privateConstructorUsedError;
 
   /// Serializes this AppVersionInfo to a JSON map.
@@ -235,15 +244,15 @@ abstract class $AppVersionInfoCopyWith<$Res> {
       _$AppVersionInfoCopyWithImpl<$Res, AppVersionInfo>;
   @useResult
   $Res call(
-      {int versionCode,
-      String versionName,
-      String apkUrl,
-      int apkSize,
-      String? apkMd5,
-      String releaseNotes,
-      bool forceUpdate,
-      List<DownloadSource> downloadSources,
-      DateTime? publishedAt});
+      {@JsonKey(name: 'version_code') int versionCode,
+      @JsonKey(name: 'version_name') String versionName,
+      @JsonKey(name: 'apk_url') String apkUrl,
+      @JsonKey(name: 'apk_size') int apkSize,
+      @JsonKey(name: 'apk_md5') String? apkMd5,
+      @JsonKey(name: 'release_notes') String releaseNotes,
+      @JsonKey(name: 'force_update') bool forceUpdate,
+      @JsonKey(name: 'download_sources') List<DownloadSource> downloadSources,
+      @JsonKey(name: 'published_at') DateTime? publishedAt});
 }
 
 /// @nodoc
@@ -321,15 +330,15 @@ abstract class _$$AppVersionInfoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int versionCode,
-      String versionName,
-      String apkUrl,
-      int apkSize,
-      String? apkMd5,
-      String releaseNotes,
-      bool forceUpdate,
-      List<DownloadSource> downloadSources,
-      DateTime? publishedAt});
+      {@JsonKey(name: 'version_code') int versionCode,
+      @JsonKey(name: 'version_name') String versionName,
+      @JsonKey(name: 'apk_url') String apkUrl,
+      @JsonKey(name: 'apk_size') int apkSize,
+      @JsonKey(name: 'apk_md5') String? apkMd5,
+      @JsonKey(name: 'release_notes') String releaseNotes,
+      @JsonKey(name: 'force_update') bool forceUpdate,
+      @JsonKey(name: 'download_sources') List<DownloadSource> downloadSources,
+      @JsonKey(name: 'published_at') DateTime? publishedAt});
 }
 
 /// @nodoc
@@ -400,38 +409,45 @@ class __$$AppVersionInfoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AppVersionInfoImpl implements _AppVersionInfo {
   const _$AppVersionInfoImpl(
-      {required this.versionCode,
-      required this.versionName,
-      required this.apkUrl,
-      required this.apkSize,
-      this.apkMd5,
-      required this.releaseNotes,
-      this.forceUpdate = false,
+      {@JsonKey(name: 'version_code') required this.versionCode,
+      @JsonKey(name: 'version_name') required this.versionName,
+      @JsonKey(name: 'apk_url') required this.apkUrl,
+      @JsonKey(name: 'apk_size') required this.apkSize,
+      @JsonKey(name: 'apk_md5') this.apkMd5,
+      @JsonKey(name: 'release_notes') required this.releaseNotes,
+      @JsonKey(name: 'force_update') this.forceUpdate = false,
+      @JsonKey(name: 'download_sources')
       final List<DownloadSource> downloadSources = const [],
-      this.publishedAt})
+      @JsonKey(name: 'published_at') this.publishedAt})
       : _downloadSources = downloadSources;
 
   factory _$AppVersionInfoImpl.fromJson(Map<String, dynamic> json) =>
       _$$AppVersionInfoImplFromJson(json);
 
   @override
+  @JsonKey(name: 'version_code')
   final int versionCode;
   @override
+  @JsonKey(name: 'version_name')
   final String versionName;
   @override
+  @JsonKey(name: 'apk_url')
   final String apkUrl;
   @override
+  @JsonKey(name: 'apk_size')
   final int apkSize;
   @override
+  @JsonKey(name: 'apk_md5')
   final String? apkMd5;
   @override
+  @JsonKey(name: 'release_notes')
   final String releaseNotes;
   @override
-  @JsonKey()
+  @JsonKey(name: 'force_update')
   final bool forceUpdate;
   final List<DownloadSource> _downloadSources;
   @override
-  @JsonKey()
+  @JsonKey(name: 'download_sources')
   List<DownloadSource> get downloadSources {
     if (_downloadSources is EqualUnmodifiableListView) return _downloadSources;
     // ignore: implicit_dynamic_type
@@ -439,6 +455,7 @@ class _$AppVersionInfoImpl implements _AppVersionInfo {
   }
 
   @override
+  @JsonKey(name: 'published_at')
   final DateTime? publishedAt;
 
   @override
@@ -501,36 +518,47 @@ class _$AppVersionInfoImpl implements _AppVersionInfo {
 
 abstract class _AppVersionInfo implements AppVersionInfo {
   const factory _AppVersionInfo(
-      {required final int versionCode,
-      required final String versionName,
-      required final String apkUrl,
-      required final int apkSize,
-      final String? apkMd5,
-      required final String releaseNotes,
-      final bool forceUpdate,
-      final List<DownloadSource> downloadSources,
-      final DateTime? publishedAt}) = _$AppVersionInfoImpl;
+          {@JsonKey(name: 'version_code') required final int versionCode,
+          @JsonKey(name: 'version_name') required final String versionName,
+          @JsonKey(name: 'apk_url') required final String apkUrl,
+          @JsonKey(name: 'apk_size') required final int apkSize,
+          @JsonKey(name: 'apk_md5') final String? apkMd5,
+          @JsonKey(name: 'release_notes') required final String releaseNotes,
+          @JsonKey(name: 'force_update') final bool forceUpdate,
+          @JsonKey(name: 'download_sources')
+          final List<DownloadSource> downloadSources,
+          @JsonKey(name: 'published_at') final DateTime? publishedAt}) =
+      _$AppVersionInfoImpl;
 
   factory _AppVersionInfo.fromJson(Map<String, dynamic> json) =
       _$AppVersionInfoImpl.fromJson;
 
   @override
+  @JsonKey(name: 'version_code')
   int get versionCode;
   @override
+  @JsonKey(name: 'version_name')
   String get versionName;
   @override
+  @JsonKey(name: 'apk_url')
   String get apkUrl;
   @override
+  @JsonKey(name: 'apk_size')
   int get apkSize;
   @override
+  @JsonKey(name: 'apk_md5')
   String? get apkMd5;
   @override
+  @JsonKey(name: 'release_notes')
   String get releaseNotes;
   @override
+  @JsonKey(name: 'force_update')
   bool get forceUpdate;
   @override
+  @JsonKey(name: 'download_sources')
   List<DownloadSource> get downloadSources;
   @override
+  @JsonKey(name: 'published_at')
   DateTime? get publishedAt;
 
   /// Create a copy of AppVersionInfo
@@ -547,7 +575,9 @@ CheckUpdateResponse _$CheckUpdateResponseFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$CheckUpdateResponse {
+  @JsonKey(name: 'has_update')
   bool get hasUpdate => throw _privateConstructorUsedError;
+  @JsonKey(name: 'latest_version')
   AppVersionInfo? get latestVersion => throw _privateConstructorUsedError;
   String get message => throw _privateConstructorUsedError;
 
@@ -567,7 +597,10 @@ abstract class $CheckUpdateResponseCopyWith<$Res> {
           CheckUpdateResponse value, $Res Function(CheckUpdateResponse) then) =
       _$CheckUpdateResponseCopyWithImpl<$Res, CheckUpdateResponse>;
   @useResult
-  $Res call({bool hasUpdate, AppVersionInfo? latestVersion, String message});
+  $Res call(
+      {@JsonKey(name: 'has_update') bool hasUpdate,
+      @JsonKey(name: 'latest_version') AppVersionInfo? latestVersion,
+      String message});
 
   $AppVersionInfoCopyWith<$Res>? get latestVersion;
 }
@@ -630,7 +663,10 @@ abstract class _$$CheckUpdateResponseImplCopyWith<$Res>
       __$$CheckUpdateResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({bool hasUpdate, AppVersionInfo? latestVersion, String message});
+  $Res call(
+      {@JsonKey(name: 'has_update') bool hasUpdate,
+      @JsonKey(name: 'latest_version') AppVersionInfo? latestVersion,
+      String message});
 
   @override
   $AppVersionInfoCopyWith<$Res>? get latestVersion;
@@ -674,14 +710,18 @@ class __$$CheckUpdateResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$CheckUpdateResponseImpl implements _CheckUpdateResponse {
   const _$CheckUpdateResponseImpl(
-      {required this.hasUpdate, this.latestVersion, required this.message});
+      {@JsonKey(name: 'has_update') required this.hasUpdate,
+      @JsonKey(name: 'latest_version') this.latestVersion,
+      required this.message});
 
   factory _$CheckUpdateResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$CheckUpdateResponseImplFromJson(json);
 
   @override
+  @JsonKey(name: 'has_update')
   final bool hasUpdate;
   @override
+  @JsonKey(name: 'latest_version')
   final AppVersionInfo? latestVersion;
   @override
   final String message;
@@ -727,16 +767,18 @@ class _$CheckUpdateResponseImpl implements _CheckUpdateResponse {
 
 abstract class _CheckUpdateResponse implements CheckUpdateResponse {
   const factory _CheckUpdateResponse(
-      {required final bool hasUpdate,
-      final AppVersionInfo? latestVersion,
+      {@JsonKey(name: 'has_update') required final bool hasUpdate,
+      @JsonKey(name: 'latest_version') final AppVersionInfo? latestVersion,
       required final String message}) = _$CheckUpdateResponseImpl;
 
   factory _CheckUpdateResponse.fromJson(Map<String, dynamic> json) =
       _$CheckUpdateResponseImpl.fromJson;
 
   @override
+  @JsonKey(name: 'has_update')
   bool get hasUpdate;
   @override
+  @JsonKey(name: 'latest_version')
   AppVersionInfo? get latestVersion;
   @override
   String get message;
