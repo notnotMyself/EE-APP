@@ -11,6 +11,7 @@ import '../widgets/role_dial.dart';
 import '../widgets/avatar_display.dart';
 import 'briefing_detail_page.dart';
 import '../../../app_update/services/app_update_service.dart';
+import '../../../design/presentation/design_feed_page.dart';
 
 /// 信息流首页 - 新版 UI
 class FeedHomePage extends ConsumerStatefulWidget {
@@ -198,6 +199,18 @@ class _FeedHomePageState extends ConsumerState<FeedHomePage> {
                   const SizedBox(width: 8),
                   Row(
                     children: [
+                      // Design button
+                      IconButton(
+                        icon: const Icon(Icons.palette, color: Colors.black54),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const DesignFeedPage(),
+                            ),
+                          );
+                        },
+                        tooltip: '设计灵感',
+                      ),
                       // Refresh button
                       IconButton(
                         icon: const Icon(Icons.refresh, color: Colors.black54),

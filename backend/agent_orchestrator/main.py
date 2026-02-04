@@ -424,6 +424,10 @@ app.include_router(app_version_router, prefix="/api/v1")  # App版本更新路�
 from api.agent_management import router as agent_management_router
 app.include_router(agent_management_router)
 
+# Design Feed API
+from api.design_feed import router as design_feed_router
+app.include_router(design_feed_router)
+
 
 # ============================================
 # 数据模型

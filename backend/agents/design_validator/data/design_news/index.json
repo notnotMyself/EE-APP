@@ -1,0 +1,355 @@
+{
+  "last_updated": "2026-01-29T17:08:40.031216",
+  "articles": {
+    "50ab48b79011": {
+      "id": "50ab48b79011",
+      "title": "Design Tools Are The New Design Deliverables",
+      "url": "https://lukew.com/ff/entry.asp?2140",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "January 19, 2026",
+      "category": "设计资讯",
+      "tags": [],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.159272"
+    },
+    "23ff42733782": {
+      "id": "23ff42733782",
+      "title": "AI Enables As-Needed Software Features",
+      "url": "https://lukew.com/ff/entry.asp?2139",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "January 14, 2026",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.159435"
+    },
+    "e39343a89d3b": {
+      "id": "e39343a89d3b",
+      "title": "More on Context Management in AI Products",
+      "url": "https://lukew.com/ff/entry.asp?2138",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "December 15, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.159575"
+    },
+    "fdd579ba5139": {
+      "id": "fdd579ba5139",
+      "title": "AI Coding Agents for Designers",
+      "url": "https://lukew.com/ff/entry.asp?2137",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "December 8, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.159730"
+    },
+    "4cd43688b663": {
+      "id": "4cd43688b663",
+      "title": "Agentic AI Interface Improvements",
+      "url": "https://lukew.com/ff/entry.asp?2136",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "November 24, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "UI模式"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.159876"
+    },
+    "1798cdbdd33d": {
+      "id": "1798cdbdd33d",
+      "title": "An Alternative Chat UI Layout",
+      "url": "https://lukew.com/ff/entry.asp?2135",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "November 10, 2025",
+      "category": "UI模式",
+      "tags": [
+        "UI模式"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160042"
+    },
+    "7dad778ab0f6": {
+      "id": "7dad778ab0f6",
+      "title": "Rethinking Networking for the AI/ML Era",
+      "url": "https://lukew.com/ff/entry.asp?2134",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 31, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160199"
+    },
+    "68a99cc36d4e": {
+      "id": "68a99cc36d4e",
+      "title": "How Design Teams Are Reacting to 10x Developer Productivity from AI",
+      "url": "https://lukew.com/ff/entry.asp?2133",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 30, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160387"
+    },
+    "cc24c95f106b": {
+      "id": "cc24c95f106b",
+      "title": "Tackling Common UX Hurdles with AI",
+      "url": "https://lukew.com/ff/entry.asp?2132",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 23, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "UX研究"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160553"
+    },
+    "2a5de9cca662": {
+      "id": "2a5de9cca662",
+      "title": "Embedded AI Apps: Now in ChatGPT",
+      "url": "https://lukew.com/ff/entry.asp?2131",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 14, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160667"
+    },
+    "33cf43edf7e6": {
+      "id": "33cf43edf7e6",
+      "title": "Let the AI do the Onboarding",
+      "url": "https://lukew.com/ff/entry.asp?2130",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 9, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160759"
+    },
+    "f6df9377cb22": {
+      "id": "f6df9377cb22",
+      "title": "Wrapper vs. Embedded AI Apps",
+      "url": "https://lukew.com/ff/entry.asp?2129",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 6, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160854"
+    },
+    "076790de2d52": {
+      "id": "076790de2d52",
+      "title": "We're (Still) Not Giving Data Enough Credit",
+      "url": "https://lukew.com/ff/entry.asp?2128",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "October 2, 2025",
+      "category": "设计资讯",
+      "tags": [],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.160947"
+    },
+    "677e58926ab5": {
+      "id": "677e58926ab5",
+      "title": "Podcast: Generative AI in the Real World",
+      "url": "https://lukew.com/ff/entry.asp?2127",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 30, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161036"
+    },
+    "1770b9b78d93": {
+      "id": "1770b9b78d93",
+      "title": "Future Product Days: Hidden Forces Driving User Behavior",
+      "url": "https://lukew.com/ff/entry.asp?2125",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 26, 2025",
+      "category": "UX研究",
+      "tags": [
+        "UX研究",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161125"
+    },
+    "6dca9519c294": {
+      "id": "6dca9519c294",
+      "title": "Future Product Days: How to solve the right problem with AI",
+      "url": "https://lukew.com/ff/entry.asp?2126",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 26, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161214"
+    },
+    "dd796dbe92b1": {
+      "id": "dd796dbe92b1",
+      "title": "Future Product Days: Future of Product Creators",
+      "url": "https://lukew.com/ff/entry.asp?2123",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 25, 2025",
+      "category": "产品设计",
+      "tags": [
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161301"
+    },
+    "b6e47a132578": {
+      "id": "b6e47a132578",
+      "title": "Future Product Days: The AI Adoption Gap",
+      "url": "https://lukew.com/ff/entry.asp?2124",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 25, 2025",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161399"
+    },
+    "c75387d283fd": {
+      "id": "c75387d283fd",
+      "title": "Defining Chat Apps",
+      "url": "https://lukew.com/ff/entry.asp?2122",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 16, 2025",
+      "category": "产品设计",
+      "tags": [
+        "产品设计"
+      ],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161486"
+    },
+    "86bf876a7daf": {
+      "id": "86bf876a7daf",
+      "title": "Letting the Machines Learn",
+      "url": "https://lukew.com/ff/entry.asp?2121",
+      "source": "lukew",
+      "source_name": "Luke Wroblewski",
+      "date": "September 12, 2025",
+      "category": "设计资讯",
+      "tags": [],
+      "summary": "",
+      "fetched_at": "2026-01-29T17:08:38.161570"
+    },
+    "cba02d86018d": {
+      "id": "cba02d86018d",
+      "title": "Beyond Generative: The Rise Of Agentic AI And User-Centric Design",
+      "url": "https://smashingmagazine.com/2026/01/beyond-generative-rise-agentic-ai-user-centric-design/",
+      "source": "smashing",
+      "source_name": "Smashing Magazine",
+      "date": "Thu, 22 Jan 2026 13:00:00 GMT",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "UI模式",
+        "UX研究"
+      ],
+      "summary": "Developing effective agentic AI requires a new research playbook. When systems plan, decide, and act on our behalf, UX moves beyond usability testing into the realm of trust, consent, and accountability. Victor Yocco outlines the research methods needed to design agentic AI systems responsibly.",
+      "fetched_at": "2026-01-29T17:08:40.028665"
+    },
+    "45054b18f5fe": {
+      "id": "45054b18f5fe",
+      "title": "Rethinking “Pixel Perfect” Web Design",
+      "url": "https://smashingmagazine.com/2026/01/rethinking-pixel-perfect-web-design/",
+      "source": "smashing",
+      "source_name": "Smashing Magazine",
+      "date": "Tue, 20 Jan 2026 10:00:00 GMT",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "UI模式"
+      ],
+      "summary": "Amit Sheen takes a hard look at the “Pixel Perfect” legacy concept, explaining why it’s failing us and redefining what “perfection” actually looks like in a multi-device, fluid world.",
+      "fetched_at": "2026-01-29T17:08:40.028801"
+    },
+    "faaa05dad28b": {
+      "id": "faaa05dad28b",
+      "title": "UX And Product Designer’s Career Paths In 2026",
+      "url": "https://smashingmagazine.com/2026/01/ux-product-designer-career-paths/",
+      "source": "smashing",
+      "source_name": "Smashing Magazine",
+      "date": "Mon, 12 Jan 2026 10:00:00 GMT",
+      "category": "UI模式",
+      "tags": [
+        "UI模式",
+        "UX研究",
+        "产品设计"
+      ],
+      "summary": "How to shape your career path for 2026, with decision trees for designers and a UX skills self-assessment matrix. The only limits for tomorrow are the doubts we have today. Brought to you bySmart Interface Design Patterns, a **friendly video course on UX** and design patterns by Vitaly.",
+      "fetched_at": "2026-01-29T17:08:40.028982"
+    },
+    "1d32d25ab8ad": {
+      "id": "1d32d25ab8ad",
+      "title": "Penpot Is Experimenting With MCP Servers For AI-Powered Design Workflows",
+      "url": "https://smashingmagazine.com/2026/01/penpot-experimenting-mcp-servers-ai-powered-design-workflows/",
+      "source": "smashing",
+      "source_name": "Smashing Magazine",
+      "date": "Thu, 08 Jan 2026 08:00:00 GMT",
+      "category": "AI设计",
+      "tags": [
+        "AI设计",
+        "产品设计"
+      ],
+      "summary": "[Penpot](https://penpot.app/?utm_source=SmashingMagazine&utm_medium=Article&utm_campaign=MCPserver) is experimenting with MCP (Model Context Protocol) servers, which could lead to designers and developers being able to perform tasks in Penpot using AI that’s able to understand and interact with Penp",
+      "fetched_at": "2026-01-29T17:08:40.029112"
+    }
+  },
+  "sources": [
+    "lukew",
+    "smashing"
+  ]
+}
