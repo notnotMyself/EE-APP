@@ -281,6 +281,10 @@ app = FastAPI(
 """,
     version="3.1.0",
     lifespan=lifespan,
+    # 禁用 OpenAPI 文档（安全考虑）
+    openapi_url=None,
+    docs_url=None,
+    redoc_url=None,
     openapi_tags=[
         {
             "name": "health",
