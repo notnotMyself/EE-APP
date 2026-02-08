@@ -119,7 +119,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
         // 登录成功，跳转到信息流页面
         if (mounted) {
-          context.go('/feed');
+          context.go('/home');
         }
       }
     } catch (e) {

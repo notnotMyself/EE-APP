@@ -1,6 +1,16 @@
 import 'package:dio/dio.dart';
 import 'design_post.dart';
 
+/// 后端基础 URL
+const String kBackendBaseUrl = 'http://localhost:8000';
+
+/// 将外部媒体 URL 转换为代理 URL
+String toProxyUrl(String originalUrl) {
+  if (originalUrl.isEmpty) return originalUrl;
+  // 使用后端代理解决 CORS 问题
+  return '$kBackendBaseUrl/api/v1/design-feed/media?url=${Uri.encodeComponent(originalUrl)}';
+}
+
 /// 设计内容仓库
 /// 负责从后端获取设计帖子数据
 class DesignRepository {
@@ -9,7 +19,7 @@ class DesignRepository {
   DesignRepository({Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
-              baseUrl: 'http://localhost:8000',
+              baseUrl: kBackendBaseUrl,
               connectTimeout: const Duration(seconds: 10),
               receiveTimeout: const Duration(seconds: 10),
             ));

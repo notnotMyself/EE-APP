@@ -12,7 +12,7 @@ class HomePage extends ConsumerWidget {
     await prefs.setBool('welcome_seen', true);
 
     if (context.mounted) {
-      context.go('/feed');
+      context.go('/home');
     }
   }
 
@@ -77,7 +77,7 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               TextButton.icon(
-                onPressed: () => context.go('/agents'),
+                onPressed: () => context.go('/home'),
                 icon: const Icon(Icons.group_outlined),
                 label: const Text('浏览AI员工'),
               ),

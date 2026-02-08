@@ -60,7 +60,7 @@ class _BottomChatBarState extends State<BottomChatBar> {
           _buildActionButton(
             context,
             icon: Icons.apps,
-            onTap: () => context.go('/agents'),
+            onTap: () => context.go('/home'),
             color: Colors.black54,
           ),
           const SizedBox(width: 8),

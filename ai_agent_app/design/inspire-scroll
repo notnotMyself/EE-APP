@@ -1,0 +1,568 @@
+Container(
+    width: double.infinity,
+    height: 800,
+    padding: const EdgeInsets.only(top: 10),
+    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(),
+    child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 10,
+        children: [
+            Container(
+                width: 155,
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Container(
+                            width: double.infinity,
+                            height: 132.25,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 116.25,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 116.25,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x116"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 119.07,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 103.07,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 103.07,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x103"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 115.20,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 99.20,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 99.20,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x99"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 125.53,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 109.53,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 109.53,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x110"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 125.53,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 109.53,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 109.53,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x110"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 115.20,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 99.20,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 99.20,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x99"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 115.20,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 99.20,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 99.20,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x99"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            Container(
+                width: 155,
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Container(
+                            width: double.infinity,
+                            height: 125.53,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 109.53,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 109.53,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x110"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 119.33,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 103.33,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 103.33,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x103"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 129,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 116.25,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 116.25,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x116"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 119.07,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 103.07,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 103.07,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x103"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 119.07,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 103.07,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 103.07,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x103"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            width: double.infinity,
+                            height: 119.07,
+                            child: Stack(
+                                children: [
+                                    Positioned(
+                                        left: 0,
+                                        top: 0,
+                                        child: Container(
+                                            width: 155,
+                                            height: 103.07,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(16),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 103.07,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/155x103"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
+)

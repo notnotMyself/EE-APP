@@ -1,7 +1,28 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../data/design_post.dart';
 import '../data/design_repository.dart';
+
+/// 设计颜色常量 - 基于 Figma 设计稿
+class DesignColors {
+  static const Color background = Color(0xFFEFF0F2);
+  static const Color textPrimary = Color(0xFF101828);
+  static const Color textSecondary = Color(0xFF99A1AF);
+  static const Color textTertiary = Color(0xFF6A7282);
+  static const Color textGray = Color(0xFF4A5565);
+  static const Color primaryBlue = Color(0xFF155DFC);
+  static const Color cardBackground = Colors.white;
+  static const Color cardBorder = Color(0xFFF3F4F6);
+  static const Color tagBackground = Color(0xFFEFF6FF);
+  static const Color chipBackground = Color(0xFFF9FAFB);
+  static const Color chipActiveBackground = Color(0xFF101828);
+  static const Color purpleGradientStart = Color(0xFF432DD7);
+  static const Color purpleGradientEnd = Color(0xFF6366F1);
+  static const Color purpleLight = Color(0xFFE0E7FF);
+}
 
 /// 设计内容展示页面
 class DesignFeedPage extends StatefulWidget {
@@ -11,16 +32,26 @@ class DesignFeedPage extends StatefulWidget {
   State<DesignFeedPage> createState() => _DesignFeedPageState();
 }
 
-class _DesignFeedPageState extends State<DesignFeedPage> {
+class _DesignFeedPageState extends State<DesignFeedPage>
+    with SingleTickerProviderStateMixin {
   final DesignRepository _repository = DesignRepository();
   List<DesignPost>? _posts;
   String? _error;
   bool _isLoading = true;
 
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadDesignPosts();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDesignPosts() async {
@@ -43,109 +74,566 @@ class _DesignFeedPageState extends State<DesignFeedPage> {
     }
   }
 
+  String _formatDate() {
+    final now = DateTime.now();
+    final weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    final weekday = weekdays[now.weekday - 1];
+    return '${now.month}月${now.day}日，$weekday';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('设计灵感'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDesignPosts,
-            tooltip: '刷新',
+      backgroundColor: DesignColors.background,
+      body: SafeArea(
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            // 标题区域 + Tab 栏 - 均随滚动消失
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  _buildTabBar(),
+                ],
+              ),
+            ),
+          ],
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildInspireTab(),
+              _buildInformationTab(),
+            ],
           ),
-        ],
+        ),
       ),
-      body: _buildBody(),
     );
   }
 
-  Widget _buildBody() {
+  /// 构建顶部标题区域 - 基于 Figma 设计稿
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '设计灵感',
+            style: TextStyle(
+              color: DesignColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              height: 1.33,
+              letterSpacing: -0.53,
+            ),
+          ),
+          Text(
+            _formatDate(),
+            style: const TextStyle(
+              color: DesignColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              height: 1.33,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建Tab切换栏 - 基于 Figma inspiration-tab 设计稿
+  Widget _buildTabBar() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Center(
+        child: Container(
+          width: 120,
+          height: 40,
+          clipBehavior: Clip.antiAlias,
+          decoration: ShapeDecoration(
+            color: Colors.black.withOpacity(0.03),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100),
+            ),
+            shadows: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 2,
+                offset: Offset(0, 0),
+              ),
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 24,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: AnimatedBuilder(
+              animation: _tabController,
+              builder: (context, child) {
+                return Row(
+                  children: [
+                    _buildSegmentItem('灵感', 0),
+                    _buildSegmentItem('AI 资讯', 1),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentItem(String title, int index) {
+    final selected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _tabController.animateTo(index);
+          });
+        },
+        child: Container(
+          height: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: ShapeDecoration(
+            color: selected ? Colors.white.withOpacity(0.80) : Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(200),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.90),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.43,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建灵感Tab内容 - 基于 Figma 设计稿（无分类标签）
+  Widget _buildInspireTab() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: _buildMasonryGrid(),
+    );
+  }
+
+  /// 构建瀑布流网格
+  Widget _buildMasonryGrid() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('加载失败: $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadDesignPosts,
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      );
+      return _buildErrorWidget();
     }
 
     if (_posts == null || _posts!.isEmpty) {
       return const Center(child: Text('暂无设计内容'));
     }
 
+    // 只取有图片的帖子
+    final postsWithMedia = _posts!.where((p) => p.mediaUrls.isNotEmpty).toList();
+
     return RefreshIndicator(
       onRefresh: _loadDesignPosts,
-      child: ListView.builder(
-        itemCount: _posts!.length,
-        itemBuilder: (context, index) {
-          return _buildDesignCard(_posts![index]);
-        },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: MasonryGridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 10,
+          itemCount: postsWithMedia.length,
+          itemBuilder: (context, index) {
+            return _buildMasonryItem(postsWithMedia[index], index);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildDesignCard(DesignPost post) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  Widget _buildMasonryItem(DesignPost post, int index) {
+    // 根据index生成不同高度，模拟瀑布流效果
+    final heights = [116.0, 150.0, 180.0, 130.0, 200.0, 140.0];
+    final height = heights[index % heights.length];
+
+    return GestureDetector(
+      onTap: () => _showDetailDialog(post),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: DesignColors.chipBackground,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: post.mediaUrls.isNotEmpty
+            ? Image.network(
+                post.mediaUrls[0],
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: height,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: DesignColors.chipBackground,
+                    child: const Center(
+                      child: Icon(Icons.broken_image, color: DesignColors.textSecondary),
+                    ),
+                  );
+                },
+              )
+            : Container(
+                color: DesignColors.chipBackground,
+                child: const Center(
+                  child: Icon(Icons.image, color: DesignColors.textSecondary),
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// 显示帖子详情弹窗 - 基于 Figma detail-card 设计稿
+  void _showDetailDialog(DesignPost post) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '关闭',
+      barrierColor: Colors.black.withOpacity(0.4),
+      transitionDuration: const Duration(milliseconds: 250),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: _DesignDetailCard(
+            post: post,
+            onClose: () => Navigator.of(context).pop(),
+            onCopyLink: () {
+              Clipboard.setData(ClipboardData(text: post.xUrl));
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('链接已复制'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// 构建AI资讯Tab内容
+  Widget _buildInformationTab() {
+    return RefreshIndicator(
+      onRefresh: _loadDesignPosts,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTrendingHeader(),
+            const SizedBox(height: 12),
+            _buildArticleList(),
+            const SizedBox(height: 20),
+            _buildAIConsultantCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建Trending Updates标题
+  Widget _buildTrendingHeader() {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Trending Updates',
+          style: TextStyle(
+            color: DesignColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 1.40,
+            letterSpacing: -0.95,
+          ),
+        ),
+        Row(
+          children: [
+            Text(
+              'View All',
+              style: TextStyle(
+                color: DesignColors.primaryBlue,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.33,
+              ),
+            ),
+            SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 16, color: DesignColors.primaryBlue),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 构建文章列表
+  Widget _buildArticleList() {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return _buildErrorWidget();
+    }
+
+    if (_posts == null || _posts!.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('暂无资讯内容'),
+        ),
+      );
+    }
+
+    // 取前5条作为文章列表
+    final articles = _posts!.take(5).toList();
+    final tags = ['TRENDING', 'GUIDE', 'OPINION', 'TRENDING', 'GUIDE'];
+    final times = ['2h ago', '5h ago', '1d ago', '2h ago', '5h ago'];
+
+    return Column(
+      children: List.generate(
+        articles.length,
+        (index) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildArticleCard(
+            articles[index],
+            tags[index % tags.length],
+            times[index % times.length],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建文章卡片
+  Widget _buildArticleCard(DesignPost post, String tag, String time) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DesignColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: DesignColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _openUrl(post.xUrl),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 左侧图片
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: DesignColors.cardBorder,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: post.mediaUrls.isNotEmpty
+                  ? Image.network(
+                      post.mediaUrls[0],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(Icons.image, color: DesignColors.textSecondary),
+                        );
+                      },
+                    )
+                  : const Center(
+                      child: Icon(Icons.image, color: DesignColors.textSecondary),
+                    ),
+            ),
+            const SizedBox(width: 16),
+            // 右侧内容
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 标签和时间
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: DesignColors.tagBackground,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            color: DesignColors.primaryBlue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.37,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          color: DesignColors.textSecondary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  // 标题
+                  Text(
+                    post.author.isNotEmpty ? post.author : 'Design Update',
+                    style: const TextStyle(
+                      color: DesignColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                      letterSpacing: -0.15,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // 描述
+                  Text(
+                    post.content.isNotEmpty
+                        ? post.content
+                        : 'Discover the latest design trends and insights.',
+                    style: const TextStyle(
+                      color: DesignColors.textTertiary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      height: 1.63,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建AI顾问卡片
+  Widget _buildAIConsultantCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            DesignColors.purpleGradientStart,
+            DesignColors.purpleGradientEnd,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: DesignColors.purpleGradientStart.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 作者信息
-          ListTile(
-            leading: post.avatarUrl.isNotEmpty
-                ? CircleAvatar(
-                    backgroundImage: NetworkImage(post.avatarUrl),
-                    onBackgroundImageError: (_, __) {},
-                  )
-                : const CircleAvatar(
-                    child: Icon(Icons.person),
-                  ),
-            title: Text(
-              post.author.isNotEmpty ? post.author : 'Unknown',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          const Text(
+            'AI Design Consultant',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              height: 1.40,
+              letterSpacing: -0.45,
             ),
-            subtitle: post.username.isNotEmpty ? Text('@${post.username}') : null,
           ),
-
-          // 内容文本
-          if (post.content.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                post.content,
-                style: const TextStyle(fontSize: 15),
-              ),
+          const SizedBox(height: 8),
+          const Text(
+            'Stuck on a creative block? Get real-time feedback and suggestions from our specialized AI assistant.',
+            style: TextStyle(
+              color: DesignColors.purpleLight,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.63,
+              letterSpacing: -0.15,
             ),
-
-          // 图片展示
-          if (post.mediaUrls.isNotEmpty) _buildMediaGallery(post.mediaUrls),
-
-          // 操作按钮
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
-                  icon: const Icon(Icons.open_in_new, size: 18),
-                  label: const Text('查看原文'),
-                  onPressed: () => _openUrl(post.xUrl),
-                ),
-              ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: const Text(
+              'Start Consultation',
+              style: TextStyle(
+                color: DesignColors.purpleGradientStart,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.43,
+                letterSpacing: -0.15,
+              ),
             ),
           ),
         ],
@@ -153,62 +641,22 @@ class _DesignFeedPageState extends State<DesignFeedPage> {
     );
   }
 
-  Widget _buildMediaGallery(List<String> mediaUrls) {
-    if (mediaUrls.length == 1) {
-      // 单张图片
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            mediaUrls[0],
-            fit: BoxFit.cover,
-            width: double.infinity,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 200,
-                color: Colors.grey[300],
-                child: const Center(
-                  child: Icon(Icons.broken_image, size: 48),
-                ),
-              );
-            },
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('加载失败: $_error'),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadDesignPosts,
+            child: const Text('重试'),
           ),
-        ),
-      );
-    } else {
-      // 多张图片 - 网格展示
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: mediaUrls.length == 2 ? 2 : 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: mediaUrls.length,
-          itemBuilder: (context, index) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                mediaUrls[index],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(Icons.broken_image),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
 
   Future<void> _openUrl(String url) async {
@@ -224,5 +672,253 @@ class _DesignFeedPageState extends State<DesignFeedPage> {
         );
       }
     }
+  }
+}
+
+/// 设计详情弹窗卡片 - 基于 Figma detail-card 设计稿
+class _DesignDetailCard extends StatelessWidget {
+  final DesignPost post;
+  final VoidCallback onClose;
+  final VoidCallback onCopyLink;
+
+  const _DesignDetailCard({
+    required this.post,
+    required this.onClose,
+    required this.onCopyLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(
+            width: 328,
+            decoration: ShapeDecoration(
+              gradient: LinearGradient(
+                begin: const Alignment(0.5, 0.0),
+                end: const Alignment(0.5, 1.0),
+                colors: [
+                  Colors.white.withOpacity(0.85),
+                  Colors.white.withOpacity(0.95),
+                ],
+              ),
+              shape: RoundedRectangleBorder(
+                side: BorderSide(
+                    width: 1, color: Colors.white.withOpacity(0.8)),
+                borderRadius: BorderRadius.circular(28),
+              ),
+              shadows: const [
+                BoxShadow(
+                  color: Color(0x28000000),
+                  blurRadius: 40,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 关闭按钮行
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, right: 11, left: 11),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: onClose,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: ShapeDecoration(
+                            color: const Color(0x197B7B7B),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(29),
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.close,
+                              size: 18,
+                              color: Color(0xFF4C4C4C),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 内容区域
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 17),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 作者信息（头像 + 姓名/副标题）
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 6, bottom: 6),
+                        child: Row(
+                          children: [
+                            // 头像
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: ShapeDecoration(
+                                color: const Color(0xFFF9FAFB),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: post.avatarUrl.isNotEmpty
+                                  ? Image.network(
+                                      post.avatarUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return const Center(
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 24,
+                                            color: DesignColors.textSecondary,
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : const Center(
+                                      child: Icon(
+                                        Icons.person,
+                                        size: 24,
+                                        color: DesignColors.textSecondary,
+                                      ),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            // 姓名 + 副标题
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    post.author.isNotEmpty
+                                        ? post.author
+                                        : 'Design Post',
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.90),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.44,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    post.username.isNotEmpty
+                                        ? '@${post.username}'
+                                        : '',
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.54),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.43,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // 描述文字
+                      if (post.content.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Text(
+                            post.content,
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.54),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              height: 1.43,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      // 图片预览
+                      if (post.mediaUrls.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Container(
+                            width: 294,
+                            height: 196,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: ShapeDecoration(
+                              color: const Color(0xFFF9FAFB),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: Image.network(
+                              post.mediaUrls[0],
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: DesignColors.textSecondary,
+                                    size: 32,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      // 复制链接按钮
+                      Center(
+                        child: GestureDetector(
+                          onTap: onCopyLink,
+                          child: Container(
+                            width: 267,
+                            height: 44,
+                            decoration: ShapeDecoration(
+                              color: const Color(0xCC4C4C4C),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                '复制链接',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.50,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 25),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

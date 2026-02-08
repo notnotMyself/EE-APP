@@ -3,11 +3,33 @@ Design Feed API
 提供设计内容展示功能
 """
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse, Response
 from pathlib import Path
 import json
+import httpx
+import hashlib
+import io
 from typing import List, Dict, Any
 
 router = APIRouter(prefix="/api/v1/design-feed", tags=["design"])
+
+# 图片缓存目录
+MEDIA_CACHE_DIR = Path(__file__).parent.parent.parent / "agents/design_validator/data/bestdesignsonx/media_cache"
+MEDIA_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# 尝试导入 Pillow 用于图片格式转换
+try:
+    from PIL import Image
+    # 注册 AVIF/HEIF 支持
+    try:
+        import pillow_heif
+        pillow_heif.register_heif_opener()
+        pillow_heif.register_avif_opener()
+    except ImportError:
+        pass
+    PILLOW_AVAILABLE = True
+except ImportError:
+    PILLOW_AVAILABLE = False
 
 # 数据文件路径
 DATA_FILE = Path(__file__).parent.parent.parent / "agents/design_validator/data/bestdesignsonx/index.json"
@@ -119,3 +141,100 @@ async def get_design_stats() -> Dict[str, Any]:
             status_code=500,
             detail=f"获取统计信息失败: {str(e)}"
         )
+
+
+@router.get("/media", summary="图片代理")
+async def proxy_media(url: str, convert: bool = True):
+    """
+    图片代理端点，解决 CORS 问题，并可转换 AVIF 为 JPEG
+
+    Args:
+        url: 原始图片 URL
+        convert: 是否将 AVIF/WebP 转换为 JPEG（默认 True）
+
+    Returns:
+        图片内容流
+    """
+    if not url:
+        raise HTTPException(status_code=400, detail="缺少 url 参数")
+
+    # 验证 URL 是否来自允许的域名
+    allowed_domains = [
+        "cdn.bestdesignsonx.com",
+        "pbs.twimg.com",
+    ]
+
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    if parsed.netloc not in allowed_domains:
+        raise HTTPException(status_code=403, detail=f"不允许的域名: {parsed.netloc}")
+
+    # 生成缓存文件名
+    url_hash = hashlib.md5(url.encode()).hexdigest()
+    ext = Path(parsed.path).suffix or ".jpg"
+
+    # 判断是否需要转换
+    needs_conversion = convert and ext.lower() in [".avif", ".webp"] and PILLOW_AVAILABLE
+
+    # 缓存文件（如果需要转换，保存为 .jpg）
+    cache_ext = ".jpg" if needs_conversion else ext
+    cache_file = MEDIA_CACHE_DIR / f"{url_hash}{cache_ext}"
+
+    # 检查缓存
+    if cache_file.exists():
+        content_type = _get_content_type(cache_ext)
+        return Response(
+            content=cache_file.read_bytes(),
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=86400"}
+        )
+
+    # 从远程获取
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, follow_redirects=True)
+            response.raise_for_status()
+
+            image_bytes = response.content
+            content_type = _get_content_type(cache_ext)
+
+            # 如果需要转换 AVIF/WebP 为 JPEG
+            if needs_conversion:
+                try:
+                    img = Image.open(io.BytesIO(image_bytes))
+                    # 转换为 RGB（去除透明通道）
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        img = img.convert('RGB')
+                    output = io.BytesIO()
+                    img.save(output, format='JPEG', quality=90)
+                    image_bytes = output.getvalue()
+                    content_type = "image/jpeg"
+                except Exception as e:
+                    # 转换失败，返回原始内容
+                    print(f"图片转换失败: {e}")
+                    content_type = response.headers.get("content-type", _get_content_type(ext))
+
+            # 保存到缓存
+            cache_file.write_bytes(image_bytes)
+
+            return Response(
+                content=image_bytes,
+                media_type=content_type,
+                headers={"Cache-Control": "public, max-age=86400"}
+            )
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"获取图片失败: {str(e)}")
+
+
+def _get_content_type(ext: str) -> str:
+    """根据扩展名获取 Content-Type"""
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".avif": "image/avif",
+        ".mp4": "video/mp4",
+    }
+    return content_types.get(ext.lower(), "application/octet-stream")

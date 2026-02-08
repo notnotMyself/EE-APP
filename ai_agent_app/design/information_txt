@@ -1,0 +1,494 @@
+Text(
+    '19:30',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0 SC',
+        fontWeight: FontWeight.w600,
+    ),
+)
+// ---
+Text(
+    '设计灵感',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 24,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w700,
+        height: 1.33,
+        letterSpacing: -0.53,
+    ),
+)
+// ---
+Text(
+    '2月5日，周四',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w500,
+        height: 1.33,
+    ),
+)
+// ---
+Text(
+    'Trending Updates',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 20,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.40,
+        letterSpacing: -0.95,
+    ),
+)
+// ---
+Text(
+    'View All',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w600,
+        height: 1.33,
+    ),
+)
+// ---
+Text(
+    'TRENDING',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '2h ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'The Future of Generative Design',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'How AI is reshaping the way we approach complex UI problems in 2024.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'GUIDE',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '5h ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'AI Tools for Designers: A Guide',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Top 10 tools you need to know to speed up your workflow significantly.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'OPINION',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '1d ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'Ethical AI in Creative Work',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Navigating the copyright and ethical landscape of AI generated art.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'TRENDING',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '2h ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'The Future of Generative Design',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'How AI is reshaping the way we approach complex UI problems in 2024.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'GUIDE',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '5h ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'AI Tools for Designers: A Guide',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Top 10 tools you need to know to speed up your workflow significantly.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'OPINION',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '1d ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'Ethical AI in Creative Work',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Navigating the copyright and ethical landscape of AI generated art.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'GUIDE',
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.37,
+    ),
+)
+// ---
+Text(
+    '5h ago',
+    style: TextStyle(
+        color: const Color(0xFF99A1AF),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'AI Tools for Designers: A Guide',
+    style: TextStyle(
+        color: const Color(0xFF101828),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.25,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Top 10 tools you need to know to speed up your workflow significantly.',
+    style: TextStyle(
+        color: const Color(0xFF6A7282),
+        fontSize: 12,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+    ),
+)
+// ---
+Text(
+    'AI Design Consultant',
+    style: TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.40,
+        letterSpacing: -0.45,
+    ),
+)
+// ---
+Text(
+    'Stuck on a creative block? Get real-time feedback and suggestions from our specialized AI assistant.',
+    style: TextStyle(
+        color: const Color(0xFFE0E7FF),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        height: 1.63,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    'Start Consultation',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: const Color(0xFF432DD7),
+        fontSize: 14,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.43,
+        letterSpacing: -0.15,
+    ),
+)
+// ---
+Text(
+    '首页',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: const Color(0xFF155DFC),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w700,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    'AI 评审官',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 10,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    '资料库',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    '我的',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+        letterSpacing: 0.12,
+    ),
+)
+// ---
+Text(
+    '灵感',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54),
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+    ),
+)
+// ---
+Text(
+    'AI 资讯',
+    style: TextStyle(
+        color: Colors.black,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+    ),
+)

@@ -249,7 +249,7 @@ class _ConversationsListPageState extends ConsumerState<ConversationsListPage> {
             if (_searchQuery.isEmpty) ...[
               const SizedBox(height: 32),
               _buildActionButton(
-                onPressed: () => context.go('/agents'),
+                onPressed: () => context.go('/home'),
                 icon: Icons.smart_toy_outlined,
                 label: '浏览AI员工',
               ),

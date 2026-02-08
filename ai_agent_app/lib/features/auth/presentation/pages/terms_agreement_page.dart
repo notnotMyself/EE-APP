@@ -58,7 +58,7 @@ class _TermsAgreementPageState extends ConsumerState<TermsAgreementPage> {
 
       // 成功后导航到主页
       if (mounted) {
-        context.go('/feed');
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {

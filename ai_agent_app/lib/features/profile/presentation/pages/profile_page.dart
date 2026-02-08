@@ -342,7 +342,7 @@ class ProfilePage extends ConsumerWidget {
             iconColor: AgentProfileTheme.accentBlue,
             title: '管理订阅',
             subtitle: '查看和管理已订阅的AI员工',
-            onTap: () => context.go('/agents'),
+            onTap: () => context.go('/home'),
           ),
           _buildMenuDivider(),
           _buildMenuItem(

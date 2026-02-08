@@ -1,0 +1,23 @@
+Text(
+    '灵感',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    'AI 资讯',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.43,
+    ),
+)

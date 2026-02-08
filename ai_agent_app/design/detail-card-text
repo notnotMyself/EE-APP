@@ -1,0 +1,44 @@
+Text(
+    '姓名',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 18,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w600,
+        height: 1.44,
+    ),
+)
+// ---
+Text(
+    '副标题',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    'A dialog is a type of modal window that appears in front of app content to provide critical information, or prompt for a decision to be made.',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    '复制链接',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.white /* 颜色-Color-文字&图标-Label-couiColorLabelOnColor */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.50,
+    ),
+)

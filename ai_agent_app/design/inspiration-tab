@@ -1,0 +1,187 @@
+Container(
+    width: 120,
+    height: 52,
+    child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+            Expanded(
+                child: Container(
+                    height: 40,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: ShapeDecoration(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(100),
+                        ),
+                        shadows: [
+                            BoxShadow(
+                                color: Color(0x0A000000),
+                                blurRadius: 24,
+                                offset: Offset(0, 2),
+                                spreadRadius: 0,
+                            )
+                        ],
+                    ),
+                    child: Stack(
+                        children: [
+                            Positioned(
+                                left: 0,
+                                top: 0,
+                                child: Container(
+                                    width: 120,
+                                    height: 40,
+                                    decoration: ShapeDecoration(
+                                        color: Colors.black.withValues(alpha: 0.03),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(100),
+                                        ),
+                                        shadows: [
+                                            BoxShadow(
+                                                color: Color(0x0F000000),
+                                                blurRadius: 12,
+                                                offset: Offset(0, 4),
+                                                spreadRadius: 0,
+                                            )BoxShadow(
+                                                color: Color(0x14000000),
+                                                blurRadius: 2,
+                                                offset: Offset(0, 0),
+                                                spreadRadius: 0,
+                                            )
+                                        ],
+                                    ),
+                                ),
+                            ),
+                            Positioned(
+                                left: 0,
+                                top: 0,
+                                child: Container(
+                                    width: 120,
+                                    height: 40,
+                                    padding: const EdgeInsets.all(4),
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: ShapeDecoration(
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(50),
+                                        ),
+                                    ),
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                            Expanded(
+                                                child: Container(
+                                                    height: double.infinity,
+                                                    clipBehavior: Clip.antiAlias,
+                                                    decoration: ShapeDecoration(
+                                                        color: Colors.white.withValues(alpha: 0.80),
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(200),
+                                                        ),
+                                                    ),
+                                                    child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                                        children: [
+                                                            Expanded(
+                                                                child: ConstrainedBox(
+                                                                    constraints: BoxConstraints(minWidth: 52, minHeight: 32),
+                                                                    child: Container(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                                        clipBehavior: Clip.antiAlias,
+                                                                        decoration: ShapeDecoration(
+                                                                            shape: RoundedRectangleBorder(
+                                                                                borderRadius: BorderRadius.circular(100),
+                                                                            ),
+                                                                        ),
+                                                                        child: Row(
+                                                                            mainAxisSize: MainAxisSize.min,
+                                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                                                            children: [
+                                                                                SizedBox(
+                                                                                    width: 32,
+                                                                                    child: Text(
+                                                                                        '灵感',
+                                                                                        textAlign: TextAlign.center,
+                                                                                        style: TextStyle(
+                                                                                            color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                                                                                            fontSize: 14,
+                                                                                            fontFamily: 'OPPO Sans 4.0',
+                                                                                            fontWeight: FontWeight.w500,
+                                                                                            height: 1.43,
+                                                                                        ),
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ),
+                                            Expanded(
+                                                child: Container(
+                                                    height: double.infinity,
+                                                    clipBehavior: Clip.antiAlias,
+                                                    decoration: ShapeDecoration(
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(100),
+                                                        ),
+                                                    ),
+                                                    child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                                        children: [
+                                                            Expanded(
+                                                                child: ConstrainedBox(
+                                                                    constraints: BoxConstraints(minWidth: 52, minHeight: 32),
+                                                                    child: Container(
+                                                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                                        clipBehavior: Clip.antiAlias,
+                                                                        decoration: ShapeDecoration(
+                                                                            shape: RoundedRectangleBorder(
+                                                                                borderRadius: BorderRadius.circular(100),
+                                                                            ),
+                                                                        ),
+                                                                        child: Row(
+                                                                            mainAxisSize: MainAxisSize.min,
+                                                                            mainAxisAlignment: MainAxisAlignment.center,
+                                                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                                                            children: [
+                                                                                Text(
+                                                                                    'AI 资讯',
+                                                                                    textAlign: TextAlign.center,
+                                                                                    style: TextStyle(
+                                                                                        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                                                                                        fontSize: 14,
+                                                                                        fontFamily: 'OPPO Sans 4.0',
+                                                                                        fontWeight: FontWeight.w500,
+                                                                                        height: 1.43,
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

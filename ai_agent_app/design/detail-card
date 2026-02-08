@@ -1,0 +1,282 @@
+Container(
+    width: 328,
+    height: 465.99,
+    decoration: ShapeDecoration(
+        gradient: LinearGradient(
+            begin: Alignment(0.50, -0.00),
+            end: Alignment(0.50, 1.00),
+            colors: [Colors.white.withValues(alpha: 0.40), Colors.white.withValues(alpha: 0.60)],
+        ),
+        shape: RoundedRectangleBorder(
+            side: BorderSide(width: 1, color: Colors.white),
+            borderRadius: BorderRadius.circular(28),
+        ),
+        shadows: [
+            BoxShadow(
+                color: Color(0x28000000),
+                blurRadius: 40,
+                offset: Offset(0, 12),
+                spreadRadius: 0,
+            )
+        ],
+    ),
+    child: Stack(
+        children: [
+            Positioned(
+                left: 17,
+                top: 25,
+                child: Container(
+                    width: 294,
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 10,
+                        children: [
+                            Container(
+                                width: 294,
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                        Container(
+                                            width: 214,
+                                            padding: const EdgeInsets.only(top: 6, left: 12, right: 24, bottom: 6),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    SizedBox(
+                                                        width: 214,
+                                                        child: Text(
+                                                            '姓名',
+                                                            style: TextStyle(
+                                                                color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                                                                fontSize: 18,
+                                                                fontFamily: 'OPPO Sans 4.0',
+                                                                fontWeight: FontWeight.w600,
+                                                                height: 1.44,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    SizedBox(
+                                                        width: 214,
+                                                        child: Text(
+                                                            '副标题',
+                                                            style: TextStyle(
+                                                                color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+                                                                fontSize: 14,
+                                                                fontFamily: 'OPPO Sans 4.0',
+                                                                fontWeight: FontWeight.w400,
+                                                                height: 1.43,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(),
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                        SizedBox(
+                                            width: 294,
+                                            height: 41,
+                                            child: Text(
+                                                'A dialog is a type of modal window that appears in front of app content to provide critical information, or prompt for a decision to be made.',
+                                                style: TextStyle(
+                                                    color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+                                                    fontSize: 14,
+                                                    fontFamily: 'OPPO Sans 4.0',
+                                                    fontWeight: FontWeight.w400,
+                                                    height: 1.43,
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(),
+                                child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    spacing: 18.97,
+                                    children: [
+                                        Container(
+                                            width: 294,
+                                            height: 195.99,
+                                            clipBehavior: Clip.antiAlias,
+                                            decoration: ShapeDecoration(
+                                                color: const Color(0xFFF9FAFB),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(30.35),
+                                                ),
+                                            ),
+                                            child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Container(
+                                                        width: double.infinity,
+                                                        height: 195.99,
+                                                        clipBehavior: Clip.antiAlias,
+                                                        decoration: BoxDecoration(
+                                                            image: DecorationImage(
+                                                                image: NetworkImage("https://placehold.co/294x196"),
+                                                                fit: BoxFit.cover,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                width: 267,
+                                child: Stack(
+                                    children: [
+                                        Positioned(
+                                            left: 0,
+                                            top: 0,
+                                            child: Container(
+                                                width: 267,
+                                                height: 44,
+                                                decoration: ShapeDecoration(
+                                                    color: const Color(0xCC4C4C4C),
+                                                    shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(100),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                        Expanded(
+                                            child: ConstrainedBox(
+                                                constraints: BoxConstraints(minHeight: 44),
+                                                child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                                    decoration: ShapeDecoration(
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(100),
+                                                        ),
+                                                    ),
+                                                    child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                                        children: [
+                                                            SizedBox(
+                                                                width: 243,
+                                                                child: Text(
+                                                                    '复制链接',
+                                                                    textAlign: TextAlign.center,
+                                                                    style: TextStyle(
+                                                                        color: Colors.white /* 颜色-Color-文字&图标-Label-couiColorLabelOnColor */,
+                                                                        fontSize: 16,
+                                                                        fontFamily: 'OPPO Sans 4.0',
+                                                                        fontWeight: FontWeight.w500,
+                                                                        height: 1.50,
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            Positioned(
+                left: 10.89,
+                top: 12,
+                child: Container(
+                    width: 306,
+                    child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 12,
+                        children: [
+                            Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    spacing: 10,
+                                    children: [
+                                    ,
+                                    ],
+                                ),
+                            ),
+                            Container(
+                                width: 36,
+                                height: 36,
+                                clipBehavior: Clip.antiAlias,
+                                decoration: ShapeDecoration(
+                                    color: const Color(0x197B7B7B),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(28.56),
+                                    ),
+                                ),
+                                child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    spacing: 10,
+                                    children: [
+                                        Container(
+                                            width: 25.71,
+                                            height: 25.71,
+                                            decoration: ShapeDecoration(
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(35.70),
+                                                ),
+                                            ),
+                                            child: Stack(
+                                                children: [
+                                                    Positioned(
+                                                        left: 7.60,
+                                                        top: 6.85,
+                                                        child: Container(
+                                                            width: 12,
+                                                            height: 12,
+                                                            clipBehavior: Clip.antiAlias,
+                                                            decoration: BoxDecoration(),
+                                                            child: Stack(),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

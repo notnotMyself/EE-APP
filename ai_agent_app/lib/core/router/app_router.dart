@@ -9,10 +9,9 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/terms_agreement_page.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/agents/presentation/pages/agents_list_page.dart';
-import '../../features/briefings/presentation/pages/briefings_feed_page.dart';
-import '../../features/briefings/presentation/pages/feed_home_page.dart';
-import '../../features/conversations/presentation/pages/conversations_list_page.dart';
+import '../../features/home/presentation/pages/home_chat_page.dart';
+import '../../features/design/presentation/design_feed_page.dart';
+import '../../features/library/presentation/pages/library_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -36,26 +35,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 已登录但在登录/注册页，跳转到主页
       if (isAuthenticated && isAuthPage) {
         // TODO: 暂时隐藏隐私策略确认，等有必要时再启用
-        // 检查用户是否需要同意服务条款
-        // final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
-        //
-        // if (needsConsent) {
-        //   return '/terms';
-        // }
-
-        // TODO: 实现首次登录显示欢迎页的逻辑（使用 SharedPreferences）
-        return '/feed';
+        return '/home';
       }
-
-      // TODO: 暂时隐藏隐私策略检查
-      // 已登录且在其他页面（非条款页），检查是否需要同意条款
-      // if (isAuthenticated && !isTermsPage && !isAuthPage) {
-      //   final needsConsent = await authController.checkAndNavigateToTermsIfNeeded();
-      //
-      //   if (needsConsent) {
-      //     return '/terms';
-      //   }
-      // }
 
       return null;
     },
@@ -88,16 +69,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: '/feed',
-            builder: (context, state) => const FeedHomePage(),
+            path: '/home',
+            builder: (context, state) => const HomeChatPage(),
           ),
           GoRoute(
-            path: '/agents',
-            builder: (context, state) => const AgentsListPage(),
+            path: '/inspiration',
+            builder: (context, state) => const DesignFeedPage(),
           ),
           GoRoute(
-            path: '/conversations',
-            builder: (context, state) => const ConversationsListPage(),
+            path: '/library',
+            builder: (context, state) => const LibraryPage(),
           ),
           GoRoute(
             path: '/profile',

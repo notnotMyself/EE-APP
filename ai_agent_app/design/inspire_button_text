@@ -1,0 +1,19 @@
+Text(
+    '灵感',
+    style: TextStyle(
+        color: Colors.black,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+    ),
+)
+// ---
+Text(
+    'AI 资讯',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54),
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+    ),
+)

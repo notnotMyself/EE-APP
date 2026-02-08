@@ -31,11 +31,14 @@ import '../widgets/voice_input_dialog.dart';
 class AgentProfilePage extends ConsumerStatefulWidget {
   final Agent agent;
   final String? initialConversationId;
+  /// 是否显示返回按钮（嵌入首页时设为 false）
+  final bool showBackButton;
 
   const AgentProfilePage({
     super.key,
     required this.agent,
     this.initialConversationId,
+    this.showBackButton = true,
   });
 
   @override
@@ -479,13 +482,14 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: AgentProfileTheme.titleColor,
+          if (widget.showBackButton)
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: AgentProfileTheme.titleColor,
+              ),
             ),
-          ),
           if (hasMessages) ...[
             // 有消息时显示紧凑 Agent 信息
             const SizedBox(width: 8),
