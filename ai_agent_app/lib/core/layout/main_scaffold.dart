@@ -53,14 +53,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     _TabConfig(
       path: '/inspiration',
       label: '灵感资讯',
-      icon: Icons.auto_awesome_outlined,
-      activeIcon: Icons.auto_awesome,
+      svgAsset: 'assets/icons/nav_inspiration.svg',
     ),
     _TabConfig(
       path: '/library',
       label: '资料库',
-      icon: Icons.folder_open_rounded,
-      activeIcon: Icons.folder_rounded,
+      svgAsset: 'assets/icons/nav_library.svg',
     ),
     _TabConfig(
       path: '/profile',
@@ -101,19 +99,29 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
   }
 
+  /// 悬浮导航栏总高度（渐变区 + 胶囊 + 系统条），用于给内容区预留底部空间，避免 RenderFlex 溢出
+  static double _floatingNavBarHeight(BuildContext context) {
+    const double pillArea = 16 + 58 + 32; // topPadding + pillHeight + systemBarHeight
+    return pillArea + MediaQuery.paddingOf(context).bottom;
+  }
+
   @override
   Widget build(BuildContext context) {
     // 监听聊天模式状态：聊天中隐藏底部导航栏
     final isChatActive = ref.watch(chatModeActiveProvider);
+    final bottomPadding = isChatActive ? 0.0 : _floatingNavBarHeight(context);
 
     return Scaffold(
       backgroundColor: _NavDesign.backgroundColor,
       // 使用 Stack 让导航栏悬浮在内容上方
       body: Stack(
         children: [
-          // === 内容层：占满全屏 ===
+          // === 内容层：占满全屏，底部预留导航栏高度，避免内容被遮挡导致溢出 ===
           Positioned.fill(
-            child: widget.child,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding),
+              child: widget.child,
+            ),
           ),
 
           // === 悬浮导航栏：固定在底部（聊天模式下隐藏） ===
@@ -278,57 +286,15 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: tab.useSvg
-            ? _buildSvgNavItem(tab, color)
-            : _buildIconNavItem(tab, isSelected, color),
-      ),
-    );
-  }
-
-  /// SVG 导航项（图标+文字一体的设计稿）
-  Widget _buildSvgNavItem(_TabConfig tab, Color color) {
-    return SizedBox(
-      height: 48,
-      child: Center(
-        child: SvgPicture.asset(
-          tab.svgAsset!,
-          height: 44,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        ),
-      ),
-    );
-  }
-
-  /// Material Icon 导航项（图标+文字分离）
-  Widget _buildIconNavItem(_TabConfig tab, bool isSelected, Color color) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // 图标
-        Icon(
-          isSelected ? tab.activeIcon : tab.icon,
-          size: 24,
-          color: color,
-        ),
-        const SizedBox(height: 2),
-        // 标签文字
-        SizedBox(
-          width: 70,
-          child: Text(
-            tab.label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: color,
-              fontSize: _NavDesign.fontSize,
-              fontWeight: _NavDesign.fontWeight,
-              height: 1.40,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        child: Center(
+          child: SvgPicture.asset(
+            tab.svgAsset,
+            width: 70,
+            height: 48,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -337,18 +303,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 class _TabConfig {
   final String path;
   final String label;
-  final IconData? icon;
-  final IconData? activeIcon;
-  /// 使用 SVG 资源替代 Material Icon（图标+文字一体的设计稿）
-  final String? svgAsset;
+  final String svgAsset;
 
   const _TabConfig({
     required this.path,
     required this.label,
-    this.icon,
-    this.activeIcon,
-    this.svgAsset,
+    required this.svgAsset,
   });
-
-  bool get useSvg => svgAsset != null;
 }

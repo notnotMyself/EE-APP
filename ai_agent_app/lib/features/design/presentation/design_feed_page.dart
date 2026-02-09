@@ -112,13 +112,15 @@ class _DesignFeedPageState extends State<DesignFeedPage>
   }
 
   /// 构建顶部标题区域 - 基于 Figma inspire_title 设计稿
+  /// 高度 56 以容纳两行文字（24*1.33 + 4 + 12*1.33 ≈ 52px），避免 RenderFlex 溢出
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       child: SizedBox(
-        height: 48,
+        height: 56,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(

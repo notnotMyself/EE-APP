@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../theme/agent_profile_theme.dart';
@@ -524,10 +525,13 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           ),
         ),
         child: Center(
-          child: Icon(
-            Icons.attach_file_rounded,
-            size: 19,
-            color: AgentProfileTheme.titleColor,
+          child: Transform.rotate(
+            angle: math.pi / 4, // 逆时针 45 度
+            child: Icon(
+              Icons.attach_file_rounded,
+              size: 19,
+              color: AgentProfileTheme.titleColor,
+            ),
           ),
         ),
       ),
