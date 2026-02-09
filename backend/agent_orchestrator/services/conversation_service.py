@@ -32,44 +32,11 @@ logger = logging.getLogger(__name__)
 # 模式前缀正则匹配 [MODE:xxx]
 MODE_PATTERN = re.compile(r'^\[MODE:(\w+)\]\s*(.*)$', re.DOTALL)
 
-# 评审模式映射到描述
+# 评审模式映射：只告诉 Chris 当前模式，具体行为由 CLAUDE.md 中的定义驱动
 REVIEW_MODE_PROMPTS = {
-    'interaction_check': """
-【评审模式: 交互可用性验证 (模式 A)】
-
-请使用「模式 A: 交互可用性验证」进行评审，重点关注：
-1. 功能入口 - 用户认知模型匹配度
-2. 操作路径 - 心智模型与断点检测
-3. 交互一致性 - 平台规范符合度（iOS HIG / Material Design）
-4. 状态反馈 - 操作确认充分度
-5. 认知负荷 - 复杂度控制
-
-请按风险等级（🔴高/🟡中/🟢低）列出发现的问题，并给出具体改进建议。
-""",
-    'visual_consistency': """
-【评审模式: 视觉一致性与清晰度验证 (模式 B)】
-
-请使用「模式 B: 视觉一致性与清晰度验证」进行评审，重点关注：
-1. 颜色使用 - 品牌色板、对比度（WCAG AA >= 4.5:1）
-2. 字体字号 - Type Scale、最小字号 >= 12pt
-3. 间距布局 - 8pt Grid、对齐规范
-4. 视觉层级 - 主次信息、关键操作突出
-5. 组件一致性 - 设计系统复用
-
-请按风险等级（🔴高/🟡中/🟢低）列出发现的问题，并给出具体改进建议。
-""",
-    'compare_designs': """
-【评审模式: 方案对比与专业评估 (模式 C)】
-
-请使用「模式 C: 方案对比与专业评估」进行评审，从以下维度对比各方案：
-1. 认知难度 - 理解设计意图的认知成本
-2. 操作效率 - 完成任务的步骤数和复杂度
-3. 决策负荷 - 需要做出的选择和判断
-4. 符合预期 - 心智模型和平台规范匹配度
-5. 心理负担 - 可能产生的焦虑或困惑
-
-请给出各方案的优劣分析和最终推荐。
-""",
+    'interaction_check': "【当前模式: 交互验证】",
+    'visual_consistency': "【当前模式: 视觉讨论】",
+    'compare_designs': "【当前模式: 方案PK】",
 }
 
 
@@ -1045,19 +1012,18 @@ class ConversationService:
         mode_prompt = self._get_mode_prompt(mode_id) if mode_id else ""
 
         if mode_prompt:
-            # 有评审模式时，使用专业评审 prompt
+            # 有评审模式时，只声明模式，让 CLAUDE.md 中的定义驱动行为
             full_prompt = (
                 f"{context_prompt}\n\n"
                 f"{mode_prompt}\n\n"
-                f"用户消息: {clean_message}\n\n"
-                f"请按照指定的评审模式进行分析。如果用户上传了图片，请仔细分析图片内容。"
+                f"用户消息: {clean_message}"
             )
         else:
-            # 普通对话
+            # 随便聊聊（默认模式）
             full_prompt = (
                 f"{context_prompt}\n\n"
-                f"用户最新消息: {clean_message}\n\n"
-                f"请根据对话历史和简报信息回答用户的问题。"
+                f"【当前模式: 随便聊聊】\n\n"
+                f"用户消息: {clean_message}"
             )
 
         # 流式生成回复
