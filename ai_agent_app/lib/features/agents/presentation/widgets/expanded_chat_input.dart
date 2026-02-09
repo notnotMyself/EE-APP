@@ -81,12 +81,13 @@ class ExpandedChatInput extends StatefulWidget {
   final List<ChatAttachment> attachments;
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
   final bool enabled;
+  final bool initiallyExpanded;                  // 是否默认展开
   final AppInfo? selectedApp;                    // 当前选中的应用
   final ValueChanged<AppInfo?>? onAppSelected;  // 应用选择回调
 
   const ExpandedChatInput({
     super.key,
-    this.hintText = '简单描述下方案背景与目标',
+    this.hintText = '这是一个什么产品 / 功能，核心解决什么问题',
     required this.onSubmit,
     this.onImageTap,
     this.onFileTap,
@@ -95,6 +96,7 @@ class ExpandedChatInput extends StatefulWidget {
     this.attachments = const [],
     this.onAttachmentRemove,
     this.enabled = true,
+    this.initiallyExpanded = false,
     this.selectedApp,
     this.onAppSelected,
   });
@@ -106,7 +108,7 @@ class ExpandedChatInput extends StatefulWidget {
 class _ExpandedChatInputState extends State<ExpandedChatInput> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  bool _isExpanded = false;
+  late bool _isExpanded = widget.initiallyExpanded;
   bool _hasText = false;
 
   @override
@@ -250,7 +252,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           ),
         ),
         child: const Icon(
-          Icons.arrow_upward_rounded,
+          Icons.arrow_forward_rounded,
           size: 16,
           color: Colors.white,
         ),
@@ -689,9 +691,8 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
     );
   }
 
-  /// 模式选择按钮
-  /// Figma规范: 宽68, 高32, 圆角21.33
   /// 发送按钮
+  /// 设计规范: 32x32, 90%黑色背景, 圆角88.89, 向右箭头图标
   Widget _buildSendButton({required bool enabled}) {
     final canSend = enabled && widget.enabled;
     
@@ -704,10 +705,10 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           color: canSend 
               ? Colors.black.withOpacity(0.9) 
               : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(89),
+          borderRadius: BorderRadius.circular(88.89),
         ),
         child: Icon(
-          Icons.arrow_upward_rounded,
+          Icons.arrow_forward_rounded,
           size: 18,
           color: canSend ? Colors.white : AgentProfileTheme.labelColor,
         ),

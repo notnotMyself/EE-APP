@@ -111,33 +111,38 @@ class _DesignFeedPageState extends State<DesignFeedPage>
     );
   }
 
-  /// 构建顶部标题区域 - 基于 Figma 设计稿
+  /// 构建顶部标题区域 - 基于 Figma inspire_title 设计稿
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '设计灵感',
-            style: TextStyle(
-              color: DesignColors.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              height: 1.33,
-              letterSpacing: -0.53,
+      child: SizedBox(
+        height: 48,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '设计灵感',
+              style: const TextStyle(
+                color: Color(0xFF101828),
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                height: 1.33,
+                letterSpacing: -0.53,
+              ),
             ),
-          ),
-          Text(
-            _formatDate(),
-            style: const TextStyle(
-              color: DesignColors.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              height: 1.33,
+            const SizedBox(height: 4),
+            Text(
+              _formatDate(),
+              style: const TextStyle(
+                color: Color(0xFF99A1AF),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                height: 1.33,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -882,7 +887,7 @@ class _DesignDetailCard extends StatelessWidget {
                           ),
                         ),
                       const SizedBox(height: 10),
-                      // 复制链接按钮
+                      // 复制链接按钮 - 与登录页"开始"按钮保持一致的黑色样式
                       Center(
                         child: GestureDetector(
                           onTap: onCopyLink,
@@ -890,10 +895,17 @@ class _DesignDetailCard extends StatelessWidget {
                             width: 267,
                             height: 44,
                             decoration: ShapeDecoration(
-                              color: const Color(0xCC4C4C4C),
+                              color: Colors.black,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(100),
                               ),
+                              shadows: const [
+                                BoxShadow(
+                                  color: Color(0x23000000),
+                                  blurRadius: 54,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
                             ),
                             child: const Center(
                               child: Text(

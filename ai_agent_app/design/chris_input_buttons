@@ -1,0 +1,116 @@
+Container(
+    width: 308,
+    child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: 8.57,
+        children: [
+            Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                spacing: 3,
+                children: [
+                    Container(
+                        width: 32,
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
+                        decoration: ShapeDecoration(
+                            color: Colors.black.withValues(alpha: 0.04) /* 颜色-Color-填充色-Container-couiColorContainer4 */,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(112),
+                            ),
+                        ),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            spacing: 8.89,
+                            children: [
+                                Container(
+                                    width: 19.56,
+                                    height: 19.56,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(),
+                                    child: Stack(),
+                                ),
+                            ],
+                        ),
+                    ),
+                    Container(
+                        width: 32,
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
+                        decoration: ShapeDecoration(
+                            color: Colors.black.withValues(alpha: 0.04) /* 颜色-Color-填充色-Container-couiColorContainer4 */,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(112),
+                            ),
+                        ),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            spacing: 8.89,
+                            children: [
+                                Container(
+                                    width: 19.56,
+                                    height: 19.56,
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: BoxDecoration(),
+                                    child: Stack(
+                                        children: [
+                                            Positioned(
+                                                left: 2.28,
+                                                top: 0.28,
+                                                child: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                                    spacing: 10,
+                                                    children: [
+                                                        Text(
+                                                            '@',
+                                                            style: TextStyle(
+                                                                color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                                                                fontSize: 16,
+                                                                fontFamily: 'OPPO Sans 4.0',
+                                                                fontWeight: FontWeight.w500,
+                                                            ),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+            Container(
+                width: 32,
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                clipBehavior: Clip.antiAlias,
+                decoration: ShapeDecoration(
+                    color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(88.89),
+                    ),
+                ),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    spacing: 10,
+                    children: [
+                    ,
+                    ],
+                ),
+            ),
+        ],
+    ),
+)

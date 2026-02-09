@@ -1,6 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/agents/presentation/pages/agent_profile_page.dart';
 
 /// 导航栏设计常量 - 基于 Figma 设计稿
 class _NavDesign {
@@ -22,7 +25,8 @@ class _NavDesign {
 
 /// Main scaffold with floating bottom navigation bar.
 /// 导航栏悬浮在内容上方，使用 Stack 实现覆盖效果。
-class MainScaffold extends StatefulWidget {
+/// 在聊天模式下自动隐藏底部导航栏。
+class MainScaffold extends ConsumerStatefulWidget {
   final Widget child;
   final String location;
 
@@ -33,10 +37,10 @@ class MainScaffold extends StatefulWidget {
   });
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
   int _currentIndex = 0;
 
   // Tab navigation configuration
@@ -44,8 +48,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     _TabConfig(
       path: '/home',
       label: 'AI 评审官',
-      icon: Icons.chat_bubble_outline_rounded,
-      activeIcon: Icons.chat_bubble_rounded,
+      svgAsset: 'assets/icons/nav_ai_reviewer.svg',
     ),
     _TabConfig(
       path: '/inspiration',
@@ -62,8 +65,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     _TabConfig(
       path: '/profile',
       label: '我的',
-      icon: Icons.person_outline_rounded,
-      activeIcon: Icons.person_rounded,
+      svgAsset: 'assets/icons/nav_profile.svg',
     ),
   ];
 
@@ -101,6 +103,9 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // 监听聊天模式状态：聊天中隐藏底部导航栏
+    final isChatActive = ref.watch(chatModeActiveProvider);
+
     return Scaffold(
       backgroundColor: _NavDesign.backgroundColor,
       // 使用 Stack 让导航栏悬浮在内容上方
@@ -111,13 +116,14 @@ class _MainScaffoldState extends State<MainScaffold> {
             child: widget.child,
           ),
 
-          // === 悬浮导航栏：固定在底部 ===
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildFloatingNavBar(context),
-          ),
+          // === 悬浮导航栏：固定在底部（聊天模式下隐藏） ===
+          if (!isChatActive)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildFloatingNavBar(context),
+            ),
         ],
       ),
     );
@@ -264,44 +270,65 @@ class _MainScaffoldState extends State<MainScaffold> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final color = isSelected
+        ? _NavDesign.activeColor
+        : _NavDesign.inactiveColor;
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 图标
-            Icon(
-              isSelected ? tab.activeIcon : tab.icon,
-              size: 24,
-              color: isSelected
-                  ? _NavDesign.activeColor
-                  : _NavDesign.inactiveColor,
-            ),
-            const SizedBox(height: 2),
-            // 标签文字
-            SizedBox(
-              width: 70,
-              child: Text(
-                tab.label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isSelected
-                      ? _NavDesign.activeColor
-                      : _NavDesign.inactiveColor,
-                  fontSize: _NavDesign.fontSize,
-                  fontWeight: _NavDesign.fontWeight,
-                  height: 1.40,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        child: tab.useSvg
+            ? _buildSvgNavItem(tab, color)
+            : _buildIconNavItem(tab, isSelected, color),
+      ),
+    );
+  }
+
+  /// SVG 导航项（图标+文字一体的设计稿）
+  Widget _buildSvgNavItem(_TabConfig tab, Color color) {
+    return SizedBox(
+      height: 48,
+      child: Center(
+        child: SvgPicture.asset(
+          tab.svgAsset!,
+          height: 44,
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         ),
       ),
+    );
+  }
+
+  /// Material Icon 导航项（图标+文字分离）
+  Widget _buildIconNavItem(_TabConfig tab, bool isSelected, Color color) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 图标
+        Icon(
+          isSelected ? tab.activeIcon : tab.icon,
+          size: 24,
+          color: color,
+        ),
+        const SizedBox(height: 2),
+        // 标签文字
+        SizedBox(
+          width: 70,
+          child: Text(
+            tab.label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontSize: _NavDesign.fontSize,
+              fontWeight: _NavDesign.fontWeight,
+              height: 1.40,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -310,13 +337,18 @@ class _MainScaffoldState extends State<MainScaffold> {
 class _TabConfig {
   final String path;
   final String label;
-  final IconData icon;
-  final IconData activeIcon;
+  final IconData? icon;
+  final IconData? activeIcon;
+  /// 使用 SVG 资源替代 Material Icon（图标+文字一体的设计稿）
+  final String? svgAsset;
 
   const _TabConfig({
     required this.path,
     required this.label,
-    required this.icon,
-    required this.activeIcon,
+    this.icon,
+    this.activeIcon,
+    this.svgAsset,
   });
+
+  bool get useSvg => svgAsset != null;
 }

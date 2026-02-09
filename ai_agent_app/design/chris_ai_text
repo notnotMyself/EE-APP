@@ -9,24 +9,50 @@ Text(
 )
 // ---
 Text(
-    '早上好',
+    'AI 评审官',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF8696BB),
-        fontSize: 16,
-        fontFamily: 'Poppins',
-        fontWeight: FontWeight.w400,
-        height: 1.20,
+        color: const Color(0xFF0066FF) /* bgLight */,
+        fontSize: 10,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.40,
     ),
 )
 // ---
 Text(
-    'Leah Fang',
+    '灵感资讯',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF0D1B34),
-        fontSize: 20,
-        fontFamily: 'Poppins',
-        fontWeight: FontWeight.w700,
-        height: 1.10,
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 10,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.40,
+    ),
+)
+// ---
+Text(
+    '资料库',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 10,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.40,
+    ),
+)
+// ---
+Text(
+    '我的',
+    textAlign: TextAlign.center,
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 10,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.40,
     ),
 )
 // ---
@@ -54,56 +80,82 @@ Text(
 )
 // ---
 Text(
-    '简单描述下方案背景与目标',
+    '默认',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: Colors.black,
-        fontSize: 16,
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 14,
         fontFamily: 'OPPO Sans 4.0',
         fontWeight: FontWeight.w400,
-        height: 1,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    '这是一个什么产品 / 功能，核心解决什么问题',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 14,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w400,
+        height: 1.43,
+    ),
+)
+// ---
+Text(
+    '@',
+    style: TextStyle(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        fontSize: 16,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
     ),
 )
 // ---
 Text(
     '随便聊聊',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF8696BB),
-        fontSize: 16,
-        fontFamily: 'Poppins',
-        fontWeight: FontWeight.w400,
-        height: 1.20,
+        color: const Color(0xFF0066FF) /* 颜色-Color-文字&图标-Label-couiColorLabelTheme-(Blue) */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0',
+        fontWeight: FontWeight.w500,
+        height: 1.40,
     ),
 )
 // ---
 Text(
     '交互验证',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF8696BB),
-        fontSize: 16,
-        fontFamily: 'Poppins',
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0',
         fontWeight: FontWeight.w400,
-        height: 1.20,
+        height: 1.40,
     ),
 )
 // ---
 Text(
     '视觉讨论',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF8696BB),
-        fontSize: 16,
-        fontFamily: 'Poppins',
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0',
         fontWeight: FontWeight.w400,
-        height: 1.20,
+        height: 1.40,
     ),
 )
 // ---
 Text(
-    '方案选择',
+    '方案PK',
+    textAlign: TextAlign.center,
     style: TextStyle(
-        color: const Color(0xFF8696BB),
-        fontSize: 16,
-        fontFamily: 'Poppins',
+        color: Colors.black.withValues(alpha: 0.54) /* 颜色-Color-文字&图标-Label-couiColorLabelSecondary */,
+        fontSize: 12,
+        fontFamily: 'OPPO Sans 4.0',
         fontWeight: FontWeight.w400,
-        height: 1.20,
+        height: 1.40,
     ),
 )

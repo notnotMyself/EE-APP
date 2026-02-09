@@ -24,6 +24,12 @@ import '../widgets/agent_profile_card.dart';
 import '../widgets/conversation_selector.dart';
 import '../widgets/voice_input_dialog.dart';
 
+/// 全局聊天模式状态 Provider
+///
+/// 当用户进入聊天模式（有消息）时设为 true，
+/// MainScaffold 监听此 Provider 来决定是否隐藏底部导航栏
+final chatModeActiveProvider = StateProvider<bool>((ref) => false);
+
 /// AI员工详情页面（整合对话功能）
 ///
 /// 基于 Figma 设计稿实现，展示AI员工信息和对话功能
@@ -69,6 +75,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   /// 选中的人物个性
   Personality? _selectedPersonality;
 
+  /// 当前选中的评审模式（默认为"随便聊聊"）
+  QuickAction _selectedMode = QuickActions.chat;
+
   @override
   void initState() {
     super.initState();
@@ -81,6 +90,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   @override
   void dispose() {
+    // 重置聊天模式状态，恢复导航栏显示
+    ref.read(chatModeActiveProvider.notifier).state = false;
     // 释放 conversation notifier
     if (_conversationId != null) {
       ref.invalidate(conversationNotifierProvider(_conversationId!));
@@ -328,25 +339,28 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     });
   }
 
-  /// 处理快捷功能点击
+  /// 处理快捷功能点击 - 选择评审模式
+  ///
+  /// 点击按钮不直接发消息，而是切换模式，
+  /// 输入框的 hintText 会随之变化
   void _onQuickActionTap(QuickAction action) {
-    String? message = action.initialMessage;
-
-    // 如果有 modeId，构建带模式前缀的消息
-    if (action.modeId != null && message != null) {
-      message = '[MODE:${action.modeId}] $message';
-    }
-
-    if (message != null && message.isNotEmpty) {
-      _sendMessageWithAttachments(message, List.from(_attachments));
-    }
+    setState(() {
+      _selectedMode = action;
+    });
   }
 
   /// 处理输入框提交
+  ///
+  /// 如果当前选中了非默认模式（有 modeId），
+  /// 自动在消息前加上 [MODE:xxx] 前缀
   void _onInputSubmit(String message) {
     if (message.isNotEmpty || _attachments.isNotEmpty) {
-      // 这里的逻辑已经在 _sendMessageWithAttachments 中处理了乐观更新
-      _sendMessageWithAttachments(message, List.from(_attachments));
+      String finalMessage = message;
+      // 如果选中了非默认模式，添加模式前缀
+      if (_selectedMode.modeId != null && message.isNotEmpty) {
+        finalMessage = '[MODE:${_selectedMode.modeId}] $message';
+      }
+      _sendMessageWithAttachments(finalMessage, List.from(_attachments));
     }
   }
 
@@ -366,6 +380,22 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           )
         : false;
 
+    // 判断是否有消息（决定输入框位置 + 导航栏显隐）
+    final hasMessages = _conversationId != null &&
+        ref.watch(
+          conversationNotifierProvider(_conversationId!).select(
+            (state) => state.messages.isNotEmpty,
+          ),
+        );
+    final isChatMode = hasMessages || _isSendingInitialMessage;
+
+    // 通知 MainScaffold 是否隐藏底部导航栏
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(chatModeActiveProvider.notifier).state = isChatMode;
+      }
+    });
+
     return Scaffold(
       backgroundColor: AgentProfileTheme.backgroundColor,
       resizeToAvoidBottomInset: true,
@@ -380,8 +410,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
               child: _buildUnifiedConversationView(),
             ),
 
-            // 底部输入区域
-            _buildInputSection(isKeyboardVisible, isStreaming),
+            // 底部输入区域（仅在聊天模式下显示）
+            if (isChatMode)
+              _buildInputSection(isKeyboardVisible, isStreaming),
           ],
         ),
       ),
@@ -432,9 +463,24 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   }
 
   /// 构建介绍视图（空会话时显示）
+  ///
+  /// 基于 Figma chris_ai 设计稿:
+  /// - 头像+名称在上方
+  /// - 输入框在中间位置（top: 379 / 800 ≈ 47% 位置）
+  /// - 胶囊快捷按钮在输入框下方
   Widget _buildIntroductionView() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final isKeyboardVisible = keyboardHeight > 0;
+
+    // 监听流式状态（用于禁用输入框）
+    final isStreaming = _conversationId != null
+        ? ref.watch(
+            conversationNotifierProvider(_conversationId!).select(
+              (state) => state.streamingState is StreamingStateStreaming ||
+                         state.streamingState is StreamingStateWaiting,
+            ),
+          )
+        : false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
@@ -453,10 +499,32 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
           const SizedBox(height: 40),
 
-          // 快捷功能按钮（仅 Chris Chen / design_validator 显示，键盘弹起时隐藏）
+          // 输入框（在中间位置，基于 Figma chris_ai_input 设计）
+          // hintText 根据当前选中的模式动态变化
+          // 对话未开始时输入框默认展开，显示附件等按钮
+          ExpandedChatInput(
+            hintText: _selectedMode.hintText,
+            onSubmit: _onInputSubmit,
+            attachments: _attachments,
+            onAttachmentRemove: _onAttachmentRemove,
+            onImageTap: _onImageTap,
+            onFileTap: _onFileTap,
+            onFigmaTap: _onFigmaTap,
+            onVoiceTap: _onVoiceTap,
+            enabled: !isStreaming && !_isInitializing,
+            initiallyExpanded: true,
+            selectedApp: _selectedApp,
+            onAppSelected: _onAppSelected,
+          ),
+
+          const SizedBox(height: 10),
+
+          // 胶囊快捷按钮（在输入框下方，基于 Figma chris-ai-fuction 设计）
+          // 点击按钮切换模式，选中的按钮蓝色高亮
           if (!isKeyboardVisible && widget.agent.role == 'design_validator') ...[
-            QuickActionRow(
+            QuickActionPillRow(
               actions: QuickActions.defaults,
+              selectedAction: _selectedMode,
               onActionTap: _onQuickActionTap,
             ),
           ],
@@ -610,6 +678,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       _pendingMessageContent = null;
       _pendingAttachments = null;
       _isSendingInitialMessage = false;
+      _selectedMode = QuickActions.chat; // 重置模式
     });
 
     // 创建全新的会话（不是加载已有的）
@@ -932,9 +1001,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 展开式输入框
+          // 展开式输入框（聊天模式下也使用模式对应的 hintText）
           ExpandedChatInput(
-            hintText: '简单描述下方案背景与目标',
+            hintText: _selectedMode.hintText,
             onSubmit: _onInputSubmit,
             attachments: _attachments,
             onAttachmentRemove: _onAttachmentRemove,

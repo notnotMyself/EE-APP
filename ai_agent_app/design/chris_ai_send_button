@@ -1,0 +1,21 @@
+Container(
+    width: 32,
+    height: 32,
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+    clipBehavior: Clip.antiAlias,
+    decoration: ShapeDecoration(
+        color: Colors.black.withValues(alpha: 0.90) /* 颜色-Color-文字&图标-Label-couiColorLabelPrimary */,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(88.89),
+        ),
+    ),
+    child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: 10,
+        children: [
+        ,
+        ],
+    ),
+)

@@ -164,17 +164,29 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     child: _buildHeader(),
                   ),
 
-                  // 中间插图区域（品牌插图）
+                  // 中间插图区域（Chris Chen 头像）
                   Positioned(
-                    left: 5,
-                    top: 122,
-                    child: Container(
-                      width: MediaQuery.of(context).size.width - 10,
-                      height: 400,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/Saly-11.png'),
-                          fit: BoxFit.contain,
+                    left: 0,
+                    right: 0,
+                    top: 140,
+                    child: Center(
+                      child: Container(
+                        width: 280,
+                        height: 280,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 40,
+                              offset: const Offset(0, 12),
+                              spreadRadius: 0,
+                            ),
+                          ],
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/chris_chen_avatar.jpeg'),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
