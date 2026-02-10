@@ -72,9 +72,9 @@ class WebSocketWriter:
         connection_manager: ConnectionManager,
         conversation_id: str,
         user_id: str,
-        initial_flush_interval: float = 0.01,  # 10ms首次刷新 (优化: 从50ms减少)
-        steady_flush_interval: float = 0.08,  # 80ms稳定刷新 (优化: 从100ms减少)
-        max_buffer_size: int = 15,  # 15字符触发刷新 (优化: 从30减少)
+        initial_flush_interval: float = 0.01,  # 10ms首次刷新
+        steady_flush_interval: float = 0.05,  # 50ms稳定刷新 (优化: 从80ms减少，更细粒度)
+        max_buffer_size: int = 10,  # 10字符触发刷新 (优化: 从15减少，更及时)
     ):
         self.websocket = websocket
         self.manager = connection_manager
@@ -95,6 +95,7 @@ class WebSocketWriter:
         self._accumulated_content = ""
         
         # 是否是首次输出（用于TTFT优化）
+        # 工具调用完成后也会重置，让工具后首个 chunk 立即推送
         self._is_first_output = True
 
     @property
@@ -242,6 +243,14 @@ class WebSocketWriter:
             logger.error(f"Failed to send tool_use: {e}")
             raise
 
+    def mark_resuming_after_tool(self) -> None:
+        """标记工具调用完成，下一个文本 chunk 视为"首次输出"立即刷新
+        
+        工具执行期间没有文本流式输出，完成后 Agent 可能突然快速产出大量 token。
+        重置首次输出标记，让工具后的第一个 chunk 立即推送，避免用户感知到"一大段突然出现"。
+        """
+        self._is_first_output = True
+
     async def write_tool_result(
         self,
         tool_id: str,
@@ -249,6 +258,9 @@ class WebSocketWriter:
         is_error: bool = False,
     ) -> None:
         """写入工具结果消息"""
+        # 工具完成后重置首次输出标记，让后续文本立即推送
+        self._is_first_output = True
+        
         message = WSMessage(
             type=MessageType.TOOL_RESULT,
             metadata={
