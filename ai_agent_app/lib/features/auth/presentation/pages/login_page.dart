@@ -196,7 +196,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                   Positioned(
                     left: 17,
                     right: 17,
-                    bottom: 130, // 调整位置，给按钮区域留出空间
+                    bottom: 164, // 调整位置，给按钮区域留出足够间距
                     child: _buildInputSection(isLoading),
                   ),
 
