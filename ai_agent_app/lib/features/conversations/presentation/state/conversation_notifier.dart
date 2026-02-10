@@ -25,6 +25,19 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
   Timer? _flushTimer;
   final List<String> _contentBuffer = [];
 
+  // 流式显示"打字机"效果：大块文本平滑逐步渲染
+  String _pendingDisplay = '';   // 等待显示的文本
+  Timer? _displayTimer;          // 逐步显示定时器
+
+  /// 每次 UI 更新最多显示的字符数（约 200 字/秒 = 6 字 × 33 帧）
+  static const int _maxCharsPerTick = 6;
+
+  /// 显示帧间隔：30ms ≈ 33fps，流畅且不过度消耗性能
+  static const Duration _displayTickInterval = Duration(milliseconds: 30);
+
+  /// 小于此阈值的内容直接显示，不走打字机动画（避免正常流式增加延迟）
+  static const int _instantDisplayThreshold = 30;
+
   // 流式状态跟踪（用于断线恢复）
   bool _isStreaming = false;
   DateTime? _streamingStartTime;
@@ -156,10 +169,20 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
 
   void _handleDisconnected() {
     // 断线时保存当前流式内容（避免丢失）
-    if (_isStreaming && _contentBuffer.isNotEmpty) {
+    if (_isStreaming) {
       _flushTimer?.cancel();
       _flushTimer = null;
-      _flushBuffer();
+      _displayTimer?.cancel();
+      _displayTimer = null;
+      // 将所有缓冲内容立即显示
+      if (_contentBuffer.isNotEmpty) {
+        _pendingDisplay += _contentBuffer.join();
+        _contentBuffer.clear();
+      }
+      if (_pendingDisplay.isNotEmpty) {
+        _updateDisplayState(_pendingDisplay);
+        _pendingDisplay = '';
+      }
     }
 
     state = state.copyWith(
@@ -330,9 +353,11 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
 
   /// 追加流式内容到缓冲区（批量更新优化）
   ///
-  /// 参考 claudecodeui 的节流策略：
-  /// - 只有在没有 timer 时才创建 timer
-  /// - 避免连续快速 chunk 导致 timer 被反复取消而永不触发
+  /// 两级缓冲架构：
+  /// 1. _contentBuffer + _flushTimer (50ms)：合并高频网络 chunk，减少处理次数
+  /// 2. _pendingDisplay + _displayTimer (25ms)：大块文本平滑逐步渲染（打字机效果）
+  ///
+  /// 小块文本（≤30 字符）跳过第二级，直接显示，保持低延迟。
   void _appendStreamingContent(String content) {
     _contentBuffer.add(content);
 
@@ -359,21 +384,69 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
     }
   }
 
-  /// 刷新缓冲区到 UI
+  /// 第一级刷新：将网络缓冲区内容转移到显示层
+  ///
+  /// 小块文本直接更新 UI（零额外延迟）；
+  /// 大块文本进入打字机队列，平滑逐步渲染。
   void _flushBuffer() {
     if (_contentBuffer.isEmpty) return;
 
     final buffered = _contentBuffer.join();
     _contentBuffer.clear();
 
+    // 小块 + 没有正在排队的内容 → 直接显示，保持流式低延迟体验
+    if (buffered.length <= _instantDisplayThreshold && _pendingDisplay.isEmpty) {
+      _updateDisplayState(buffered);
+      return;
+    }
+
+    // 大块或已有排队内容 → 进入打字机队列
+    _pendingDisplay += buffered;
+    _ensureDisplayTimerRunning();
+  }
+
+  /// 启动打字机显示定时器（如果尚未运行）
+  void _ensureDisplayTimerRunning() {
+    if (_displayTimer != null) return;
+
+    // 立即显示第一批，减少感知延迟
+    _dripNextChunk();
+
+    // 如果还有剩余，启动周期定时器
+    if (_pendingDisplay.isNotEmpty) {
+      _displayTimer = Timer.periodic(_displayTickInterval, (_) {
+        _dripNextChunk();
+        if (_pendingDisplay.isEmpty) {
+          _displayTimer?.cancel();
+          _displayTimer = null;
+        }
+      });
+    }
+  }
+
+  /// 从打字机队列取出一小块内容显示
+  void _dripNextChunk() {
+    if (_pendingDisplay.isEmpty) return;
+
+    final n = _pendingDisplay.length <= _maxCharsPerTick
+        ? _pendingDisplay.length
+        : _maxCharsPerTick;
+    final chunk = _pendingDisplay.substring(0, n);
+    _pendingDisplay = _pendingDisplay.substring(n);
+
+    _updateDisplayState(chunk);
+  }
+
+  /// 更新流式显示状态（追加内容到 UI）
+  void _updateDisplayState(String content) {
     state = state.copyWith(
       streamingState: state.streamingState.maybeMap(
         streaming: (s) => StreamingState.streaming(
-          content: s.content + buffered,
+          content: s.content + content,
           startedAt: s.startedAt,
         ),
         orElse: () => StreamingState.streaming(
-          content: buffered,
+          content: content,
           startedAt: _streamingStartTime ?? DateTime.now(),
         ),
       ),
@@ -384,22 +457,29 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
   /// 
   /// 合并所有状态更新为单次操作，避免中间状态导致 UI 重复渲染
   void _finalizeMessageAndResetTool() {
-    // 先刷新所有缓冲（不触发状态更新，直接合并到缓冲）
+    // 先停止所有定时器
     _flushTimer?.cancel();
     _flushTimer = null;
+    _displayTimer?.cancel();
+    _displayTimer = null;
     
-    // 合并缓冲内容但不更新状态
+    // 合并所有缓冲内容：网络缓冲 + 打字机队列
     String bufferedContent = '';
     if (_contentBuffer.isNotEmpty) {
       bufferedContent = _contentBuffer.join();
       _contentBuffer.clear();
+    }
+    // 打字机队列中还没显示完的内容也要一并加入
+    if (_pendingDisplay.isNotEmpty) {
+      bufferedContent += _pendingDisplay;
+      _pendingDisplay = '';
     }
 
     // 重置流式状态
     _isStreaming = false;
     _streamingStartTime = null;
 
-    // 获取完整的流式内容（现有内容 + 缓冲内容）
+    // 获取完整的流式内容（已显示内容 + 未显示缓冲内容）
     final existingContent = state.streamingState.maybeMap(
       streaming: (s) => s.content,
       orElse: () => '',
@@ -446,10 +526,22 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
 
   /// 完成消息（保留用于 SSE fallback）
   void _finalizeMessage() {
-    // 先刷新所有缓冲
+    // 先停止所有定时器并刷新所有缓冲
     _flushTimer?.cancel();
     _flushTimer = null;
-    _flushBuffer();
+    _displayTimer?.cancel();
+    _displayTimer = null;
+
+    // 合并所有未显示的内容
+    if (_contentBuffer.isNotEmpty) {
+      _pendingDisplay += _contentBuffer.join();
+      _contentBuffer.clear();
+    }
+    // 将所有 pending 内容直接显示
+    if (_pendingDisplay.isNotEmpty) {
+      _updateDisplayState(_pendingDisplay);
+      _pendingDisplay = '';
+    }
 
     // 重置流式状态
     _isStreaming = false;
@@ -564,6 +656,7 @@ class ConversationNotifier extends StateNotifier<ConversationViewState> {
   @override
   void dispose() {
     _flushTimer?.cancel();
+    _displayTimer?.cancel();
     _wsClient?.dispose();
     super.dispose();
   }
