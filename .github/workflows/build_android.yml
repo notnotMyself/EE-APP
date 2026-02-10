@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/design-feed" ]
     paths:
       - 'ai_agent_app/**'
       - '.github/workflows/build_android.yml'
