@@ -99,10 +99,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
   }
 
-  /// 悬浮导航栏总高度（渐变区 + 胶囊 + 系统条），用于给内容区预留底部空间，避免 RenderFlex 溢出
+  /// 悬浮导航栏总高度（渐变区 + 胶囊 + 底部安全区），用于给内容区预留底部空间，避免 RenderFlex 溢出
   static double _floatingNavBarHeight(BuildContext context) {
-    const double pillArea = 16 + 58 + 32; // topPadding + pillHeight + systemBarHeight
-    return pillArea + MediaQuery.paddingOf(context).bottom;
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    final bottomPad = bottomSafe > 0 ? bottomSafe : 8.0;
+    return 16 + 56 + bottomPad; // topPadding + pillHeight + bottomPadding
   }
 
   @override
@@ -137,113 +138,84 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     );
   }
 
-  /// 构建悬浮毛玻璃胶囊导航栏 + 系统导航条
+  /// 构建悬浮毛玻璃胶囊导航栏
   Widget _buildFloatingNavBar(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // === 导航栏区域 ===
-        Container(
-          padding: const EdgeInsets.only(
-            top: 16,
-            left: 16,
-            right: 16,
-          ),
-          // 顶部渐变遮罩（从透明到半透明背景，平滑过渡内容）
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment(0.50, 0.00),
-              end: Alignment(0.50, 1.00),
-              colors: [Color(0x00F0F1F2), Color(0xCCF0F1F2)],
-            ),
-          ),
-          child: _buildGlassPill(),
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    return Container(
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 16,
+        right: 16,
+        bottom: bottomSafe > 0 ? bottomSafe : 8,
+      ),
+      // 顶部渐变遮罩（从透明到半透明背景，平滑过渡内容）
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment(0.50, 0.00),
+          end: Alignment(0.50, 1.00),
+          colors: [Color(0x00F0F1F2), Color(0xCCF0F1F2)],
         ),
-
-        // === 系统手势导航条 ===
-        Container(
-          width: double.infinity,
-          height: 32,
-          decoration: const BoxDecoration(
-            color: Color(0xCCF0F1F2),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Center(
-            child: Container(
-              width: 120,
-              height: 4,
-              decoration: ShapeDecoration(
-                color: Colors.black.withOpacity(0.50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
+      child: _buildGlassPill(),
     );
   }
 
   /// 构建毛玻璃胶囊本体
   Widget _buildGlassPill() {
+    const double pillHeight = 56;
+    const borderRadius = BorderRadius.all(Radius.circular(28));
+
     return SizedBox(
-      height: 56,
+      height: pillHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // --- 内层阴影/边框层（向右下偏移，营造玻璃厚度感） ---
+          // --- 底层柔和阴影（营造浮起感） ---
           Positioned(
-            left: 8,
-            top: 12,
-            right: 8,
-            bottom: -8,
+            left: 6,
+            right: 6,
+            top: 6,
+            bottom: -4,
             child: Container(
-              decoration: ShapeDecoration(
-                gradient: LinearGradient(
-                  begin: const Alignment(0.50, 0.00),
-                  end: const Alignment(0.50, 1.00),
-                  colors: [
-                    Colors.white.withOpacity(0.50),
-                    Colors.white,
-                  ],
-                ),
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(
-                    width: 1.60,
-                    color: Colors.white.withOpacity(0.3),
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
-                  borderRadius: BorderRadius.circular(100),
-                ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // --- 外层主体：毛玻璃 + 渐变 ---
+          // --- 外层主体：毛玻璃 + 渐变 + 高光边框 ---
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: borderRadius,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: const Alignment(0.50, 0.00),
-                      end: const Alignment(0.50, 1.00),
+                      begin: const Alignment(0.0, -1.0),
+                      end: const Alignment(0.0, 1.0),
                       colors: [
-                        Colors.white.withOpacity(0.60),
-                        Colors.white.withOpacity(0.92),
+                        Colors.white.withOpacity(0.72),
+                        Colors.white.withOpacity(0.56),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x19000000),
-                        blurRadius: 32,
-                        offset: Offset(0, 6),
-                        spreadRadius: 0,
-                      ),
-                    ],
+                    borderRadius: borderRadius,
+                    border: Border.all(
+                      width: 0.5,
+                      color: Colors.white.withOpacity(0.80),
+                    ),
                   ),
                 ),
               ),

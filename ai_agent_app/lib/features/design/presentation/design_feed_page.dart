@@ -19,9 +19,6 @@ class DesignColors {
   static const Color tagBackground = Color(0xFFEFF6FF);
   static const Color chipBackground = Color(0xFFF9FAFB);
   static const Color chipActiveBackground = Color(0xFF101828);
-  static const Color purpleGradientStart = Color(0xFF432DD7);
-  static const Color purpleGradientEnd = Color(0xFF6366F1);
-  static const Color purpleLight = Color(0xFFE0E7FF);
 }
 
 /// 设计内容展示页面
@@ -369,7 +366,6 @@ class _DesignFeedPageState extends State<DesignFeedPage>
             const SizedBox(height: 12),
             _buildArticleList(),
             const SizedBox(height: 20),
-            _buildAIConsultantCard(),
           ],
         ),
       ),
@@ -378,35 +374,15 @@ class _DesignFeedPageState extends State<DesignFeedPage>
 
   /// 构建Trending Updates标题
   Widget _buildTrendingHeader() {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Trending Updates',
-          style: TextStyle(
-            color: DesignColors.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            height: 1.40,
-            letterSpacing: -0.95,
-          ),
-        ),
-        Row(
-          children: [
-            Text(
-              'View All',
-              style: TextStyle(
-                color: DesignColors.primaryBlue,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.33,
-              ),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 16, color: DesignColors.primaryBlue),
-          ],
-        ),
-      ],
+    return const Text(
+      'Trending Updates',
+      style: TextStyle(
+        color: DesignColors.textPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        height: 1.40,
+        letterSpacing: -0.95,
+      ),
     );
   }
 
@@ -574,76 +550,6 @@ class _DesignFeedPageState extends State<DesignFeedPage>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// 构建AI顾问卡片
-  Widget _buildAIConsultantCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            DesignColors.purpleGradientStart,
-            DesignColors.purpleGradientEnd,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: DesignColors.purpleGradientStart.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'AI Design Consultant',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              height: 1.40,
-              letterSpacing: -0.45,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Stuck on a creative block? Get real-time feedback and suggestions from our specialized AI assistant.',
-            style: TextStyle(
-              color: DesignColors.purpleLight,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              height: 1.63,
-              letterSpacing: -0.15,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: const Text(
-              'Start Consultation',
-              style: TextStyle(
-                color: DesignColors.purpleGradientStart,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                height: 1.43,
-                letterSpacing: -0.15,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
