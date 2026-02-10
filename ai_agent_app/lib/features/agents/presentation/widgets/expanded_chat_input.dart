@@ -111,6 +111,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   final _focusNode = FocusNode();
   late bool _isExpanded = widget.initiallyExpanded;
   bool _hasText = false;
+  bool _isFocused = false;
 
   @override
   void initState() {
@@ -136,7 +137,11 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   void _onFocusChanged() {
-    if (_focusNode.hasFocus && !_isExpanded) {
+    final focused = _focusNode.hasFocus;
+    if (focused != _isFocused) {
+      setState(() => _isFocused = focused);
+    }
+    if (focused && !_isExpanded) {
       setState(() => _isExpanded = true);
     }
   }
@@ -289,14 +294,21 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 展开卡片的装饰样式
+  /// 仅在输入框获得焦点时显示蓝色高亮边框，否则显示淡灰色边框
   ShapeDecoration get _expandedCardDecoration => ShapeDecoration(
     color: Colors.white.withOpacity(0.50),
     shape: RoundedRectangleBorder(
-      side: const BorderSide(
-        width: 1.3,
-        strokeAlign: BorderSide.strokeAlignOutside,
-        color: Color(0xFF0066FF), // 蓝色边框
-      ),
+      side: _isFocused
+          ? const BorderSide(
+              width: 1.3,
+              strokeAlign: BorderSide.strokeAlignOutside,
+              color: Color(0xFF0066FF), // 蓝色高亮边框（聚焦时）
+            )
+          : BorderSide(
+              width: 1,
+              strokeAlign: BorderSide.strokeAlignOutside,
+              color: Colors.black.withOpacity(0.08), // 淡灰色边框（未聚焦时）
+            ),
       borderRadius: BorderRadius.circular(20),
     ),
     shadows: const [
@@ -474,7 +486,14 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
             fontWeight: FontWeight.w400,
             height: 1.4, // 保持提示文字行高一致
           ),
+          // 修复: 显式移除所有边框类型，防止部分机型显示内层输入框边框
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          filled: false,
           // 修复: 添加适当的内边距，避免文字被裁剪
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
           isDense: false, // 修复: 不使用 isDense，让输入框有正常高度

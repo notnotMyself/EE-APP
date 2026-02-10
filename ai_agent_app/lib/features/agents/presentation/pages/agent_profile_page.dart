@@ -30,6 +30,12 @@ import '../widgets/voice_input_dialog.dart';
 /// MainScaffold 监听此 Provider 来决定是否隐藏底部导航栏
 final chatModeActiveProvider = StateProvider<bool>((ref) => false);
 
+/// Debug 模拟键盘弹起状态 Provider
+///
+/// 仅用于 Web/桌面端调试，模拟手机键盘弹起效果。
+/// 在 kDebugMode 下可通过 MainScaffold 的调试按钮切换。
+final debugKeyboardVisibleProvider = StateProvider<bool>((ref) => false);
+
 /// AI员工详情页面（整合对话功能）
 ///
 /// 基于 Figma 设计稿实现，展示AI员工信息和对话功能
@@ -366,9 +372,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取键盘高度
+    // 获取键盘高度（真实 + debug 模拟）
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isKeyboardVisible = keyboardHeight > 0;
+    final debugKeyboard = ref.watch(debugKeyboardVisibleProvider);
+    final isKeyboardVisible = keyboardHeight > 0 || debugKeyboard;
 
     // 监听流式状态
     final isStreaming = _conversationId != null
@@ -470,7 +477,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   /// - 胶囊快捷按钮在输入框下方
   Widget _buildIntroductionView() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final isKeyboardVisible = keyboardHeight > 0;
+    final debugKeyboard = ref.watch(debugKeyboardVisibleProvider);
+    final isKeyboardVisible = keyboardHeight > 0 || debugKeyboard;
 
     // 监听流式状态（用于禁用输入框）
     final isStreaming = _conversationId != null
@@ -529,8 +537,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             ),
           ],
 
-          // 底部间距
-          SizedBox(height: isKeyboardVisible ? 16 : 32),
+          // 底部间距：键盘弹起时输入框距键盘顶部 24dp
+          SizedBox(height: isKeyboardVisible ? 24 : 32),
         ],
       ),
     );
@@ -985,7 +993,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         AgentProfileTheme.horizontalPadding,
         12,
         AgentProfileTheme.horizontalPadding,
-        isKeyboardVisible ? 8 : 24,
+        24, // 输入框底部间距：键盘弹起时距键盘顶部 24dp
       ),
       decoration: hasMessages
           ? BoxDecoration(

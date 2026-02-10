@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -111,6 +112,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     // 监听聊天模式状态：聊天中隐藏底部导航栏
     final isChatActive = ref.watch(chatModeActiveProvider);
+    // 检测键盘是否弹起：真实键盘 + debug 模拟
+    final realKeyboard = MediaQuery.of(context).viewInsets.bottom > 0;
+    final debugKeyboard = ref.watch(debugKeyboardVisibleProvider);
+    final isKeyboardVisible = realKeyboard || debugKeyboard;
 
     return Scaffold(
       backgroundColor: _NavDesign.backgroundColor,
@@ -124,15 +129,59 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
             child: widget.child,
           ),
 
-          // === 悬浮导航栏：固定在底部（聊天模式下隐藏） ===
-          if (!isChatActive)
+          // === 悬浮导航栏：固定在底部（聊天模式或键盘弹起时隐藏） ===
+          if (!isChatActive && !isKeyboardVisible)
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: _buildFloatingNavBar(context),
             ),
+
+          // === Debug: 模拟键盘弹起开关（仅 debug 模式显示） ===
+          if (kDebugMode)
+            Positioned(
+              right: 8,
+              top: MediaQuery.paddingOf(context).top + 8,
+              child: _buildDebugKeyboardToggle(debugKeyboard),
+            ),
         ],
+      ),
+    );
+  }
+
+  /// Debug 模式：模拟键盘弹起/收回的悬浮按钮
+  Widget _buildDebugKeyboardToggle(bool isSimulating) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(debugKeyboardVisibleProvider.notifier).state = !isSimulating;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSimulating ? Colors.orange : Colors.black54,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isSimulating ? Icons.keyboard_hide : Icons.keyboard,
+              size: 16,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isSimulating ? 'KB ON' : 'KB OFF',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
