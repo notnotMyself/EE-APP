@@ -143,6 +143,15 @@ async def get_design_stats() -> Dict[str, Any]:
         )
 
 
+## 图片代理的通用 CORS 响应头
+_CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+    "Cache-Control": "public, max-age=86400",
+}
+
+
 @router.get("/media", summary="图片代理")
 async def proxy_media(url: str, convert: bool = True):
     """
@@ -186,13 +195,16 @@ async def proxy_media(url: str, convert: bool = True):
         return Response(
             content=cache_file.read_bytes(),
             media_type=content_type,
-            headers={"Cache-Control": "public, max-age=86400"}
+            headers=_CORS_HEADERS,
         )
 
     # 从远程获取
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, follow_redirects=True)
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0),
+            follow_redirects=True,
+        ) as client:
+            response = await client.get(url)
             response.raise_for_status()
 
             image_bytes = response.content
@@ -220,8 +232,10 @@ async def proxy_media(url: str, convert: bool = True):
             return Response(
                 content=image_bytes,
                 media_type=content_type,
-                headers={"Cache-Control": "public, max-age=86400"}
+                headers=_CORS_HEADERS,
             )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="获取图片超时，请稍后重试")
     except httpx.HTTPError as e:
         raise HTTPException(status_code=502, detail=f"获取图片失败: {str(e)}")
 

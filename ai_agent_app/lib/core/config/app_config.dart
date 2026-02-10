@@ -15,7 +15,6 @@ class AppConfig {
   static const String localDevIp = '10.101.138.205';
   
   static String get apiBaseUrl {
-    print('🔍 [AppConfig] Environment: $environment');
     switch (environment) {
       case 'prod':
         return 'https://super-niuma-cn.allawntech.com';

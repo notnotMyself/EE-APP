@@ -294,11 +294,45 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: height,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: DesignColors.chipBackground,
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: DesignColors.textSecondary.withOpacity(0.4),
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: DesignColors.chipBackground,
-                    child: const Center(
-                      child: Icon(Icons.broken_image, color: DesignColors.textSecondary),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_outlined,
+                            size: 28, color: DesignColors.textSecondary.withOpacity(0.4)),
+                        const SizedBox(height: 4),
+                        Text(
+                          post.author.isNotEmpty ? post.author : '',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: DesignColors.textSecondary.withOpacity(0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   );
                 },

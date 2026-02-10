@@ -2,11 +2,14 @@ import 'package:dio/dio.dart';
 import '../../../core/config/app_config.dart';
 import 'design_post.dart';
 
+/// 缓存 baseUrl，避免每次调用都走 getter 逻辑
+final String _cachedBaseUrl = AppConfig.apiBaseUrl;
+
 /// 将外部媒体 URL 转换为代理 URL
 String toProxyUrl(String originalUrl) {
   if (originalUrl.isEmpty) return originalUrl;
   // 使用后端代理解决 CORS 问题
-  return '${AppConfig.apiBaseUrl}/api/v1/design-feed/media?url=${Uri.encodeComponent(originalUrl)}';
+  return '$_cachedBaseUrl/api/v1/design-feed/media?url=${Uri.encodeComponent(originalUrl)}';
 }
 
 /// 设计内容仓库
