@@ -505,13 +505,25 @@ class ConversationService:
 """
 
             assistant_content = ""
+            saw_text_delta = False
             async for event in self.agent_service.execute_query(
                 prompt=summary_prompt,
                 agent_role=agent_role,  # 使用 role string
             ):
                 event_type = event.get("type")
                 # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
-                if event_type in ("text_chunk", "text_delta"):
+                # 如果已收到 text_delta，则忽略后续完整块，避免重复内容。
+                if event_type == "text_delta":
+                    saw_text_delta = True
+                    chunk = event.get("content", "")
+                    assistant_content += chunk
+                    yield json.dumps({
+                        "type": "text_chunk",
+                        "content": chunk
+                    })
+                elif event_type == "text_chunk":
+                    if saw_text_delta:
+                        continue
                     chunk = event.get("content", "")
                     assistant_content += chunk
                     yield json.dumps({
@@ -579,6 +591,7 @@ class ConversationService:
 
         # 4. 流式生成回复（使用Agent SDK Service）
         assistant_content = ""
+        saw_text_delta = False
 
         # Agent SDK Service 使用 execute_query 方法
         async for event in self.agent_service.execute_query(
@@ -587,7 +600,15 @@ class ConversationService:
         ):
             event_type = event.get("type")
             # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
-            if event_type in ("text_chunk", "text_delta"):
+            # 如果已收到 text_delta，则忽略后续完整块，避免重复内容。
+            if event_type == "text_delta":
+                saw_text_delta = True
+                chunk = event.get("content", "")
+                assistant_content += chunk
+                yield chunk
+            elif event_type == "text_chunk":
+                if saw_text_delta:
+                    continue
                 chunk = event.get("content", "")
                 assistant_content += chunk
                 yield chunk
@@ -952,13 +973,20 @@ class ConversationService:
 请给用户一个友好的回复（1-2句话）。
 """
 
+            saw_text_delta = False
             async for event in self.agent_service.execute_query(
                 prompt=summary_prompt,
                 agent_role=agent_role,
             ):
                 event_type = event.get("type")
                 # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
-                if event_type in ("text_chunk", "text_delta"):
+                # 如果已收到 text_delta，则忽略后续完整块，避免重复内容。
+                if event_type == "text_delta":
+                    saw_text_delta = True
+                    await ws_writer.write_text_chunk(event.get("content", ""))
+                elif event_type == "text_chunk":
+                    if saw_text_delta:
+                        continue
                     await ws_writer.write_text_chunk(event.get("content", ""))
 
             # 4. 保存AI回复
@@ -1049,6 +1077,7 @@ class ConversationService:
             except asyncio.CancelledError:
                 pass  # 正常取消
 
+        saw_text_delta = False
         async for event in self.agent_service.execute_query(
             prompt=full_prompt,
             agent_role=agent_role,
@@ -1056,7 +1085,13 @@ class ConversationService:
         ):
             event_type = event.get("type")
             # 支持细粒度流式输出 (text_delta) 和完整块 (text_chunk)
-            if event_type in ("text_chunk", "text_delta"):
+            # 如果已收到 text_delta，则忽略后续完整块，避免重复内容。
+            if event_type == "text_delta":
+                saw_text_delta = True
+                await ws_writer.write_text_chunk(event.get("content", ""))
+            elif event_type == "text_chunk":
+                if saw_text_delta:
+                    continue
                 await ws_writer.write_text_chunk(event.get("content", ""))
             elif event_type == "tool_use":
                 # 取消之前的进度任务（如果有）
@@ -1180,4 +1215,3 @@ class ConversationService:
         except Exception as e:
             # 标题生成失败不应影响对话流程
             logger.warning(f"Failed to auto-generate conversation title: {e}")
-
