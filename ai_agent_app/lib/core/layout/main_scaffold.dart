@@ -36,6 +36,14 @@ class MainScaffold extends ConsumerStatefulWidget {
     required this.location,
   });
 
+  /// 悬浮导航栏总高度（渐变区 + 胶囊 + 底部安全区）
+  /// 公开供子页面添加滚动底部留白，确保最后一项可滚动到导航栏上方
+  static double floatingNavBarHeight(BuildContext context) {
+    final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    final bottomPad = bottomSafe > 0 ? bottomSafe : 8.0;
+    return 16 + 56 + bottomPad; // topPadding + pillHeight + bottomPadding
+  }
+
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
@@ -99,30 +107,21 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
   }
 
-  /// 悬浮导航栏总高度（渐变区 + 胶囊 + 底部安全区），用于给内容区预留底部空间，避免 RenderFlex 溢出
-  static double _floatingNavBarHeight(BuildContext context) {
-    final bottomSafe = MediaQuery.paddingOf(context).bottom;
-    final bottomPad = bottomSafe > 0 ? bottomSafe : 8.0;
-    return 16 + 56 + bottomPad; // topPadding + pillHeight + bottomPadding
-  }
-
   @override
   Widget build(BuildContext context) {
     // 监听聊天模式状态：聊天中隐藏底部导航栏
     final isChatActive = ref.watch(chatModeActiveProvider);
-    final bottomPadding = isChatActive ? 0.0 : _floatingNavBarHeight(context);
 
     return Scaffold(
       backgroundColor: _NavDesign.backgroundColor,
       // 使用 Stack 让导航栏悬浮在内容上方
+      // 内容层不添加底部留白，让内容自然延伸到导航栏下方（悬浮效果）
+      // 各子页面的可滚动区域自行通过 MainScaffold.floatingNavBarHeight() 添加底部 padding
       body: Stack(
         children: [
-          // === 内容层：占满全屏，底部预留导航栏高度，避免内容被遮挡导致溢出 ===
+          // === 内容层：占满全屏，内容延伸到导航栏下方 ===
           Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: bottomPadding),
-              child: widget.child,
-            ),
+            child: widget.child,
           ),
 
           // === 悬浮导航栏：固定在底部（聊天模式下隐藏） ===

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import '../../../agents/presentation/theme/agent_profile_theme.dart';
+import '../../../../core/layout/main_scaffold.dart';
 
 /// OPPO Sans 字体家族名称
 const String _oppoSansFamily = 'PingFang SC';
@@ -70,7 +71,8 @@ class ProfilePage extends ConsumerWidget {
 
                   // Logout Button
                   _buildLogoutButton(context),
-                  const SizedBox(height: 32),
+                  // 底部留白，避免被悬浮导航栏遮挡
+                  SizedBox(height: MainScaffold.floatingNavBarHeight(context)),
                 ],
               ),
             ),

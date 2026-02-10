@@ -5,6 +5,8 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../data/design_post.dart';
 import '../data/design_repository.dart';
+import 'widgets/dio_image.dart';
+import '../../../core/layout/main_scaffold.dart';
 
 /// 设计颜色常量 - 基于 Figma 设计稿
 class DesignColors {
@@ -257,6 +259,9 @@ class _DesignFeedPageState extends State<DesignFeedPage>
     // 只取有图片的帖子
     final postsWithMedia = _posts!.where((p) => p.mediaUrls.isNotEmpty).toList();
 
+    // 获取悬浮导航栏高度，为滚动内容底部留白
+    final navBarHeight = MainScaffold.floatingNavBarHeight(context);
+
     return RefreshIndicator(
       onRefresh: _loadDesignPosts,
       child: Padding(
@@ -265,8 +270,13 @@ class _DesignFeedPageState extends State<DesignFeedPage>
           crossAxisCount: 2,
           mainAxisSpacing: 16,
           crossAxisSpacing: 10,
-          itemCount: postsWithMedia.length,
+          // 额外 +1 项作为底部留白占位
+          itemCount: postsWithMedia.length + 1,
           itemBuilder: (context, index) {
+            // 最后一项为底部留白，确保最后的卡片可以滚动到导航栏上方
+            if (index == postsWithMedia.length) {
+              return SizedBox(height: navBarHeight);
+            }
             return _buildMasonryItem(postsWithMedia[index], index);
           },
         ),
@@ -289,13 +299,12 @@ class _DesignFeedPageState extends State<DesignFeedPage>
         ),
         clipBehavior: Clip.antiAlias,
         child: post.mediaUrls.isNotEmpty
-            ? Image.network(
-                post.mediaUrls[0],
+            ? DioImage(
+                url: post.mediaUrls[0],
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: height,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
+                loadingBuilder: (context) {
                   return Container(
                     color: DesignColors.chipBackground,
                     child: Center(
@@ -305,16 +314,12 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: DesignColors.textSecondary.withOpacity(0.4),
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
                         ),
                       ),
                     ),
                   );
                 },
-                errorBuilder: (context, error, stackTrace) {
+                errorBuilder: (context, error) {
                   return Container(
                     color: DesignColors.chipBackground,
                     child: Column(
@@ -389,10 +394,15 @@ class _DesignFeedPageState extends State<DesignFeedPage>
 
   /// 构建AI资讯Tab内容
   Widget _buildInformationTab() {
+    final navBarHeight = MainScaffold.floatingNavBarHeight(context);
+
     return RefreshIndicator(
       onRefresh: _loadDesignPosts,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.only(
+          left: 20, right: 20, top: 16,
+          bottom: navBarHeight + 16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -500,10 +510,10 @@ class _DesignFeedPageState extends State<DesignFeedPage>
               ),
               clipBehavior: Clip.antiAlias,
               child: post.mediaUrls.isNotEmpty
-                  ? Image.network(
-                      post.mediaUrls[0],
+                  ? DioImage(
+                      url: post.mediaUrls[0],
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
+                      errorBuilder: (context, error) {
                         return const Center(
                           child: Icon(Icons.image, color: DesignColors.textSecondary),
                         );
@@ -722,11 +732,11 @@ class _DesignDetailCard extends StatelessWidget {
                               ),
                               clipBehavior: Clip.antiAlias,
                               child: post.avatarUrl.isNotEmpty
-                                  ? Image.network(
-                                      post.avatarUrl,
+                                  ? DioImage(
+                                      url: post.avatarUrl,
                                       fit: BoxFit.cover,
                                       errorBuilder:
-                                          (context, error, stackTrace) {
+                                          (context, error) {
                                         return const Center(
                                           child: Icon(
                                             Icons.person,
@@ -813,10 +823,10 @@ class _DesignDetailCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(30),
                               ),
                             ),
-                            child: Image.network(
-                              post.mediaUrls[0],
+                            child: DioImage(
+                              url: post.mediaUrls[0],
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
+                              errorBuilder: (context, error) {
                                 return const Center(
                                   child: Icon(
                                     Icons.broken_image,
