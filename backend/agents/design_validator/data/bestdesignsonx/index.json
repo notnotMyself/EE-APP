@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-02-04T16:07:25.491828",
+  "last_updated": "2026-02-10T11:52:57.061703",
   "source": "bestdesignsonx.com",
   "posts": {
     "a41e4836fcea": {
@@ -1013,6 +1013,207 @@
         "设计"
       ],
       "fetched_at": "2026-02-04T16:07:24.645577"
+    },
+    "93fa4a3e6344": {
+      "id": "93fa4a3e6344",
+      "author": "Areeba",
+      "username": "areebadesigns",
+      "content": "Onto 2nd @framer template Still in WIP, thoughts?",
+      "x_url": "https://x.com/areebadesigns/status/2019459299148226775",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019458848613101568/vid/avc1/1182x874/vPsegYMPoJgfxgSK.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019458848613101568/img/ed_QYlTL2oEWNuaL-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1962180523268169728/miwHM8uB_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:27.073748"
+    },
+    "2c8185d7fa31": {
+      "id": "2c8185d7fa31",
+      "author": "erik",
+      "username": "flowstated",
+      "content": "rewind anytime",
+      "x_url": "https://x.com/flowstated/status/2019882228512354729",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019878092542492672/vid/avc1/1068x1080/0C3SEtxaOcBInOfC.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019878092542492672/img/pxM6a0ZFu1PEtF6t-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/2002013850141409281/u9tuYzub_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:30.287442"
+    },
+    "ccd476ecaba0": {
+      "id": "ccd476ecaba0",
+      "author": "nanda",
+      "username": "nandafyi",
+      "content": "found out about @seflless's slowmo package the other day, and it's so good for debugging animations",
+      "x_url": "https://x.com/nandafyi/status/2019829782326984748",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019829697618800642/vid/avc1/2048x1848/A49WZviSCLcwpoho.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019829697618800642/img/6iWYDqLPwst7RVhe-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1592601726997385217/O8nZqwHZ_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:34.526661"
+    },
+    "0bdcc5b7a615": {
+      "id": "0bdcc5b7a615",
+      "author": "Call me Oz",
+      "username": "ozenua_",
+      "content": "10/10 website built for 10/10 clients",
+      "x_url": "https://x.com/ozenua_/status/2019693332562342146",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019691889465679873/vid/avc1/3418x1970/B5anAVBWH_svh9Wt.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019691889465679873/img/_RyOlhVW8cM8B888-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1939053943348203520/kj22Apfd_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:41.605885"
+    },
+    "47586797d5eb": {
+      "id": "47586797d5eb",
+      "author": "Adrian",
+      "username": "adriankuleszo",
+      "content": "Droxy bento micro-animations. Bentos without motion feel flat. A little hover state goes a long way",
+      "x_url": "https://x.com/adriankuleszo/status/2019776928908275845",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019776861375692800/vid/avc1/852x720/1MpMLebv8Bm6fvlL.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019776861375692800/img/9HjolncG_gxNRKrR-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1997267301494640640/hy2F-JHl_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:44.665245"
+    },
+    "00f37443bad4": {
+      "id": "00f37443bad4",
+      "author": "Ammy",
+      "username": "ammybuilds",
+      "content": "This font is so awesome. Instant download.",
+      "x_url": "https://x.com/ammybuilds/status/2019934675515633747",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019840873320820736/vid/avc1/1080x1080/cZhV1gO9An0j-0yL.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019840873320820736/img/ivdand8oiITcs_ZB-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1883243296228515840/aJ2rQdf5_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:47.709026"
+    },
+    "624a0339e1bf": {
+      "id": "624a0339e1bf",
+      "author": "Mikkel Malmberg",
+      "username": "mikker",
+      "content": "I've built an entirely new, 100% native, extendable, themeable, modal cmd-space launcher for macOS. Meet Tuna. https://tunaformac.com",
+      "x_url": "https://x.com/mikker/status/2019689268990595580",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019689219242045441/vid/avc1/720x720/zhX5A2uKRtBgTlij.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019689219242045441/img/ZPF9nBqKUS8Ch3lU-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1697183160834953216/YUmUdc8R_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:50.762842"
+    },
+    "03030cff0365": {
+      "id": "03030cff0365",
+      "author": "Kailash",
+      "username": "kail_designs",
+      "content": "Can't believe this is a government website",
+      "x_url": "https://x.com/kail_designs/status/2019702730613506409",
+      "media_urls": [],
+      "video_urls": [
+        {
+          "src": "https://cdn.bestdesignsonx.com/amplify_video/2019702621712551936/vid/avc1/2092x1080/v0hHxSddjKlxN5N-.mp4",
+          "poster": "https://cdn.bestdesignsonx.com/amplify_video_thumb/2019702621712551936/img/xEVGN4hJpUD7u9sm-thumbnail.avif"
+        }
+      ],
+      "has_video": true,
+      "avatar_url": "https://pbs.twimg.com/profile_images/1781741994093805568/gi6iTUbP_bigger.jpg",
+      "source": "bestdesignsonx",
+      "source_name": "Best Designs on X",
+      "category": "设计灵感",
+      "tags": [
+        "X/Twitter",
+        "设计",
+        "视频"
+      ],
+      "fetched_at": "2026-02-10T11:52:53.792157"
     }
-  }
+  },
+  "crawl_time": "2026-02-10T11:52:57.061714"
 }

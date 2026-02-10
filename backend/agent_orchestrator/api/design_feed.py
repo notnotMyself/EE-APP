@@ -2,7 +2,7 @@
 Design Feed API
 提供设计内容展示功能
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 from pathlib import Path
 import json
@@ -60,8 +60,18 @@ async def get_design_posts(limit: int = 20) -> Dict[str, Any]:
         # 提取所有帖子
         posts = list(data.get("posts", {}).values())
 
-        # 只返回有图片的帖子
-        posts_with_media = [p for p in posts if p.get('media_urls')]
+        # 对于视频帖子：如果没有 media_urls 但有 video poster，用 poster 作为预览图
+        for post in posts:
+            if not post.get('media_urls') and post.get('video_urls'):
+                posters = []
+                for vid in post['video_urls']:
+                    if isinstance(vid, dict) and vid.get('poster'):
+                        posters.append(vid['poster'])
+                if posters:
+                    post['media_urls'] = posters
+
+        # 只返回有图片或视频的帖子
+        posts_with_media = [p for p in posts if p.get('media_urls') or p.get('video_urls')]
 
         # 按时间倒序排列
         posts_with_media.sort(
@@ -143,26 +153,22 @@ async def get_design_stats() -> Dict[str, Any]:
         )
 
 
-## 图片代理的通用 CORS 响应头
-_CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+## 媒体代理的缓存响应头（CORS 由 FastAPI CORSMiddleware 统一处理）
+_MEDIA_HEADERS = {
     "Cache-Control": "public, max-age=86400",
 }
 
 
-@router.get("/media", summary="图片代理")
-async def proxy_media(url: str, convert: bool = True):
+@router.get("/media", summary="媒体代理（图片/视频）")
+async def proxy_media(request: Request, url: str, convert: bool = True):
     """
-    图片代理端点，解决 CORS 问题，并可转换 AVIF 为 JPEG
+    媒体代理端点，解决 CORS 问题。
+    - 图片：可转换 AVIF 为 JPEG
+    - 视频：支持 Range 请求（拖动进度条）
 
     Args:
-        url: 原始图片 URL
+        url: 原始媒体 URL
         convert: 是否将 AVIF/WebP 转换为 JPEG（默认 True）
-
-    Returns:
-        图片内容流
     """
     if not url:
         raise HTTPException(status_code=400, detail="缺少 url 参数")
@@ -181,9 +187,10 @@ async def proxy_media(url: str, convert: bool = True):
     # 生成缓存文件名
     url_hash = hashlib.md5(url.encode()).hexdigest()
     ext = Path(parsed.path).suffix or ".jpg"
+    is_video = ext.lower() in [".mp4", ".webm", ".mov"]
 
-    # 判断是否需要转换
-    needs_conversion = convert and ext.lower() in [".avif", ".webp"] and PILLOW_AVAILABLE
+    # 判断是否需要转换（仅图片）
+    needs_conversion = (not is_video) and convert and ext.lower() in [".avif", ".webp"] and PILLOW_AVAILABLE
 
     # 缓存文件（如果需要转换，保存为 .jpg）
     cache_ext = ".jpg" if needs_conversion else ext
@@ -192,52 +199,102 @@ async def proxy_media(url: str, convert: bool = True):
     # 检查缓存
     if cache_file.exists():
         content_type = _get_content_type(cache_ext)
+
+        # 视频文件：支持 Range 请求（浏览器 seek 需要）
+        if is_video:
+            return _serve_file_with_range(request, cache_file, content_type)
+
         return Response(
             content=cache_file.read_bytes(),
             media_type=content_type,
-            headers=_CORS_HEADERS,
+            headers=_MEDIA_HEADERS,
         )
 
     # 从远程获取
     try:
         async with httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=10.0, read=30.0, write=10.0, pool=10.0),
+            timeout=httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0),
             follow_redirects=True,
         ) as client:
             response = await client.get(url)
             response.raise_for_status()
 
-            image_bytes = response.content
+            media_bytes = response.content
             content_type = _get_content_type(cache_ext)
 
             # 如果需要转换 AVIF/WebP 为 JPEG
             if needs_conversion:
                 try:
-                    img = Image.open(io.BytesIO(image_bytes))
-                    # 转换为 RGB（去除透明通道）
+                    img = Image.open(io.BytesIO(media_bytes))
                     if img.mode in ('RGBA', 'LA', 'P'):
                         img = img.convert('RGB')
                     output = io.BytesIO()
                     img.save(output, format='JPEG', quality=90)
-                    image_bytes = output.getvalue()
+                    media_bytes = output.getvalue()
                     content_type = "image/jpeg"
                 except Exception as e:
-                    # 转换失败，返回原始内容
                     print(f"图片转换失败: {e}")
                     content_type = response.headers.get("content-type", _get_content_type(ext))
 
             # 保存到缓存
-            cache_file.write_bytes(image_bytes)
+            cache_file.write_bytes(media_bytes)
+
+            if is_video:
+                return _serve_file_with_range(request, cache_file, content_type)
 
             return Response(
-                content=image_bytes,
+                content=media_bytes,
                 media_type=content_type,
-                headers=_CORS_HEADERS,
+                headers=_MEDIA_HEADERS,
             )
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="获取图片超时，请稍后重试")
+        raise HTTPException(status_code=504, detail="获取媒体超时，请稍后重试")
     except httpx.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"获取图片失败: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"获取媒体失败: {str(e)}")
+
+
+def _serve_file_with_range(request: Request, file_path: Path, content_type: str) -> Response:
+    """
+    支持 HTTP Range 请求的文件服务。
+    浏览器 <video> 标签需要 Range 支持才能 seek/拖动进度条。
+    """
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("range")
+
+    headers = {
+        **_MEDIA_HEADERS,
+        "Accept-Ranges": "bytes",
+    }
+
+    if range_header:
+        # 解析 Range: bytes=start-end
+        range_spec = range_header.replace("bytes=", "")
+        parts = range_spec.split("-")
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if parts[1] else file_size - 1
+        end = min(end, file_size - 1)
+        length = end - start + 1
+
+        with open(file_path, "rb") as f:
+            f.seek(start)
+            data = f.read(length)
+
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+        headers["Content-Length"] = str(length)
+
+        return Response(
+            content=data,
+            status_code=206,
+            media_type=content_type,
+            headers=headers,
+        )
+    else:
+        headers["Content-Length"] = str(file_size)
+        return Response(
+            content=file_path.read_bytes(),
+            media_type=content_type,
+            headers=headers,
+        )
 
 
 def _get_content_type(ext: str) -> str:

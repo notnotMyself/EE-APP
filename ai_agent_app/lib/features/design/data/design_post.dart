@@ -11,6 +11,7 @@ class DesignPost {
   final List<String> videoUrls;
   final String avatarUrl;
   final String fetchedAt;
+  final bool hasVideo;
 
   DesignPost({
     required this.id,
@@ -22,6 +23,7 @@ class DesignPost {
     required this.videoUrls,
     required this.avatarUrl,
     required this.fetchedAt,
+    this.hasVideo = false,
   });
 
   factory DesignPost.fromJson(Map<String, dynamic> json) {
@@ -60,6 +62,7 @@ class DesignPost {
       videoUrls: videoUrls,
       avatarUrl: avatarUrl,
       fetchedAt: json['fetched_at'] ?? '',
+      hasVideo: json['has_video'] == true || videoUrls.isNotEmpty,
     );
   }
 

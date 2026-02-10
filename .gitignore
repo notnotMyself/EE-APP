@@ -202,6 +202,9 @@ product_mind.md
 backend/agents/*/reports/
 backend/agents/*/data/cache/
 
+# Media cache (images/videos downloaded by crawlers, too large for git)
+backend/agents/*/data/*/media_cache/
+
 # Database migration backups (should not be committed)
 supabase/migrations/*.backup
 supabase/migrations/*.sql.backup

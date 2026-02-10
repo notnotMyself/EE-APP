@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/design_post.dart';
 import '../data/design_repository.dart';
 import 'widgets/dio_image.dart';
+import 'widgets/feed_video_player.dart';
 import '../../../core/layout/main_scaffold.dart';
 
 /// 设计颜色常量 - 基于 Figma 设计稿
@@ -286,68 +287,100 @@ class _DesignFeedPageState extends State<DesignFeedPage>
 
   Widget _buildMasonryItem(DesignPost post, int index) {
     // 根据index生成不同高度，模拟瀑布流效果
-    final heights = [116.0, 150.0, 180.0, 130.0, 200.0, 140.0];
+    // 视频帖子给更高的高度以容纳播放器
+    final heights = post.hasVideo
+        ? [200.0, 220.0, 240.0, 210.0, 250.0, 230.0]
+        : [116.0, 150.0, 180.0, 130.0, 200.0, 140.0];
     final height = heights[index % heights.length];
 
-    return GestureDetector(
-      onTap: () => _showDetailDialog(post),
-      child: Container(
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: DesignColors.chipBackground,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // 底层：视频或图片内容
+          Positioned.fill(
+            child: _buildMasonryContent(post, height),
+          ),
+          // 顶层：透明点击层（Web 端 HtmlElementView 会拦截事件，
+          // 这里用 opaque GestureDetector 覆盖在平台视图之上捕获点击）
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _showDetailDialog(post),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMasonryContent(DesignPost post, double height) {
+    // 视频帖子：直接内联播放
+    if (post.hasVideo && post.videoUrls.isNotEmpty) {
+      return FeedVideoPlayer(
+        videoUrl: post.videoUrls[0],
         height: height,
-        decoration: BoxDecoration(
-          color: DesignColors.chipBackground,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: post.mediaUrls.isNotEmpty
-            ? DioImage(
-                url: post.mediaUrls[0],
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: height,
-                loadingBuilder: (context) {
-                  return Container(
-                    color: DesignColors.chipBackground,
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: DesignColors.textSecondary.withOpacity(0.4),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error) {
-                  return Container(
-                    color: DesignColors.chipBackground,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.image_outlined,
-                            size: 28, color: DesignColors.textSecondary.withOpacity(0.4)),
-                        const SizedBox(height: 4),
-                        Text(
-                          post.author.isNotEmpty ? post.author : '',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: DesignColors.textSecondary.withOpacity(0.6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              )
-            : Container(
-                color: DesignColors.chipBackground,
-                child: const Center(
-                  child: Icon(Icons.image, color: DesignColors.textSecondary),
+        width: double.infinity,
+        autoPlay: true,
+      );
+    }
+
+    // 图片帖子
+    if (post.mediaUrls.isNotEmpty) {
+      return DioImage(
+        url: post.mediaUrls[0],
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: height,
+        loadingBuilder: (context) {
+          return Container(
+            color: DesignColors.chipBackground,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: DesignColors.textSecondary.withOpacity(0.4),
                 ),
               ),
+            ),
+          );
+        },
+        errorBuilder: (context, error) {
+          return Container(
+            color: DesignColors.chipBackground,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.image_outlined,
+                    size: 28, color: DesignColors.textSecondary.withOpacity(0.4)),
+                const SizedBox(height: 4),
+                Text(
+                  post.author.isNotEmpty ? post.author : '',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: DesignColors.textSecondary.withOpacity(0.6),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    return Container(
+      color: DesignColors.chipBackground,
+      child: const Center(
+        child: Icon(Icons.image, color: DesignColors.textSecondary),
       ),
     );
   }
@@ -810,7 +843,29 @@ class _DesignDetailCard extends StatelessWidget {
                           ),
                         ),
                       // 图片预览
-                      if (post.mediaUrls.isNotEmpty)
+                      // 视频或图片预览
+                      if (post.hasVideo && post.videoUrls.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Container(
+                            width: 294,
+                            height: 220,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: ShapeDecoration(
+                              color: const Color(0xFFF9FAFB),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            child: FeedVideoPlayer(
+                              videoUrl: post.videoUrls[0],
+                              width: 294,
+                              height: 220,
+                              autoPlay: true,
+                            ),
+                          ),
+                        )
+                      else if (post.mediaUrls.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: Container(
