@@ -35,9 +35,16 @@ class DesignFeedPage extends StatefulWidget {
 class _DesignFeedPageState extends State<DesignFeedPage>
     with SingleTickerProviderStateMixin {
   final DesignRepository _repository = DesignRepository();
+
+  // 灵感 Tab 数据
   List<DesignPost>? _posts;
   String? _error;
   bool _isLoading = true;
+
+  // AI 资讯 Tab 数据
+  List<NewsArticle>? _newsArticles;
+  String? _newsError;
+  bool _newsLoading = true;
 
   late TabController _tabController;
 
@@ -46,6 +53,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadDesignPosts();
+    _loadAiNews();
   }
 
   @override
@@ -70,6 +78,26 @@ class _DesignFeedPageState extends State<DesignFeedPage>
       setState(() {
         _error = e.toString();
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadAiNews() async {
+    setState(() {
+      _newsLoading = true;
+      _newsError = null;
+    });
+
+    try {
+      final response = await _repository.getAiNews(limit: 15);
+      setState(() {
+        _newsArticles = response.articles;
+        _newsLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _newsError = e.toString();
+        _newsLoading = false;
       });
     }
   }
@@ -430,7 +458,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
     final navBarHeight = MainScaffold.floatingNavBarHeight(context);
 
     return RefreshIndicator(
-      onRefresh: _loadDesignPosts,
+      onRefresh: _loadAiNews,
       child: SingleChildScrollView(
         padding: EdgeInsets.only(
           left: 20, right: 20, top: 16,
@@ -465,7 +493,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
 
   /// 构建文章列表
   Widget _buildArticleList() {
-    if (_isLoading) {
+    if (_newsLoading) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -474,11 +502,27 @@ class _DesignFeedPageState extends State<DesignFeedPage>
       );
     }
 
-    if (_error != null) {
-      return _buildErrorWidget();
+    if (_newsError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, color: DesignColors.textSecondary),
+              const SizedBox(height: 8),
+              Text(_newsError!, style: const TextStyle(color: DesignColors.textSecondary, fontSize: 12)),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _loadAiNews,
+                child: const Text('点击重试', style: TextStyle(color: DesignColors.primaryBlue, fontSize: 14)),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    if (_posts == null || _posts!.isEmpty) {
+    if (_newsArticles == null || _newsArticles!.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -487,28 +531,19 @@ class _DesignFeedPageState extends State<DesignFeedPage>
       );
     }
 
-    // 取前5条作为文章列表
-    final articles = _posts!.take(5).toList();
-    final tags = ['TRENDING', 'GUIDE', 'OPINION', 'TRENDING', 'GUIDE'];
-    final times = ['2h ago', '5h ago', '1d ago', '2h ago', '5h ago'];
-
     return Column(
       children: List.generate(
-        articles.length,
+        _newsArticles!.length,
         (index) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: _buildArticleCard(
-            articles[index],
-            tags[index % tags.length],
-            times[index % times.length],
-          ),
+          child: _buildNewsCard(_newsArticles![index]),
         ),
       ),
     );
   }
 
-  /// 构建文章卡片
-  Widget _buildArticleCard(DesignPost post, String tag, String time) {
+  /// 构建 AI 资讯文章卡片
+  Widget _buildNewsCard(NewsArticle article) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -529,7 +564,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
         ],
       ),
       child: InkWell(
-        onTap: () => _openUrl(post.xUrl),
+        onTap: () => _openUrl(article.url),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -542,19 +577,15 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                 borderRadius: BorderRadius.circular(14),
               ),
               clipBehavior: Clip.antiAlias,
-              child: post.mediaUrls.isNotEmpty
+              child: article.imageUrl.isNotEmpty
                   ? DioImage(
-                      url: post.mediaUrls[0],
+                      url: article.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error) {
-                        return const Center(
-                          child: Icon(Icons.image, color: DesignColors.textSecondary),
-                        );
+                        return _buildNewsPlaceholder(article.source);
                       },
                     )
-                  : const Center(
-                      child: Icon(Icons.image, color: DesignColors.textSecondary),
-                    ),
+                  : _buildNewsPlaceholder(article.source),
             ),
             const SizedBox(width: 16),
             // 右侧内容
@@ -562,7 +593,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 标签和时间
+                  // 标签 + 来源 + 时间
                   Row(
                     children: [
                       Container(
@@ -572,7 +603,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
-                          tag,
+                          article.tag,
                           style: const TextStyle(
                             color: DesignColors.primaryBlue,
                             fontSize: 10,
@@ -581,14 +612,18 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        time,
-                        style: const TextStyle(
-                          color: DesignColors.textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.12,
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          '${article.source} · ${article.relativeTime}',
+                          style: const TextStyle(
+                            color: DesignColors.textSecondary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -596,7 +631,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                   const SizedBox(height: 6),
                   // 标题
                   Text(
-                    post.author.isNotEmpty ? post.author : 'Design Update',
+                    article.title,
                     style: const TextStyle(
                       color: DesignColors.textPrimary,
                       fontSize: 14,
@@ -608,11 +643,9 @@ class _DesignFeedPageState extends State<DesignFeedPage>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  // 描述
+                  // 摘要
                   Text(
-                    post.content.isNotEmpty
-                        ? post.content
-                        : 'Discover the latest design trends and insights.',
+                    article.summary,
                     style: const TextStyle(
                       color: DesignColors.textTertiary,
                       fontSize: 12,
@@ -626,6 +659,24 @@ class _DesignFeedPageState extends State<DesignFeedPage>
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 无图片时的来源占位
+  Widget _buildNewsPlaceholder(String source) {
+    final isVerge = source.contains('Verge');
+    return Container(
+      color: isVerge ? const Color(0xFF1A1A2E) : const Color(0xFF2D1B69),
+      child: Center(
+        child: Text(
+          isVerge ? 'V' : 'Aa',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.8),
+            fontSize: isVerge ? 32 : 24,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
     );

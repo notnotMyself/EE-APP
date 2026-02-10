@@ -174,15 +174,25 @@ async def proxy_media(request: Request, url: str, convert: bool = True):
         raise HTTPException(status_code=400, detail="缺少 url 参数")
 
     # 验证 URL 是否来自允许的域名
-    allowed_domains = [
-        "cdn.bestdesignsonx.com",
-        "pbs.twimg.com",
+    # 域名白名单（支持后缀匹配）
+    allowed_suffixes = [
+        "bestdesignsonx.com",
+        "twimg.com",
+        "theverge.com",
+        "github.io",           # GitHub Pages (学术项目页)
+        "nvidia.com",          # NVIDIA 研究
+        "googleapis.com",      # Google 存储
+        "google.com",          # Google 博客
+        "huggingface.co",      # HuggingFace
+        "githubassets.com",    # GitHub 资源
+        "tigris.dev",          # AI Art Weekly 存储
     ]
 
     from urllib.parse import urlparse
     parsed = urlparse(url)
-    if parsed.netloc not in allowed_domains:
-        raise HTTPException(status_code=403, detail=f"不允许的域名: {parsed.netloc}")
+    domain = parsed.netloc
+    if not any(domain == s or domain.endswith("." + s) for s in allowed_suffixes):
+        raise HTTPException(status_code=403, detail=f"不允许的域名: {domain}")
 
     # 生成缓存文件名
     url_hash = hashlib.md5(url.encode()).hexdigest()
@@ -215,6 +225,10 @@ async def proxy_media(request: Request, url: str, convert: bool = True):
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0),
             follow_redirects=True,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            },
         ) as client:
             response = await client.get(url)
             response.raise_for_status()

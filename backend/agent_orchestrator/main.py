@@ -428,6 +428,10 @@ app.include_router(agent_management_router)
 from api.design_feed import router as design_feed_router
 app.include_router(design_feed_router)
 
+# AI News API
+from api.ai_news import router as ai_news_router
+app.include_router(ai_news_router)
+
 
 # ============================================
 # 数据模型

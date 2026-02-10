@@ -1,0 +1,203 @@
+{
+  "sources": {
+    "theverge": {
+      "name": "The Verge AI",
+      "url": "https://www.theverge.com/ai-artificial-intelligence",
+      "last_crawled": "2026-02-10"
+    },
+    "aiartweekly": {
+      "name": "AI Art Weekly",
+      "url": "https://aiartweekly.com",
+      "last_crawled": "2026-02-10"
+    }
+  },
+  "articles": [
+    {
+      "id": "theverge-chatgpt-ads-20260209",
+      "title": "ChatGPT's cheapest options now show you ads",
+      "summary": "ChatGPT users will soon start seeing 'sponsored' links unless they pay at least $20 per month for a Plus subscription.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/876029/openai-testing-ads-in-chatgpt",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/ads-in-chatgpt-announcement.jpg?quality=90&strip=all&crop=7.7777777777778,0,84.444444444444,100&w=2400",
+      "source": "The Verge",
+      "tag": "AI NEWS",
+      "author": "Stevie Bonifield",
+      "published_at": "2026-02-09"
+    },
+    {
+      "id": "theverge-superbowl-ai-ads-20260209",
+      "title": "AI-generated ads dropped the ball at this year's Super Bowl",
+      "summary": "Not a single one of these commercials made betting on gen AI seem like a good idea.",
+      "url": "https://www.theverge.com/entertainment/875886/super-bowl-2026-ai-generated-ads-were-terrible",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/Screenshot-2026-02-09-at-12.45.57%E2%80%AFPM.png?quality=90&strip=all&crop=7.2196345395915,0,85.560730920817,100&w=2400",
+      "source": "The Verge",
+      "tag": "OPINION",
+      "author": "Charles Pulliam-Moore",
+      "published_at": "2026-02-09"
+    },
+    {
+      "id": "theverge-anthropic-opus-20260205",
+      "title": "Anthropic debuts new model with hopes to corner the market beyond coding",
+      "summary": "Anthropic's latest Opus 4.6 model represents a major step forward in AI capabilities, targeting enterprise users beyond traditional coding tasks.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/874440/anthropic-opus-4-6-new-model-claude",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/01/STKB364_CLAUDE_2_B_e941dd.jpg?quality=90&strip=all&crop=16.666666666667,0,66.666666666667,100&w=2400",
+      "source": "The Verge",
+      "tag": "AI NEWS",
+      "author": "Hayden Field",
+      "published_at": "2026-02-05"
+    },
+    {
+      "id": "theverge-claude-moment-20260205",
+      "title": "Claude has been having a moment — can it keep it up?",
+      "summary": "\"Now you're just like, 'Here's the magic castle. Build it.' And it gets done.\" Anthropic's Claude is riding a wave of developer enthusiasm.",
+      "url": "https://www.theverge.com/report/874308/anthropic-claude-code-opus-hype-moment",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/268317_Claude_has_been_having_a_moment_%E2%80%94-can_it_keep_it_up__CVirginia.jpg?quality=90&strip=all&crop=0,0,100,100&w=2400",
+      "source": "The Verge",
+      "tag": "TRENDING",
+      "author": "Hayden Field",
+      "published_at": "2026-02-05"
+    },
+    {
+      "id": "theverge-openai-frontier-20260205",
+      "title": "OpenAI Frontier is a single platform to control your AI agents",
+      "summary": "OpenAI launches Frontier, a unified platform that lets enterprises manage and orchestrate multiple AI agents from one dashboard.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/874258/openai-frontier-ai-agent-platform-management",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/STK155_OPEN_AI_4_CVirginia_A.png?quality=90&strip=all&crop=16.658823529412,0,66.682352941176,100&w=2400",
+      "source": "The Verge",
+      "tag": "AI NEWS",
+      "author": "Robert Hart",
+      "published_at": "2026-02-05"
+    },
+    {
+      "id": "theverge-deepfake-war-20260205",
+      "title": "Reality is losing the deepfake war",
+      "summary": "Why you can't label your way into consensus reality amid the AI deepfake apocalypse. C2PA labels alone aren't enough.",
+      "url": "https://www.theverge.com/podcast/874038/ai-deepfakes-war-on-reality-c2pa-labels",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/VRG_DCD_020526.jpg?quality=90&strip=all&crop=0,0,100,100&w=2400",
+      "source": "The Verge",
+      "tag": "OPINION",
+      "author": "Nilay Patel",
+      "published_at": "2026-02-05"
+    },
+    {
+      "id": "theverge-github-claude-codex-20260204",
+      "title": "GitHub adds Claude and Codex AI coding agents",
+      "summary": "GitHub integrates Anthropic's Claude and OpenAI's Codex as AI coding agents, marking a significant expansion of AI-powered development tools.",
+      "url": "https://www.theverge.com/news/873665/github-claude-codex-ai-agents",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/githubclaudehero.jpg?quality=90&strip=all&crop=16.666666666667,0,66.666666666667,100&w=2400",
+      "source": "The Verge",
+      "tag": "TOOLS",
+      "author": "Tom Warren",
+      "published_at": "2026-02-04"
+    },
+    {
+      "id": "theverge-anthropic-adfree-20260204",
+      "title": "Anthropic says 'Claude will remain ad-free,' unlike ChatGPT",
+      "summary": "Anthropic fires shots at OpenAI with Super Bowl ad campaign promising Claude will stay ad-free, as ChatGPT prepares to show sponsored links.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/873686/anthropic-claude-ai-ad-free-super-bowl-advert-chatgpt",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/oi873IR.png?quality=90&strip=all&crop=18.444730077121,0,63.110539845758,100&w=2400",
+      "source": "The Verge",
+      "tag": "AI NEWS",
+      "author": "Dominic Preston",
+      "published_at": "2026-02-04"
+    },
+    {
+      "id": "theverge-ai-spending-moon-20260209",
+      "title": "2026 AI investments will cost more than the Moon landing",
+      "summary": "Meta, Microsoft, Amazon, and Alphabet are planning to spend $670 billion on AI infrastructure this year, dwarfing historic capital efforts.",
+      "url": "https://www.theverge.com/ai-artificial-intelligence/875630/2026-ai-investments-will-cost-more-than-the-moon-landing",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/02/Screenshot-2026-02-09-095816.jpg?quality=90&strip=all&crop=0,0,100,100&w=2400",
+      "source": "The Verge",
+      "tag": "TRENDING",
+      "author": "Jess Weatherbed",
+      "published_at": "2026-02-09"
+    },
+    {
+      "id": "theverge-google-revenue-400b-20260204",
+      "title": "Google's annual revenue tops $400 billion for the first time",
+      "summary": "Google parent Alphabet reports record annual revenue exceeding $400 billion, driven largely by cloud and AI services growth.",
+      "url": "https://www.theverge.com/news/874161/google-400-billion-revenue-q4-2025-earnings",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2025/03/STK093_GOOGLE_A-1.jpg?quality=90&strip=all&crop=16.666666666667,0,66.666666666667,100&w=2400",
+      "source": "The Verge",
+      "tag": "AI NEWS",
+      "author": "Emma Roth",
+      "published_at": "2026-02-04"
+    },
+    {
+      "id": "aiartweekly-lyra-3d-134",
+      "title": "Lyra: Generative 3D Scene Reconstruction via Video Diffusion",
+      "summary": "Lyra can generate 3D scenes from a single image or video, using self-distillation for real-time rendering and dynamic scene generation without multiple views.",
+      "url": "https://research.nvidia.com/labs/toronto-ai/lyra/",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2024-12-20.jpg",
+      "source": "AI Art Weekly",
+      "tag": "RESEARCH",
+      "author": "NVIDIA Research",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-meshmosaic-134",
+      "title": "MeshMosaic: Scaling Artist Mesh Generation via Local-to-Global Assembly",
+      "summary": "MeshMosaic generates high-resolution 3D meshes with over 100,000 triangles by breaking shapes into smaller patches for better detail and accuracy.",
+      "url": "https://xrvitd.github.io/MeshMosaic/index.html",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2025-09-19.jpg",
+      "source": "AI Art Weekly",
+      "tag": "RESEARCH",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-wan-animate-134",
+      "title": "Wan-Animate: Unified Character Animation and Replacement",
+      "summary": "Wan-Animate can animate characters from images by copying expressions and movements from video, with seamless character replacement keeping original lighting.",
+      "url": "https://humanaigc.github.io/wan-animate/",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2024-12-20.jpg",
+      "source": "AI Art Weekly",
+      "tag": "CREATIVE AI",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-omniinsert-134",
+      "title": "OmniInsert: Mask-Free Video Insertion of Any Reference",
+      "summary": "OmniInsert can insert subjects from any video or image into original scenes without masks, solving data scarcity and subject-scene balance problems.",
+      "url": "https://phantom-video.github.io/OmniInsert/",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2025-09-19.jpg",
+      "source": "AI Art Weekly",
+      "tag": "CREATIVE AI",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-mixboard-134",
+      "title": "Google releases Mixboard: Canvas-Based Ideation with Gen AI",
+      "summary": "Google released Mixboard, a canvas based ideation tool with generative AI capabilities for creative brainstorming and design exploration.",
+      "url": "https://blog.google/technology/google-labs/mixboard/",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2024-12-20.jpg",
+      "source": "AI Art Weekly",
+      "tag": "TOOLS",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-qwen-image-edit-134",
+      "title": "Alibaba releases Qwen-Image-Edit-2509 with ControlNet support",
+      "summary": "An improved Qwen-Image-Edit model that supports multi-image editing with ControlNet support for precise creative control.",
+      "url": "https://huggingface.co/Qwen/Qwen-Image-Edit-2509",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2025-09-19.jpg",
+      "source": "AI Art Weekly",
+      "tag": "TOOLS",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    },
+    {
+      "id": "aiartweekly-star-audio-134",
+      "title": "STAR: Speech-to-Audio Generation via Representation Learning",
+      "summary": "STAR generates audio from speech input while capturing important sounds and scene details, bridging the gap between spoken words and soundscapes.",
+      "url": "https://zeyuxie29.github.io/STAR",
+      "image_url": "https://fly.storage.tigris.dev/aiartweekly/covers/2024-12-20.jpg",
+      "source": "AI Art Weekly",
+      "tag": "RESEARCH",
+      "author": "AI Art Weekly #134",
+      "published_at": "2026-02-07"
+    }
+  ]
+}

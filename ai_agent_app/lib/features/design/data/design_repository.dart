@@ -55,6 +55,36 @@ class DesignRepository {
     }
   }
 
+  /// 获取 AI 资讯文章列表
+  Future<AiNewsResponse> getAiNews({int limit = 15, String source = ''}) async {
+    try {
+      final params = <String, dynamic>{'limit': limit};
+      if (source.isNotEmpty) params['source'] = source;
+
+      final response = await _dio.get(
+        '/api/v1/ai-news',
+        queryParameters: params,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data as Map<String, dynamic>;
+        final articles = (data['articles'] as List)
+            .map((json) => NewsArticle.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        return AiNewsResponse(
+          success: data['success'] ?? true,
+          articles: articles,
+          total: data['total'] ?? 0,
+        );
+      } else {
+        throw Exception('Failed to load AI news: ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      throw Exception('Network error: ${e.message}');
+    }
+  }
+
   /// 获取设计内容统计信息
   Future<DesignStats> getDesignStats() async {
     try {
@@ -118,4 +148,60 @@ class DesignStats {
       lastUpdated: json['last_updated'] ?? '',
     );
   }
+}
+
+/// AI 资讯文章
+class NewsArticle {
+  final String id;
+  final String title;
+  final String summary;
+  final String url;
+  final String imageUrl;
+  final String source;
+  final String tag;
+  final String author;
+  final String publishedAt;
+  final String relativeTime;
+
+  NewsArticle({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.url,
+    required this.imageUrl,
+    required this.source,
+    required this.tag,
+    required this.author,
+    required this.publishedAt,
+    required this.relativeTime,
+  });
+
+  factory NewsArticle.fromJson(Map<String, dynamic> json) {
+    final rawImageUrl = json['image_url'] as String? ?? '';
+    return NewsArticle(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      summary: json['summary'] ?? '',
+      url: json['url'] ?? '',
+      imageUrl: rawImageUrl.isNotEmpty ? toProxyUrl(rawImageUrl) : '',
+      source: json['source'] ?? '',
+      tag: json['tag'] ?? '',
+      author: json['author'] ?? '',
+      publishedAt: json['published_at'] ?? '',
+      relativeTime: json['relative_time'] ?? '',
+    );
+  }
+}
+
+/// AI 资讯响应
+class AiNewsResponse {
+  final bool success;
+  final List<NewsArticle> articles;
+  final int total;
+
+  AiNewsResponse({
+    required this.success,
+    required this.articles,
+    required this.total,
+  });
 }
