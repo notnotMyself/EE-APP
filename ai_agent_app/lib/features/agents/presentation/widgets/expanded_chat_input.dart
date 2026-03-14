@@ -216,8 +216,6 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
                 ),
               ),
             ),
-            // 麦克风按钮
-            _buildMicrophoneButton(),
             // 发送按钮
             _buildCollapsedSendButton(),
           ],
@@ -270,7 +268,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   Widget _buildExpandedCard() {
     return Container(
       decoration: _expandedCardDecoration,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 16),
+      padding: const EdgeInsets.all(10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,14 +276,14 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           // 附件预览区域
           if (widget.attachments.isNotEmpty) ...[
             _buildAttachmentsPreview(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
-          
-          // 输入区域
+
+          // 输入区域 (Figma: padding top:5, bottom:20)
           _buildInputArea(),
-          
-          const SizedBox(height: 16),
-          
+
+          const SizedBox(height: 5),
+
           // 操作工具栏
           _buildToolbar(),
         ],
@@ -294,9 +292,9 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 展开卡片的装饰样式
-  /// 仅在输入框获得焦点时显示蓝色高亮边框，否则显示淡灰色边框
+  /// 基于 Figma chris_ai_input: white 68%, border 1px white, radius 20
   ShapeDecoration get _expandedCardDecoration => ShapeDecoration(
-    color: Colors.white.withOpacity(0.50),
+    color: Colors.white.withOpacity(0.68),
     shape: RoundedRectangleBorder(
       side: _isFocused
           ? const BorderSide(
@@ -304,21 +302,12 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
               strokeAlign: BorderSide.strokeAlignOutside,
               color: Color(0xFF0066FF), // 蓝色高亮边框（聚焦时）
             )
-          : BorderSide(
+          : const BorderSide(
               width: 1,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: Colors.black.withOpacity(0.08), // 淡灰色边框（未聚焦时）
+              color: Colors.white, // Figma: white border
             ),
       borderRadius: BorderRadius.circular(20),
     ),
-    shadows: const [
-      BoxShadow(
-        color: Color(0x14000000),
-        blurRadius: 24,
-        offset: Offset(0, 12),
-        spreadRadius: 0,
-      ),
-    ],
   );
 
   /// 附件预览区域
@@ -467,7 +456,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   /// 输入区域
   Widget _buildInputArea() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.only(top: 5, bottom: 20),
       child: TextField(
         controller: _controller,
         focusNode: _focusNode,
@@ -482,7 +471,7 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
           hintText: widget.hintText,
           hintStyle: TextStyle(
             color: Colors.black.withOpacity(0.4),
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w400,
             height: 1.4, // 保持提示文字行高一致
           ),

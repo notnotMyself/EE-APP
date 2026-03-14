@@ -10,8 +10,8 @@ class AgentProfileTheme {
   // 颜色定义
   // ============================================
   
-  /// 页面背景色
-  static const Color backgroundColor = Color(0xFFE9EAF0);
+  /// 页面背景色 (Figma: couiColorBackgroundWithCard)
+  static const Color backgroundColor = Color(0xFFEFF0F2);
   
   /// 主标题颜色（深蓝黑）
   static const Color titleColor = Color(0xFF0D1B34);
@@ -28,10 +28,10 @@ class AgentProfileTheme {
   /// 三级文字颜色
   static const Color textTertiary = Color(0x42000000); // 26% black
   
-  /// 卡片/按钮背景色（半透明白）
+  /// 卡片/按钮背景色（半透明白，Figma: white 68%）
   static const Color cardBackground = Color(0xADFFFFFF); // 68% white
-  
-  /// 卡片边框色
+
+  /// 卡片边框色（Figma: white）
   static const Color cardBorder = Colors.white;
   
   /// 头像占位背景色
@@ -87,7 +87,7 @@ class AgentProfileTheme {
   static TextStyle get inputHintStyle => const TextStyle(
     fontFamily: oppoSansFamily,
     color: Colors.black,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1,
   );

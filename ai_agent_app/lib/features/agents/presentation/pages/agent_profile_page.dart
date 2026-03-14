@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -72,6 +73,16 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   List<ChatAttachment>? _pendingAttachments;
   bool _isSendingInitialMessage = false;
 
+  /// 是否需要自动设置会话标题（新建会话后首次发消息时设置）
+  bool _needsAutoTitle = false;
+
+  /// 判断会话标题是否为默认标题（需要自动替换）
+  static bool _isDefaultTitle(String? title) {
+    if (title == null || title.isEmpty) return true;
+    final lower = title.trim().toLowerCase();
+    return lower == 'new conversation' || lower == '未命名会话' || lower == '新对话';
+  }
+
   /// 消息列表滚动控制器
   final ScrollController _scrollController = ScrollController();
 
@@ -113,8 +124,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     // 检查是否已经有会话ID
     if (_conversationId != null) return;
 
-    // 检查用户登录状态
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 检查用户登录状态（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       debugPrint('⚠️ 加载会话失败: 用户未登录');
       return;
@@ -140,7 +151,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           // 有历史对话，使用最新的一个
           final latestConversation = conversations.first; // 已按时间排序，最新的在前
           conversationId = latestConversation.id;
-          debugPrint('📂 找到最新会话: $conversationId');
+          _needsAutoTitle = _isDefaultTitle(latestConversation.title);
+          debugPrint('📂 找到最新会话: $conversationId (needsAutoTitle: $_needsAutoTitle)');
         } else {
           // 没有历史对话，创建新会话
           debugPrint('📝 没有历史会话，创建新会话...');
@@ -153,6 +165,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             return;
           }
           conversationId = newConversation.id;
+          _needsAutoTitle = _isDefaultTitle(newConversation.title);
           debugPrint('✅ 新会话创建完成: $conversationId');
         }
       }
@@ -171,6 +184,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             .then((_) {
               final totalDuration = DateTime.now().difference(startTime);
               debugPrint('🔌 WebSocket连接完成 (总耗时: ${totalDuration.inMilliseconds}ms)');
+              // 会话加载完成后，如果标题是默认的且已有消息，用第一条用户消息更新标题
+              _tryFixTitleFromExistingMessages();
             })
             .catchError((e) {
               debugPrint('⚠️ WebSocket连接失败: $e');
@@ -218,7 +233,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   Future<void> _ensureConversation() async {
     if (_conversationId != null) return;
 
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 检查用户登录状态（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -240,6 +256,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         setState(() {
           _conversationId = conversation.id;
           _isInitializing = false;
+          // 新建的会话没有标题（或默认标题），标记需要自动设置
+          _needsAutoTitle = _isDefaultTitle(conversation.title);
         });
 
         // 初始化 WebSocket 连接
@@ -323,6 +341,12 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         });
       }
 
+      // 自动设置会话标题：用第一条消息内容作为标题
+      if (_needsAutoTitle && _conversationId != null && message.isNotEmpty) {
+        _needsAutoTitle = false;
+        _autoSetConversationTitle(message);
+      }
+
       // 滚动到底部
       _scrollToBottom();
     } catch (e) {
@@ -342,6 +366,56 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(0);
       }
+    });
+  }
+
+  /// 尝试从已有消息中修复默认标题
+  ///
+  /// 当加载一个已有消息但标题仍为"New Conversation"的会话时调用
+  void _tryFixTitleFromExistingMessages() {
+    if (!_needsAutoTitle || _conversationId == null) return;
+
+    final convState = ref.read(conversationNotifierProvider(_conversationId!));
+    final messages = convState.messages;
+
+    // 找到第一条用户消息
+    final firstUserMessage = messages
+        .where((m) => m.role == 'user' && m.content.trim().isNotEmpty)
+        .toList();
+
+    if (firstUserMessage.isNotEmpty) {
+      _needsAutoTitle = false;
+      _autoSetConversationTitle(firstUserMessage.first.content);
+      debugPrint('📝 从已有消息中修复会话标题');
+    }
+  }
+
+  /// 自动设置会话标题（取第一条消息内容，超长截断加省略号）
+  void _autoSetConversationTitle(String firstMessage) {
+    // 清理消息内容：去掉模式前缀、换行符等
+    String title = firstMessage.replaceAll(RegExp(r'^\[MODE:\w+\]\s*'), '').trim();
+    // 取第一行
+    final firstLine = title.split('\n').first.trim();
+    // 截断：最多 30 个字符
+    const maxLen = 30;
+    if (firstLine.length > maxLen) {
+      title = '${firstLine.substring(0, maxLen)}...';
+    } else {
+      title = firstLine;
+    }
+
+    if (title.isEmpty) return;
+
+    // 异步更新标题，不阻塞消息发送流程
+    ref
+        .read(conversationControllerProvider.notifier)
+        .updateConversationTitle(
+          conversationId: _conversationId!,
+          title: title,
+        )
+        .then((_) {
+      // 刷新对话列表
+      ref.invalidate(agentConversationsProvider(widget.agent.id));
     });
   }
 
@@ -405,22 +479,30 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
     return Scaffold(
       backgroundColor: AgentProfileTheme.backgroundColor,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 顶部导航栏
-            _buildAppBar(),
+      resizeToAvoidBottomInset: false,
+      body: AnimatedPadding(
+        padding: EdgeInsets.only(bottom: keyboardHeight),
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 顶部导航栏：键盘弹起且非聊天模式时隐藏，腾出空间给头像
+              if (isChatMode || !isKeyboardVisible)
+                _buildAppBar()
+              else
+                const SizedBox.shrink(),
 
-            // 主内容区域（统一视图）
-            Expanded(
-              child: _buildUnifiedConversationView(),
-            ),
+              // 主内容区域（统一视图）
+              Expanded(
+                child: _buildUnifiedConversationView(),
+              ),
 
-            // 底部输入区域（仅在聊天模式下显示）
-            if (isChatMode)
-              _buildInputSection(isKeyboardVisible, isStreaming),
-          ],
+              // 底部输入区域（仅在聊天模式下显示）
+              if (isChatMode)
+                _buildChatModeInputSection(isKeyboardVisible, isStreaming),
+            ],
+          ),
         ),
       ),
     );
@@ -471,10 +553,19 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 构建介绍视图（空会话时显示）
   ///
-  /// 基于 Figma chris_ai 设计稿:
+  /// 基于 Figma chris_chat_with_kb 设计稿:
   /// - 头像+名称在上方
-  /// - 输入框在中间位置（top: 379 / 800 ≈ 47% 位置）
+  /// - 输入框在中间位置
   /// - 胶囊快捷按钮在输入框下方
+  ///
+  /// 键盘行为:
+  /// - 键盘未弹起: Expanded(头像) + 输入框 + Spacer() → 输入框大致居中
+  /// - 键盘弹起: Expanded 折叠（头像隐藏），输入框推至底部，距键盘 15dp
+  ///
+  /// 关键设计：使用 **同一棵 Widget 树**，仅通过属性值变化来切换布局。
+  /// 这样 ExpandedChatInput 始终在 Column children[1] 位置，
+  /// Flutter 的 reconcile 机制会保留其 State 和 FocusNode，
+  /// 避免键盘弹起时因 widget 重建而丢失焦点导致键盘自动收起。
   Widget _buildIntroductionView() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final debugKeyboard = ref.watch(debugKeyboardVisibleProvider);
@@ -490,26 +581,27 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           )
         : false;
 
-    return SingleChildScrollView(
+    // 头像介绍区域
+    final avatarSection = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AgentProfileTheme.horizontalPadding,
+      ),
+      child: AgentProfileCard(
+        agent: widget.agent,
+        selectedPersonality: _selectedPersonality,
+        onPersonalityTap: _showPersonalitySelector,
+      ),
+    );
+
+    // 输入框和功能键区域（Figma: spacing 10 between input & pills）
+    final inputSection = Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AgentProfileTheme.horizontalPadding,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 40),
-
-          // AI员工介绍卡片（包含人物个性选择）
-          AgentProfileCard(
-            agent: widget.agent,
-            selectedPersonality: _selectedPersonality,
-            onPersonalityTap: _showPersonalitySelector,
-          ),
-
-          const SizedBox(height: 40),
-
-          // 输入框（在中间位置，基于 Figma chris_ai_input 设计）
-          // hintText 根据当前选中的模式动态变化
-          // 对话未开始时输入框默认展开，显示附件等按钮
+          // 输入框
           ExpandedChatInput(
             hintText: _selectedMode.hintText,
             onSubmit: _onInputSubmit,
@@ -525,22 +617,49 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onAppSelected: _onAppSelected,
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 10), // Figma: spacing 10
 
-          // 胶囊快捷按钮（在输入框下方，基于 Figma chris-ai-fuction 设计）
-          // 点击按钮切换模式，选中的按钮蓝色高亮
-          if (!isKeyboardVisible && widget.agent.role == 'design_validator') ...[
+          // 胶囊快捷按钮
+          if (widget.agent.role == 'design_validator') ...[
             QuickActionPillRow(
               actions: QuickActions.defaults,
               selectedAction: _selectedMode,
               onActionTap: _onQuickActionTap,
             ),
           ],
-
-          // 底部间距：键盘弹起时输入框距键盘顶部 24dp
-          SizedBox(height: isKeyboardVisible ? 24 : 32),
         ],
       ),
+    );
+
+    // ── 统一树结构：只改变属性值，不改变树形状 ──
+    //
+    // children[0]: Expanded — 头像始终显示，键盘弹起时空间缩小、头像上移;
+    //                          键盘收起时居中显示
+    // children[1]: inputSection — 始终在同一位置，FocusNode 不丢失
+    // children[2]: SizedBox — 键盘弹起时 15dp 底部间距，否则 0
+    // children[3]: Spacer (仅键盘收起时) — 使输入框垂直居中
+    return Column(
+      children: [
+        // 上部区域：头像始终显示
+        // 键盘弹起时 Expanded 空间缩小 → 头像自然上移（可滚动）
+        // 键盘收起时 Expanded 空间充足 → 头像居中
+        Expanded(
+          child: Center(
+            child: SingleChildScrollView(
+              child: avatarSection,
+            ),
+          ),
+        ),
+
+        // 输入框 + 胶囊按钮（始终在 children[1]，保持焦点）
+        inputSection,
+
+        // 底部间距：键盘弹起时 15dp（Figma），收起时 0
+        SizedBox(height: isKeyboardVisible ? 15 : 0),
+
+        // 下部空间：键盘收起时占据下半部分，使输入框垂直居中
+        if (!isKeyboardVisible) const Spacer(),
+      ],
     );
   }
 
@@ -554,6 +673,12 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
           ),
         );
 
+    // 有消息时使用 Figma 风格的顶部栏
+    if (hasMessages) {
+      return _buildChatAppBar();
+    }
+
+    // 无消息时使用原有的顶部栏
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
@@ -566,55 +691,178 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
                 color: AgentProfileTheme.titleColor,
               ),
             ),
-          if (hasMessages) ...[
-            // 有消息时显示紧凑 Agent 信息
-            const SizedBox(width: 8),
-            _buildCompactAgentInfo(),
-          ] else ...[
-            // 无消息时显示问候语
-            const SizedBox(width: 8),
-            _buildGreetingHeader(),
-          ],
+          const SizedBox(width: 8),
+          _buildGreetingHeader(),
           const Spacer(),
-          if (_conversationId != null && hasMessages)
-            _buildConnectionStatus(),
-          PopupMenuButton<String>(
-            icon: const Icon(
-              Icons.more_horiz,
-              color: AgentProfileTheme.titleColor,
+          // History button
+          GestureDetector(
+            onTap: _showConversationSelector,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Container(
+                decoration: ShapeDecoration(
+                  color: Colors.black.withOpacity(0.04),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(90),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: SvgPicture.asset(
+                  'assets/icons/chat/history.svg',
+                  width: 24,
+                  height: 24,
+                ),
+              ),
             ),
-            onSelected: (value) {
-              switch (value) {
-                case 'new_conversation':
-                  _startNewConversation();
-                  break;
-                case 'conversation_history':
-                  _showConversationSelector();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'conversation_history',
-                child: Row(
-                  children: [
-                    Icon(Icons.history, size: 20),
-                    SizedBox(width: 12),
-                    Text('会话历史'),
-                  ],
-                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建聊天模式的顶部栏（Figma 设计风格）
+  Widget _buildChatAppBar() {
+    return Container(
+      width: double.infinity,
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: back button + agent name
+          Expanded(
+            child: SizedBox(
+              height: 52,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Back button - 48px touch area, 40x40 circle bg (Figma)
+                  GestureDetector(
+                    onTap: () {
+                      if (widget.showBackButton) {
+                        // 推送进入的页面：返回上一页
+                        Navigator.of(context).pop();
+                      } else {
+                        // 首页嵌入模式：返回到问候/空白状态（新建会话）
+                        _startNewConversation();
+                      }
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: SizedBox(
+                      width: 48,
+                      height: 52,
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: ShapeDecoration(
+                            color: Colors.black.withOpacity(0.04),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(90),
+                            ),
+                          ),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/icons/chat/back_arrow.svg',
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Agent name
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 52),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        widget.agent.name,
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.90),
+                          fontSize: 18,
+                          fontFamily: 'OPPO Sans 4.0',
+                          fontWeight: FontWeight.w500,
+                          height: 1.44,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const PopupMenuItem<String>(
-                value: 'new_conversation',
-                child: Row(
-                  children: [
-                    Icon(Icons.add_comment_outlined, size: 20),
-                    SizedBox(width: 12),
-                    Text('新建对话'),
-                  ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Right: add new conversation + history
+          SizedBox(
+            height: 52,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Add new conversation button
+                GestureDetector(
+                  onTap: _startNewConversation,
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    width: 48,
+                    height: 52,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: ShapeDecoration(
+                          color: Colors.black.withOpacity(0.04),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(90),
+                          ),
+                        ),
+                        child: SvgPicture.asset(
+                          'assets/icons/chat/add_circle.svg',
+                          width: 40,
+                          height: 40,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                // History button
+                GestureDetector(
+                  onTap: _showConversationSelector,
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    width: 48,
+                    height: 52,
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: ShapeDecoration(
+                          color: Colors.black.withOpacity(0.04),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(90),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: SvgPicture.asset(
+                          'assets/icons/chat/history.svg',
+                          width: 24,
+                          height: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -695,7 +943,10 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         .createNewConversation(widget.agent.id);
 
     if (newConversation != null && mounted) {
-      setState(() => _conversationId = newConversation.id);
+      setState(() {
+        _conversationId = newConversation.id;
+        _needsAutoTitle = true; // 新建会话，需要自动设置标题
+      });
 
       // 初始化WebSocket连接
       unawaited(
@@ -703,13 +954,6 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             .initialize(),
       );
 
-      // 显示提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已创建新对话'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -747,6 +991,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       _pendingMessageContent = null;
       _pendingAttachments = null;
       _isSendingInitialMessage = false;
+      _needsAutoTitle = false; // 已有会话不需要自动设置标题
     });
 
     // 初始化新会话的WebSocket连接
@@ -836,7 +1081,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             Text(
               widget.agent.description,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: AgentProfileTheme.labelColor,
               ),
               maxLines: 1,
@@ -978,38 +1223,20 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
     );
   }
 
-  /// 构建底部输入区域
-  Widget _buildInputSection(bool isKeyboardVisible, bool isStreaming) {
-    // 判断是否有消息（用于决定是否显示顶部边框）
-    final hasMessages = _conversationId != null &&
-        ref.watch(
-          conversationNotifierProvider(_conversationId!).select(
-            (state) => state.messages.isNotEmpty,
-          ),
-        );
-
+  /// 构建聊天模式的底部输入区域
+  ///
+  /// 使用与无消息状态相同的 ExpandedChatInput 组件，
+  /// 保持一致的按钮和交互模式（附件、应用选择、语音等）。
+  /// 默认收起状态（单行输入框），点击后展开为完整输入卡片。
+  Widget _buildChatModeInputSection(bool isKeyboardVisible, bool isStreaming) {
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        AgentProfileTheme.horizontalPadding,
-        12,
-        AgentProfileTheme.horizontalPadding,
-        24, // 输入框底部间距：键盘弹起时距键盘顶部 24dp
+      padding: const EdgeInsets.symmetric(
+        horizontal: AgentProfileTheme.horizontalPadding,
       ),
-      decoration: hasMessages
-          ? BoxDecoration(
-              color: AgentProfileTheme.backgroundColor,
-              border: Border(
-                top: BorderSide(
-                  color: Colors.black.withOpacity(0.05),
-                  width: 1,
-                ),
-              ),
-            )
-          : null,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 展开式输入框（聊天模式下也使用模式对应的 hintText）
+          // 使用和无消息状态一样的 ExpandedChatInput
           ExpandedChatInput(
             hintText: _selectedMode.hintText,
             onSubmit: _onInputSubmit,
@@ -1020,9 +1247,22 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onFigmaTap: _onFigmaTap,
             onVoiceTap: _onVoiceTap,
             enabled: !isStreaming && !_isInitializing,
+            initiallyExpanded: false, // 聊天模式默认收起
             selectedApp: _selectedApp,
             onAppSelected: _onAppSelected,
           ),
+
+          // 胶囊快捷按钮（仅 design_validator）
+          if (widget.agent.role == 'design_validator') ...[
+            const SizedBox(height: 10),
+            QuickActionPillRow(
+              actions: QuickActions.defaults,
+              selectedAction: _selectedMode,
+              onActionTap: _onQuickActionTap,
+            ),
+          ],
+
+          SizedBox(height: isKeyboardVisible ? 8 : 8),
         ],
       ),
     );
