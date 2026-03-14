@@ -190,24 +190,16 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         decoration: ShapeDecoration(
           color: AgentProfileTheme.cardBackground,
           shape: RoundedRectangleBorder(
-            // 移除边框，使用更淡的阴影
+            side: const BorderSide(width: 1, color: Colors.white),
             borderRadius: BorderRadius.circular(100),
           ),
-          shadows: const [
-            BoxShadow(
-              color: Color(0x0A000000), // 更淡的阴影
-              blurRadius: 8,
-              offset: Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
         ),
         padding: const EdgeInsets.only(left: 24, right: 10),
         child: Row(
           children: [
             Expanded(
               child: Opacity(
-                opacity: 0.4, // 降低透明度，使提示文字更淡
+                opacity: 0.54, // Figma: couiColorLabelSecondary (black 54%)
                 child: Text(
                   widget.hintText,
                   style: AgentProfileTheme.inputHintStyle,
@@ -463,17 +455,17 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
         enabled: widget.enabled,
         style: const TextStyle(
           color: Colors.black,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          height: 1.4, // 修复: 使用合理的行高，避免在某些设备上文字被裁剪
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          height: 1.43,
         ),
         decoration: InputDecoration(
           hintText: widget.hintText,
           hintStyle: TextStyle(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withOpacity(0.54),
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            height: 1.4, // 保持提示文字行高一致
+            height: 1.43,
           ),
           // 修复: 显式移除所有边框类型，防止部分机型显示内层输入框边框
           border: InputBorder.none,
