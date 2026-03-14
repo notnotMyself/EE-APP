@@ -164,43 +164,31 @@ class _LoginPageState extends ConsumerState<LoginPage>
                     child: _buildHeader(),
                   ),
 
-                  // 中间插图区域（Chris Chen 头像）
+                  // 中间插图区域（基于 Figma: left:5, top:122, 350x400）
                   Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 140,
-                    child: Center(
-                      child: Container(
-                        width: 280,
-                        height: 280,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 40,
-                              offset: const Offset(0, 12),
-                              spreadRadius: 0,
-                            ),
-                          ],
-                          image: const DecorationImage(
-                            image: AssetImage('assets/images/chris_chen_avatar.jpeg'),
-                            fit: BoxFit.cover,
-                          ),
+                    left: 5,
+                    top: 122,
+                    child: Container(
+                      width: 350,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        image: const DecorationImage(
+                          image: AssetImage('assets/images/chris_chen_avatar.jpeg'),
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
                   ),
 
-                  // 底部输入区域
+                  // 底部输入区域（基于 Figma: left:17, top:537）
                   Positioned(
                     left: 17,
                     right: 17,
-                    bottom: 164, // 调整位置，给按钮区域留出足够间距
+                    bottom: 144, // 800 - 537 - 122(输入区高度) ≈ 141, 留适当间距
                     child: _buildInputSection(isLoading),
                   ),
 
-                  // 底部按钮区域（登录按钮 + 切换链接）
+                  // 底部按钮区域（基于 Figma: left:17, top:702.97）
                   Positioned(
                     left: 17,
                     right: 17,
@@ -233,7 +221,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
       children: [
         // 主标题
         Text(
-          'AI数字员工',
+          '灵感验证官',
           style: TextStyle(
             color: _AppDesign.titleColor,
             fontSize: 30,
@@ -246,7 +234,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
         const SizedBox(height: 8),
         // 副标题
         Text(
-          '让每个人都组建AI团队',
+          '让每一个像素都经得起推敲。',
           style: TextStyle(
             color: _AppDesign.subtitleColor,
             fontSize: 14,
@@ -394,6 +382,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
             minHeight: 20,
           ),
           suffixIcon: suffixIcon,
+          suffixIconConstraints: suffixIcon != null
+              ? const BoxConstraints(minWidth: 48, minHeight: 20)
+              : null,
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -455,13 +446,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontFamily: _oppoSansFamily,
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
                           height: 1.50,
                           letterSpacing: -0.31,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 32),
                       const Icon(
                         Icons.arrow_forward_rounded,
                         color: Colors.white,
