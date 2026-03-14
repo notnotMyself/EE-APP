@@ -89,6 +89,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   /// 选中的应用
   AppInfo? _selectedApp;
 
+  /// Profile 描述行的 GlobalKey（用于定位个性弹窗）
+  final GlobalKey _profileDescriptionKey = GlobalKey();
+
   /// 选中的人物个性
   Personality? _selectedPersonality;
 
@@ -587,6 +590,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
         horizontal: AgentProfileTheme.horizontalPadding,
       ),
       child: AgentProfileCard(
+        key: _profileDescriptionKey,
         agent: widget.agent,
         selectedPersonality: _selectedPersonality,
         onPersonalityTap: _showPersonalitySelector,
@@ -895,17 +899,33 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   void _showPersonalitySelector() async {
     final RenderBox overlay =
         Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-
-    // 计算弹窗位置（屏幕中央偏上）
     final screenWidth = overlay.size.width;
-    final screenHeight = overlay.size.height;
-    
-    final position = RelativeRect.fromLTRB(
-      (screenWidth - 196) / 2, // 弹窗宽度196，居中
-      screenHeight * 0.35,     // 屏幕35%位置
-      (screenWidth - 196) / 2,
-      screenHeight * 0.35,
-    );
+
+    // Figma: 弹窗距离描述文字 8dp
+    RelativeRect position;
+    final profileRenderBox = _profileDescriptionKey.currentContext
+        ?.findRenderObject() as RenderBox?;
+    if (profileRenderBox != null) {
+      final profilePosition =
+          profileRenderBox.localToGlobal(Offset.zero, ancestor: overlay);
+      final profileSize = profileRenderBox.size;
+      final topOffset = profilePosition.dy + profileSize.height + 8; // 8dp gap
+      position = RelativeRect.fromLTRB(
+        (screenWidth - 196) / 2, // 弹窗宽度196，居中
+        topOffset,
+        (screenWidth - 196) / 2,
+        0,
+      );
+    } else {
+      // Fallback
+      final screenHeight = overlay.size.height;
+      position = RelativeRect.fromLTRB(
+        (screenWidth - 196) / 2,
+        screenHeight * 0.35,
+        (screenWidth - 196) / 2,
+        screenHeight * 0.35,
+      );
+    }
 
     final selected = await showPersonalitySelectorPopup(
       context,
