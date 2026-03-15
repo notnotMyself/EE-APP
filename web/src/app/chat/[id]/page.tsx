@@ -358,7 +358,11 @@ export default function ChatDetailPage({
             role: m.role as "user" | "assistant",
             content: m.content_type === "briefing_card" ? "[简报卡片]" : m.content,
           }));
-        setMessages(loaded);
+        // Only replace messages if API returned actual history;
+        // don't wipe out the initial ?q= message for a fresh conversation.
+        if (loaded.length > 0) {
+          setMessages(loaded);
+        }
         // Use first user message as title hint
         const firstUser = apiMessages.find((m: ApiMessage) => m.role === "user");
         if (firstUser) {
@@ -370,6 +374,27 @@ export default function ChatDetailPage({
       .catch((err) => console.error("Failed to load messages:", err));
   }, [accessToken, conversationId]);
 
+  // Show initial user message from ?q= param immediately (before WS connects)
+  useEffect(() => {
+    if (initialMessageSent.current) return;
+    const q = searchParams.get("q");
+    if (q) {
+      initialMessageSent.current = true;
+      // Show user message bubble right away
+      const userMsg: ChatMessage = {
+        id: `user-init-${Date.now()}`,
+        role: "user",
+        content: q,
+      };
+      setMessages((prev) => (prev.length === 0 ? [userMsg] : prev));
+      // Store the pending initial query for WS to pick up
+      pendingInitialQuery.current = q;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const pendingInitialQuery = useRef<string | null>(null);
+
   // Connect WebSocket
   useEffect(() => {
     if (!accessToken || !conversationId || conversationId.startsWith("new-"))
@@ -377,11 +402,20 @@ export default function ChatDetailPage({
 
     const ws = new ConversationWebSocket(conversationId, accessToken, {
       onConnected: () => {
-        // If there's an initial query pending, send it now
-        const q = searchParams.get("q");
-        if (q && !initialMessageSent.current) {
-          initialMessageSent.current = true;
-          sendMessageViaWS(ws, q);
+        // If there's a pending initial query, send it via WS now
+        const q = pendingInitialQuery.current;
+        if (q) {
+          pendingInitialQuery.current = null;
+          // Add AI streaming placeholder and send
+          const aiId = `ai-${Date.now()}`;
+          streamingMessageId.current = aiId;
+          setMessages((prev) => [
+            ...prev,
+            { id: aiId, role: "assistant", content: "", isStreaming: true },
+          ]);
+          setIsGenerating(true);
+          streamBuffer.reset();
+          ws.sendMessage(q);
         }
       },
       onTextChunk: (content) => {
@@ -424,7 +458,19 @@ export default function ChatDetailPage({
         streamBuffer.reset();
       },
       onClose: () => {
-        // Connection lost — stop streaming if active
+        // Connection lost — if we had a pending initial query that never got sent, show fallback
+        if (pendingInitialQuery.current) {
+          const q = pendingInitialQuery.current;
+          pendingInitialQuery.current = null;
+          // Show fallback response
+          const aiId = `ai-fallback-${Date.now()}`;
+          const fallbackReply = `收到你的消息："${q}"\n\n当前无法连接到后端服务，请检查网络连接后重试。`;
+          setMessages((prev) => [
+            ...prev,
+            { id: aiId, role: "assistant", content: fallbackReply, isStreaming: false },
+          ]);
+        }
+        // Stop streaming if active
         if (streamingMessageId.current) {
           streamBuffer.finish();
           const finalContent = streamBuffer.displayedRef.current;
