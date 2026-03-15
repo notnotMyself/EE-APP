@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg-gray: #F0F1F2;
+  --color-bg-sidebar: #F8F8F8;
+  --color-primary-black: rgba(0, 0, 0, 0.9);
+  --color-secondary-text: rgba(0, 0, 0, 0.54);
+  --color-disabled-text: rgba(0, 0, 0, 0.3);
+  --color-blue: #0066FF;
+  --color-dark-title: #0D1B34;
+  --color-thin-fill: rgba(0, 0, 0, 0.04);
+  --color-input-bg: #F8FAFC;
+  --color-input-border: #E2E8F0;
+  --font-sans: "OPPO Sans 4.0", "Inter", system-ui, sans-serif;
+  --font-heading: "Poppins", sans-serif;
+}
+
+@font-face {
+  font-family: "OPPO Sans 4.0";
+  src: local("OPPO Sans 4.0"), local("OPPO Sans"), local("PingFang SC"), local("Microsoft YaHei");
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg-gray);
+  color: var(--color-primary-black);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
+}
+
+/* Glass effect for login modal */
+.glass-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%),
+              rgba(87,87,87,0.05);
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+  border: 1px solid;
+  border-image-source: linear-gradient(108deg, rgba(255,255,255,0.8) 8%, rgba(235,241,254,0.43) 57%, rgba(173,193,211,0.3) 100%);
+  border-image-slice: 1;
+  box-shadow: 0px 12px 40px rgba(0,0,0,0.16),
+              inset 1.2px 1.2px 3.6px rgba(255,255,255,0.24),
+              inset 0px -4.8px 8.6px rgba(255,255,255,0.6),
+              inset 0px -1.2px 1.7px rgba(255,255,255,0.6);
+}
+
+/* Gradient border for glass card (since border-image doesn't work with border-radius) */
+.glass-card-wrapper {
+  position: relative;
+  border-radius: 28px;
+  padding: 1px;
+  background: linear-gradient(108deg, rgba(255,255,255,0.8) 8%, rgba(235,241,254,0.43) 57%, rgba(173,193,211,0.3) 100%);
+}
+.glass-card-inner {
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.6) 100%),
+              rgba(178,178,178,0.8);
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+  border-radius: 27px;
+  box-shadow: 0px 12px 40px rgba(0,0,0,0.16),
+              inset 1.2px 1.2px 3.6px rgba(255,255,255,0.24),
+              inset 0px -4.8px 8.6px rgba(255,255,255,0.6),
+              inset 0px -1.2px 1.7px rgba(255,255,255,0.6);
+}
+
+/* Input box with gradient border */
+.input-gradient-border {
+  position: relative;
+  border-radius: 20px;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%);
+}
+.input-gradient-border-inner {
+  background: rgba(255,255,255,0.68);
+  backdrop-filter: blur(60px);
+  -webkit-backdrop-filter: blur(60px);
+  border-radius: 19px;
+  box-shadow: inset 0px -0.6px 1px rgba(255,255,255,0.2),
+              inset 0px 0.6px 1px rgba(255,255,255,0.2),
+              inset 0px -2px 8px rgba(255,255,255,0.8);
+}
+
+/* Suggestion chip with gradient border */
+.chip-gradient-border {
+  border-radius: 84px;
+  padding: 0.5px;
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.chip-gradient-border:hover {
+  opacity: 0.8;
+}
+.chip-gradient-border-inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 76px;
+  height: 32px;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.04);
+  border-radius: 84px;
+}
