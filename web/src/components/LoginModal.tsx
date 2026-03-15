@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 function CloseIcon() {
   return (
@@ -151,13 +151,24 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
-  const router = useRouter();
+  const { login } = useAuth();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleStart = () => {
-    router.push("/chat");
+  const handleStart = async () => {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await login(account, password);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -253,6 +264,12 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   type={passwordVisible ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleStart();
+                    }
+                  }}
                   placeholder="请输入密码"
                   className="h-full w-full border-none bg-transparent text-[14px] text-black outline-none"
                   style={{
@@ -272,10 +289,16 @@ export default function LoginModal({ onClose }: LoginModalProps) {
               </div>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <p className="m-0 text-[14px] text-red-500 text-center">{error}</p>
+            )}
+
             {/* Start button */}
             <button
               onClick={handleStart}
-              className="flex cursor-pointer items-center justify-center gap-[32px] border-none transition-opacity hover:opacity-90 active:opacity-80"
+              disabled={isSubmitting}
+              className="flex cursor-pointer items-center justify-center gap-[32px] border-none transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 width: 329.3,
                 height: 55.99,
@@ -291,9 +314,9 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   letterSpacing: "-0.0195em",
                 }}
               >
-                开始
+                {isSubmitting ? "登录中..." : "开始"}
               </span>
-              <ArrowRightIcon />
+              {!isSubmitting && <ArrowRightIcon />}
             </button>
           </div>
         </div>

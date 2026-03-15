@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
+import { createConversation } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import PersonalitySelector, { personalities } from "@/components/PersonalitySelector";
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
+
+// Default agent for "AI 评审" tab — matches backend agent_mapping
+const DEFAULT_AGENT_ID = "dev_efficiency_analyst";
 
 function DropdownArrowIcon() {
   return (
@@ -93,24 +98,56 @@ function MicIcon() {
   );
 }
 
-const suggestionChips = ["\u968F\u4FBF\u804A\u804A", "\u4EA4\u4E92\u9A8C\u8BC1", "\u89C6\u89C9\u8BA8\u8BBA", "\u65B9\u6848PK"];
+const suggestionChips = ["随便聊聊", "交互验证", "视觉讨论", "方案PK"];
 
 export default function ChatPage() {
   const router = useRouter();
+  const { isLoggedIn, isLoading, accessToken } = useAuth();
   const [inputValue, setInputValue] = useState("");
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showPersonalitySelector, setShowPersonalitySelector] = useState(false);
   const [selectedPersonality, setSelectedPersonality] = useState("default");
+  const [isCreating, setIsCreating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.replace("/login");
+    }
+  }, [isLoading, isLoggedIn, router]);
+
   const handleSubmit = useCallback(
-    (text?: string) => {
+    async (text?: string) => {
       const valueToSend = text ?? inputValue;
-      if (!valueToSend.trim()) return;
+      if (!valueToSend.trim() || isCreating) return;
+
       setInputValue("");
-      router.push("/chat/new");
+
+      if (!accessToken) {
+        // Fallback: local-only navigation (should not happen if logged in)
+        const convId = `new-${Date.now()}`;
+        router.push(`/chat/${convId}?q=${encodeURIComponent(valueToSend.trim())}`);
+        return;
+      }
+
+      // Create a real conversation via API, then navigate
+      setIsCreating(true);
+      try {
+        const conv = await createConversation(accessToken, DEFAULT_AGENT_ID);
+        router.push(
+          `/chat/${conv.id}?q=${encodeURIComponent(valueToSend.trim())}`
+        );
+      } catch (err) {
+        console.error("Failed to create conversation:", err);
+        // Fallback to local ID
+        const convId = `new-${Date.now()}`;
+        router.push(`/chat/${convId}?q=${encodeURIComponent(valueToSend.trim())}`);
+      } finally {
+        setIsCreating(false);
+      }
     },
-    [inputValue, router]
+    [inputValue, router, accessToken, isCreating]
   );
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -127,7 +164,7 @@ export default function ChatPage() {
     if (inputValue.trim()) {
       handleSubmit();
     } else {
-      alert("\u8BED\u97F3\u8F93\u5165\u529F\u80FD\u5F00\u53D1\u4E2D");
+      alert("语音输入功能开发中");
     }
   };
 
@@ -137,12 +174,12 @@ export default function ChatPage() {
   };
 
   const selectedPersonalityLabel =
-    personalities.find((p) => p.id === selectedPersonality)?.label ?? "\u9ED8\u8BA4";
+    personalities.find((p) => p.id === selectedPersonality)?.label ?? "默认";
 
   return (
     <div className="flex h-screen w-full bg-[#F0F1F2]">
       {/* Left Sidebar */}
-      <Sidebar isLoggedIn={true} />
+      <Sidebar isLoggedIn={isLoggedIn} />
 
       {/* Right Content */}
       <div className="relative flex flex-col flex-1 min-w-0">
@@ -174,7 +211,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-[2px] relative">
               <div className="flex items-center gap-1">
                 <span className="text-[14px] font-normal leading-[1.43em] text-black/[0.54]">
-                  {"\u8EAB\u7ECF\u767E\u6218\uFF0C\u773C\u5149\u5982\u70AC\u7684\u8BBE\u8BA1\u8001\u6CD5\u5E08"}
+                  身经百战，眼光如炬的设计老法师
                 </span>
                 <span className="w-1 h-1 rounded-full bg-[#3A3A3A] inline-block" />
                 <button
@@ -183,7 +220,7 @@ export default function ChatPage() {
                   className="flex items-center gap-[2px] bg-transparent border-none cursor-pointer p-0 hover:opacity-70 transition-opacity"
                 >
                   <span className="text-[14px] font-normal leading-[1.43em] text-black/[0.54]">
-                    {selectedPersonalityLabel === "\u9ED8\u8BA4" ? "\u9009\u62E9\u4E2A\u6027" : selectedPersonalityLabel}
+                    {selectedPersonalityLabel === "默认" ? "选择个性" : selectedPersonalityLabel}
                   </span>
                   <DropdownArrowIcon />
                 </button>
@@ -222,6 +259,7 @@ export default function ChatPage() {
                     placeholder={"简单描述设计方案背景与目标"}
                     className="w-full bg-transparent border-none outline-none resize-none text-[16px] leading-[1.4em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.54)] font-normal min-h-[60px]"
                     rows={3}
+                    disabled={isCreating}
                   />
                 </div>
 
@@ -256,8 +294,9 @@ export default function ChatPage() {
                   <button
                     type="button"
                     onClick={handleSendOrMicClick}
-                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
-                    title={inputValue.trim() ? "\u53D1\u9001" : "\u8BED\u97F3\u8F93\u5165"}
+                    disabled={isCreating}
+                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors disabled:opacity-50"
+                    title={inputValue.trim() ? "发送" : "语音输入"}
                   >
                     {inputValue.trim() ? <SendIcon /> : <MicIcon />}
                   </button>
@@ -272,6 +311,7 @@ export default function ChatPage() {
                   key={chip}
                   type="button"
                   onClick={() => handleChipClick(chip)}
+                  disabled={isCreating}
                   className="chip-gradient-border"
                 >
                   <span className="chip-gradient-border-inner">

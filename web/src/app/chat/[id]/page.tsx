@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, use, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
+import { listMessages, type Message as ApiMessage } from "@/lib/api";
+import { ConversationWebSocket } from "@/lib/websocket";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
@@ -82,24 +86,8 @@ function CopyIcon() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect
-        x="1.5"
-        y="1.5"
-        width="8.5"
-        height="8.5"
-        rx="1"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.26"
-      />
-      <rect
-        x="5"
-        y="5"
-        width="8.5"
-        height="8.5"
-        rx="1"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.26"
-      />
+      <rect x="1.5" y="1.5" width="8.5" height="8.5" rx="1" stroke="rgba(0,0,0,0.9)" strokeWidth="1.26" />
+      <rect x="5" y="5" width="8.5" height="8.5" rx="1" stroke="rgba(0,0,0,0.9)" strokeWidth="1.26" />
     </svg>
   );
 }
@@ -151,42 +139,15 @@ function DownloadIcon() {
   );
 }
 
-// ─── Mock Data ──────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   hasImages?: boolean;
+  isStreaming?: boolean;
 }
-
-const initialMockMessages: ChatMessage[] = [
-  {
-    id: "1",
-    role: "user",
-    content: "\u70B9\u6309\u624B\u5199\u7B14\u673A\u8EAB\u7684\u6309\u952E\uFF0C\u51FA\u73B0\u7684\u8F6E\u76D8\u65B9\u6848\u9009\u62E9\u5BF9\u6BD4",
-    hasImages: true,
-  },
-  {
-    id: "2",
-    role: "assistant",
-    content:
-      "\u4F60\u5E0C\u671B\u8FD9\u4E2A\u8F6E\u76D8\u89E3\u51B3\u7684\u6838\u5FC3\u95EE\u9898\u662F\u4EC0\u4E48\uFF1F\n\u51CF\u5C11\u64CD\u4F5C\u8DEF\u5F84\uFF1F\n\u964D\u4F4E\u624B\u5199\u8FC7\u7A0B\u4E2D\u7684\u4E2D\u65AD\u611F\uFF1F\n\u8FD8\u662F\u4E3A\u4E86\u5BB9\u7EB3\u66F4\u591A\u80FD\u529B\u800C\u4E0D\u5360\u753B\u5E03\u7A7A\u95F4\uFF1F",
-  },
-  {
-    id: "3",
-    role: "user",
-    content: "\u5BB9\u7EB3\u66F4\u591A\u80FD\u529B\u800C\u4E0D\u5360\u753B\u5E03\u7A7A\u95F4\uFF0C\u7528\u6237\u53EF\u4EE5\u5FEB\u901F\u8BC6\u522B\u5DE5\u5177",
-  },
-  {
-    id: "4",
-    role: "assistant",
-    content:
-      "\u6211\u4F1A\u9009\u4E0B\u9762\u8FD9\u4E2A\u65B9\u6848\uFF08\u7B2C\u4E8C\u5F20\uFF1A\u56FE\u6807\u5728\u8F6E\u76D8\u5185\uFF0C\u6587\u6848\u5916\u6D6E\u63D0\u793A\uFF09\uFF0C\u4F46\u524D\u63D0\u662F\u4F60\u628A\u5B83\u5F53\u6210\u300C\u5B66\u4E60\u671F / \u4F4E\u9891\u529F\u80FD\u786E\u8BA4\u6001\u300D\u65B9\u6848\uFF1B\n\u5982\u679C\u76EE\u6807\u662F\u300C\u5DF2\u7ECF\u719F\u7EC3\u4F7F\u7528\u7684\u9AD8\u9891\u5DE5\u5177\u300D\uFF0C\u7B2C\u4E00\u5F20\u66F4\u4F18\u3002",
-  },
-];
-
-const mockConversationTitle = "\u624B\u5199\u7B14\u8F6E\u76D8\u8BBE\u8BA1\u5BF9\u6BD4";
 
 // ─── User Message Bubble ────────────────────────────────────────────────────
 
@@ -231,49 +192,124 @@ function UserMessage({ message }: { message: ChatMessage }) {
 function AIMessage({ message }: { message: ChatMessage }) {
   return (
     <div className="flex flex-col gap-[8px] max-w-[600px]">
-      {/* Message bubble */}
       <div
         className="bg-[rgba(0,0,0,0.04)] rounded-[12px] px-[16px] pt-[12px] pb-[16px] flex flex-col gap-[8px]"
-        style={{
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
-        }}
+        style={{ boxShadow: "0px 2px 8px rgba(0,0,0,0.04)" }}
       >
-        {/* Message text */}
         <div className="w-full">
           <p className="m-0 text-[16px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
             {message.content}
+            {message.isStreaming && (
+              <span className="inline-block w-[2px] h-[1em] bg-[rgba(0,0,0,0.6)] ml-[1px] align-middle animate-pulse" />
+            )}
           </p>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-between gap-[9px]">
-          <div className="flex items-center gap-[8px]">
+        {/* Action buttons - hidden while streaming */}
+        {!message.isStreaming && message.content && (
+          <div className="flex items-center justify-between gap-[9px]">
+            <div className="flex items-center gap-[8px]">
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                title="复制"
+                onClick={() => navigator.clipboard.writeText(message.content)}
+              >
+                <CopyIcon />
+              </button>
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                title="重新生成"
+              >
+                <RegenerateIcon />
+              </button>
+            </div>
             <button
               type="button"
               className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-              title="复制"
+              title="下载"
             >
-              <CopyIcon />
-            </button>
-            <button
-              type="button"
-              className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-              title="重新生成"
-            >
-              <RegenerateIcon />
+              <DownloadIcon />
             </button>
           </div>
-          <button
-            type="button"
-            className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-            title="下载"
-          >
-            <DownloadIcon />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
+}
+
+// ─── Streaming buffer ───────────────────────────────────────────────────────
+// 2-level buffer matching the Flutter app:
+// Level 1: Network chunks accumulate in a buffer (50ms flush interval)
+// Level 2: Display buffer renders chars with a typewriter effect (30ms per chunk)
+
+function useStreamingBuffer() {
+  const networkBuffer = useRef("");
+  const displayedRef = useRef("");
+  const flushTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const setContentFn = useRef<((s: string) => void) | null>(null);
+
+  const startTypewriter = useCallback(() => {
+    if (typeTimer.current) return;
+    typeTimer.current = setInterval(() => {
+      const target = networkBuffer.current;
+      const displayed = displayedRef.current;
+      if (displayed.length >= target.length) {
+        // caught up — stop typewriter until more data arrives
+        if (typeTimer.current) {
+          clearInterval(typeTimer.current);
+          typeTimer.current = null;
+        }
+        return;
+      }
+      const chunkSize = Math.min(6, target.length - displayed.length);
+      displayedRef.current = target.slice(0, displayed.length + chunkSize);
+      setContentFn.current?.(displayedRef.current);
+    }, 30);
+  }, []);
+
+  const pushChunk = useCallback(
+    (chunk: string) => {
+      networkBuffer.current += chunk;
+      startTypewriter();
+    },
+    [startTypewriter]
+  );
+
+  const finish = useCallback(() => {
+    // Immediately display all remaining content
+    if (typeTimer.current) {
+      clearInterval(typeTimer.current);
+      typeTimer.current = null;
+    }
+    if (flushTimer.current) {
+      clearInterval(flushTimer.current);
+      flushTimer.current = null;
+    }
+    displayedRef.current = networkBuffer.current;
+    setContentFn.current?.(displayedRef.current);
+  }, []);
+
+  const reset = useCallback(() => {
+    networkBuffer.current = "";
+    displayedRef.current = "";
+    if (typeTimer.current) {
+      clearInterval(typeTimer.current);
+      typeTimer.current = null;
+    }
+    if (flushTimer.current) {
+      clearInterval(flushTimer.current);
+      flushTimer.current = null;
+    }
+  }, []);
+
+  const bindSetter = useCallback((fn: (s: string) => void) => {
+    setContentFn.current = fn;
+  }, []);
+
+  return { pushChunk, finish, reset, bindSetter, displayedRef };
 }
 
 // ─── Page Component ─────────────────────────────────────────────────────────
@@ -283,36 +319,229 @@ export default function ChatDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id: _conversationId } = use(params);
+  const { id: conversationId } = use(params);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isLoggedIn, isLoading, accessToken } = useAuth();
   const [inputValue, setInputValue] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMockMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState("新对话");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const wsRef = useRef<ConversationWebSocket | null>(null);
+  const initialMessageSent = useRef(false);
+  const streamingMessageId = useRef<string | null>(null);
+
+  const streamBuffer = useStreamingBuffer();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      router.replace("/login");
+    }
+  }, [isLoading, isLoggedIn, router]);
+
+  // Load existing messages from API
+  useEffect(() => {
+    if (!accessToken || !conversationId || conversationId.startsWith("new-"))
+      return;
+
+    listMessages(accessToken, conversationId)
+      .then(({ messages: apiMessages }) => {
+        const loaded: ChatMessage[] = apiMessages
+          .filter((m: ApiMessage) => m.role === "user" || m.role === "assistant")
+          .map((m: ApiMessage) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content_type === "briefing_card" ? "[简报卡片]" : m.content,
+          }));
+        setMessages(loaded);
+        // Use first user message as title hint
+        const firstUser = apiMessages.find((m: ApiMessage) => m.role === "user");
+        if (firstUser) {
+          setConversationTitle(
+            firstUser.content.slice(0, 20) + (firstUser.content.length > 20 ? "..." : "")
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to load messages:", err));
+  }, [accessToken, conversationId]);
+
+  // Connect WebSocket
+  useEffect(() => {
+    if (!accessToken || !conversationId || conversationId.startsWith("new-"))
+      return;
+
+    const ws = new ConversationWebSocket(conversationId, accessToken, {
+      onConnected: () => {
+        // If there's an initial query pending, send it now
+        const q = searchParams.get("q");
+        if (q && !initialMessageSent.current) {
+          initialMessageSent.current = true;
+          sendMessageViaWS(ws, q);
+        }
+      },
+      onTextChunk: (content) => {
+        streamBuffer.pushChunk(content);
+      },
+      onDone: () => {
+        streamBuffer.finish();
+        const finalContent = streamBuffer.displayedRef.current;
+        // Mark streaming message as complete
+        if (streamingMessageId.current) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingMessageId.current
+                ? { ...m, content: finalContent, isStreaming: false }
+                : m
+            )
+          );
+          streamingMessageId.current = null;
+        }
+        setIsGenerating(false);
+        streamBuffer.reset();
+      },
+      onError: (content) => {
+        console.error("WS error:", content);
+        if (streamingMessageId.current) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingMessageId.current
+                ? {
+                    ...m,
+                    content: m.content || `[Error: ${content}]`,
+                    isStreaming: false,
+                  }
+                : m
+            )
+          );
+          streamingMessageId.current = null;
+        }
+        setIsGenerating(false);
+        streamBuffer.reset();
+      },
+      onClose: () => {
+        // Connection lost — stop streaming if active
+        if (streamingMessageId.current) {
+          streamBuffer.finish();
+          const finalContent = streamBuffer.displayedRef.current;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingMessageId.current
+                ? { ...m, content: finalContent || "[连接断开]", isStreaming: false }
+                : m
+            )
+          );
+          streamingMessageId.current = null;
+          setIsGenerating(false);
+          streamBuffer.reset();
+        }
+      },
+    });
+
+    wsRef.current = ws;
+    ws.connect();
+
+    return () => {
+      ws.disconnect();
+      wsRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, conversationId]);
+
+  // Bind the streaming buffer setter to update the streaming message's content
+  useEffect(() => {
+    streamBuffer.bindSetter((displayedContent) => {
+      if (!streamingMessageId.current) return;
+      const msgId = streamingMessageId.current;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msgId ? { ...m, content: displayedContent } : m
+        )
+      );
+    });
+  }, [streamBuffer]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = useCallback(() => {
-    if (!inputValue.trim()) return;
+  function sendMessageViaWS(ws: ConversationWebSocket, text: string) {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: inputValue.trim(),
+      content: text,
     };
 
-    // Simulate AI reply
-    const aiReply: ChatMessage = {
-      id: `ai-${Date.now()}`,
-      role: "assistant",
-      content: `\u6536\u5230\u4F60\u7684\u6D88\u606F\uFF1A\u201C${inputValue.trim()}\u201D\n\n\u8FD9\u662F\u4E00\u4E2A\u6A21\u62DF\u56DE\u590D\uFF0C\u5B9E\u9645\u7684 AI \u56DE\u590D\u5C06\u7531\u540E\u7AEF\u670D\u52A1\u63D0\u4F9B\u3002`,
-    };
+    const aiId = `ai-${Date.now()}`;
+    streamingMessageId.current = aiId;
 
-    setMessages((prev) => [...prev, userMessage, aiReply]);
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      { id: aiId, role: "assistant", content: "", isStreaming: true },
+    ]);
+    setIsGenerating(true);
+
+    streamBuffer.reset();
+    ws.sendMessage(text);
+  }
+
+  const handleSubmit = useCallback(() => {
+    if (!inputValue.trim() || isGenerating) return;
+    const userText = inputValue.trim();
     setInputValue("");
-  }, [inputValue]);
+
+    if (wsRef.current?.isConnected) {
+      sendMessageViaWS(wsRef.current, userText);
+    } else {
+      // Fallback: mock streaming for when WS is not connected
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: userText,
+      };
+      const aiId = `ai-${Date.now()}`;
+      const fallbackReply = `收到你的消息："${userText}"\n\n当前无法连接到后端服务，请检查网络连接后重试。`;
+
+      setMessages((prev) => [
+        ...prev,
+        userMessage,
+        { id: aiId, role: "assistant", content: "", isStreaming: true },
+      ]);
+      setIsGenerating(true);
+
+      let charIndex = 0;
+      const interval = setInterval(() => {
+        const chunkSize = Math.floor(Math.random() * 3) + 2;
+        charIndex = Math.min(charIndex + chunkSize, fallbackReply.length);
+        if (charIndex >= fallbackReply.length) {
+          clearInterval(interval);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId
+                ? { ...m, content: fallbackReply, isStreaming: false }
+                : m
+            )
+          );
+          setIsGenerating(false);
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiId
+                ? { ...m, content: fallbackReply.slice(0, charIndex) }
+                : m
+            )
+          );
+        }
+      }, 30);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue, isGenerating]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,19 +557,19 @@ export default function ChatDetailPage({
     if (inputValue.trim()) {
       handleSubmit();
     } else {
-      alert("\u8BED\u97F3\u8F93\u5165\u529F\u80FD\u5F00\u53D1\u4E2D");
+      alert("语音输入功能开发中");
     }
   };
 
   return (
     <div className="flex h-screen w-full bg-[#F0F1F2]">
       {/* Left Sidebar */}
-      <Sidebar isLoggedIn={true} />
+      <Sidebar isLoggedIn={isLoggedIn} />
 
       {/* Right Content */}
       <div className="relative flex flex-col flex-1 min-w-0">
         {/* Top Bar with conversation title */}
-        <TopBar showNewChat={true} title={mockConversationTitle} />
+        <TopBar showNewChat={true} title={conversationTitle} />
 
         {/* Chat Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
@@ -414,7 +643,7 @@ export default function ChatDetailPage({
                       type="button"
                       onClick={handleSendOrMicClick}
                       className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
-                      title={inputValue.trim() ? "\u53D1\u9001" : "\u8BED\u97F3\u8F93\u5165"}
+                      title={inputValue.trim() ? "发送" : "语音输入"}
                     >
                       {inputValue.trim() ? <SendIcon /> : <MicIcon />}
                     </button>
