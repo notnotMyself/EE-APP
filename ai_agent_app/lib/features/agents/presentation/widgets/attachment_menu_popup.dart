@@ -58,7 +58,7 @@ class AttachmentMenuPopup extends StatelessWidget {
       width: 196,
       padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: ShapeDecoration(
-        color: const Color(0xCCEFEFEF),
+        color: const Color(0xFFEFEFEF),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),

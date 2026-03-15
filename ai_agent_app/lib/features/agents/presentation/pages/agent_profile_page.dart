@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -480,7 +481,9 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       }
     });
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark, // 黑色状态栏图标（时间、信号、电量）
+      child: Scaffold(
       backgroundColor: AgentProfileTheme.backgroundColor,
       resizeToAvoidBottomInset: false,
       body: AnimatedPadding(
@@ -507,6 +510,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -556,14 +560,14 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
 
   /// 构建介绍视图（空会话时显示）
   ///
-  /// 基于 Figma chris_chat_with_kb 设计稿:
-  /// - 头像+名称在上方
-  /// - 输入框在中间位置
-  /// - 胶囊快捷按钮在输入框下方
+  /// 基于 Figma chris_chat_with_kb 设计稿 (1915:17823):
+  /// - Profile image container at y=117, avatar 130x130 circle
+  /// - Profile name + description below avatar, gap 14px
+  /// - Input container at y=374, width=328, gap=8px with chips
   ///
   /// 键盘行为:
-  /// - 键盘未弹起: Expanded(头像) + 输入框 + Spacer() → 输入框大致居中
-  /// - 键盘弹起: Expanded 折叠（头像隐藏），输入框推至底部，距键盘 15dp
+  /// - 键盘未弹起: 使用 SingleChildScrollView 按 Figma 位置排列
+  /// - 键盘弹起: 内容可滚动，输入框保持可见
   ///
   /// 关键设计：使用 **同一棵 Widget 树**，仅通过属性值变化来切换布局。
   /// 这样 ExpandedChatInput 始终在 Column children[1] 位置，
@@ -597,7 +601,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       ),
     );
 
-    // 输入框和功能键区域（Figma: spacing 10 between input & pills）
+    // 输入框和功能键区域（Figma: spacing 8 between input & pills）
     final inputSection = Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AgentProfileTheme.horizontalPadding,
@@ -621,7 +625,8 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onAppSelected: _onAppSelected,
           ),
 
-          const SizedBox(height: 10), // Figma: spacing 10
+          // Figma: Description container column gap = 8px between input and chips row
+          // (chips row itself has padding 8px 0px internally)
 
           // 胶囊快捷按钮
           if (widget.agent.role == 'design_validator') ...[
@@ -635,35 +640,29 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       ),
     );
 
-    // ── 统一树结构：只改变属性值，不改变树形状 ──
-    //
-    // children[0]: Expanded — 头像始终显示，键盘弹起时空间缩小、头像上移;
-    //                          键盘收起时居中显示
-    // children[1]: inputSection — 始终在同一位置，FocusNode 不丢失
-    // children[2]: SizedBox — 键盘弹起时 15dp 底部间距，否则 0
-    // children[3]: Spacer (仅键盘收起时) — 使输入框垂直居中
-    return Column(
-      children: [
-        // 上部区域：头像始终显示
-        // 键盘弹起时 Expanded 空间缩小 → 头像自然上移（可滚动）
-        // 键盘收起时 Expanded 空间充足 → 头像居中
-        Expanded(
-          child: Center(
-            child: SingleChildScrollView(
-              child: avatarSection,
-            ),
-          ),
-        ),
+    // ── Figma 布局：头像在上方，输入框紧随其下 ──
+    // Figma: profile at y=117 (right after app bar), input at y=374
+    // gap between profile bottom and input top ≈ 30px
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Figma: Profile at y=117, app bar ~104px → gap ≈ 13px
+          const SizedBox(height: 13),
 
-        // 输入框 + 胶囊按钮（始终在 children[1]，保持焦点）
-        inputSection,
+          // 头像介绍区域
+          avatarSection,
 
-        // 底部间距：键盘弹起时 15dp（Figma），收起时 0
-        SizedBox(height: isKeyboardVisible ? 15 : 0),
+          // Figma: profile ends ~y314, input at y=374
+          // Using proportional gap since device status bar height varies
+          const SizedBox(height: 44),
 
-        // 下部空间：键盘收起时占据下半部分，使输入框垂直居中
-        if (!isKeyboardVisible) const Spacer(),
-      ],
+          // 输入框 + 胶囊按钮
+          inputSection,
+
+          // 底部间距
+          SizedBox(height: isKeyboardVisible ? 15 : 40),
+        ],
+      ),
     );
   }
 
@@ -682,41 +681,54 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
       return _buildChatAppBar();
     }
 
-    // 无消息时使用原有的顶部栏
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    // 无消息时按 Figma 设计: 仅右上角历史记录图标
+    // Figma: Primary app bar - padding bottom 12px, controls trailing area right-aligned
+    return Container(
+      padding: const EdgeInsets.only(bottom: 12), // Figma: padding 0px 0px 12px
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          if (widget.showBackButton)
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: AgentProfileTheme.titleColor,
-              ),
-            ),
-          const SizedBox(width: 8),
-          _buildGreetingHeader(),
-          const Spacer(),
-          // History button
-          GestureDetector(
-            onTap: _showConversationSelector,
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Container(
-                decoration: ShapeDecoration(
-                  color: Colors.black.withOpacity(0.04),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(90),
+          // Figma: .通用区 Trailing_primary - padding 0px 12px 0px 0px, height 52
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: _showConversationSelector,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: 48, // Figma: .操作图标 Action icon width 48
+                height: 52, // Figma: Trailing height 52
+                child: Center(
+                  child: Container(
+                    width: 40, // Figma: .Btn bg 40x40
+                    height: 40,
+                    decoration: BoxDecoration(
+                      // Figma: 质感样式/标题栏按钮（亮色）- gradient + inset shadows
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0x99FFFFFF), // rgba(255,255,255,0.6)
+                          Color(0xFFFFFFFF), // rgba(255,255,255,1)
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(100), // Figma: borderRadius 100px
+                      boxShadow: [
+                        // Figma: 质感样式/面板（亮色） inset shadows approximated
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.8),
+                          blurRadius: 8,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/history_icon.svg', // Figma: History 历史 24x24
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
                   ),
-                ),
-                alignment: Alignment.center,
-                child: SvgPicture.asset(
-                  'assets/icons/chat/history.svg',
-                  width: 24,
-                  height: 24,
                 ),
               ),
             ),
@@ -727,152 +739,96 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
   }
 
   /// 构建聊天模式的顶部栏（Figma 设计风格）
+  /// Figma: 次级标题栏 - App bar row, padding 0 12px
+  /// 左: 导航图标(48宽) + 头像(24x24) + 标题"Chris"
+  /// 右: 2个操作图标(各48宽), gap 4px
   Widget _buildChatAppBar() {
+    // Figma 标题只显示 "Chris"（取首个名字）
+    final displayName = widget.agent.name.split(' ').first;
+
     return Container(
       width: double.infinity,
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: back button + agent name
+          // Left: back button + title
           Expanded(
-            child: SizedBox(
-              height: 52,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Back button - 48px touch area, 40x40 circle bg (Figma)
-                  GestureDetector(
-                    onTap: () {
-                      if (widget.showBackButton) {
-                        // 推送进入的页面：返回上一页
-                        Navigator.of(context).pop();
-                      } else {
-                        // 首页嵌入模式：返回到问候/空白状态（新建会话）
-                        _startNewConversation();
-                      }
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: SizedBox(
-                      width: 48,
-                      height: 52,
-                      child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: ShapeDecoration(
-                            color: Colors.black.withOpacity(0.04),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(90),
-                            ),
-                          ),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              'assets/icons/chat/back_arrow.svg',
-                              width: 24,
-                              height: 24,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Agent name
-                  Expanded(
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 52),
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        widget.agent.name,
-                        style: TextStyle(
-                          color: Colors.black.withOpacity(0.90),
-                          fontSize: 18,
-                          fontFamily: 'OPPO Sans 4.0',
-                          fontWeight: FontWeight.w500,
-                          height: 1.44,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Right: add new conversation + history
-          SizedBox(
-            height: 52,
             child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Add new conversation button
-                GestureDetector(
-                  onTap: _startNewConversation,
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    width: 48,
-                    height: 52,
-                    child: Center(
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: ShapeDecoration(
-                          color: Colors.black.withOpacity(0.04),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(90),
-                          ),
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icons/chat/add_circle.svg',
-                          width: 40,
-                          height: 40,
-                        ),
-                      ),
-                    ),
-                  ),
+                // Back button - Figma: 48px 触控区, 内含 40x40 玻璃态圆形按钮
+                _buildNavButton(
+                  svgAsset: 'assets/icons/chat/back_arrow_figma.svg',
+                  onTap: () {
+                    if (widget.showBackButton) {
+                      Navigator.of(context).pop();
+                    } else {
+                      _startNewConversation();
+                    }
+                  },
                 ),
-                // History button
-                GestureDetector(
-                  onTap: _showConversationSelector,
-                  behavior: HitTestBehavior.opaque,
-                  child: SizedBox(
-                    width: 48,
-                    height: 52,
-                    child: Center(
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: ShapeDecoration(
-                          color: Colors.black.withOpacity(0.04),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(90),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: SvgPicture.asset(
-                          'assets/icons/chat/history.svg',
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
+                const SizedBox(width: 4),
+                // Title - Figma: Headline/S · Medium, 18px, w500
+                Expanded(
+                  child: Text(
+                    displayName,
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.90),
+                      fontSize: 18,
+                      fontFamily: 'OPPO Sans 4.0',
+                      fontWeight: FontWeight.w500,
+                      height: 1.44,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
+          ),
+          // Right: add + history - Figma: .通用区 Trailing_secondary, gap 4px
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildNavButton(
+                svgAsset: 'assets/icons/chat/add_new_figma.svg',
+                onTap: _startNewConversation,
+              ),
+              _buildNavButton(
+                svgAsset: 'assets/icons/chat/history_figma.svg',
+                onTap: _showConversationSelector,
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  /// Figma 导航栏按钮: 48px 触控区, SVG viewBox 64x68 含 40x40 玻璃态圆形 + 阴影溢出
+  /// 需要用 OverflowBox 让阴影自然溢出，圆形按钮保持 40px
+  Widget _buildNavButton({required String svgAsset, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 48,
+        height: 52,
+        child: Center(
+          child: OverflowBox(
+            maxWidth: 64,
+            maxHeight: 68,
+            child: SvgPicture.asset(
+              svgAsset,
+              width: 64,
+              height: 68,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   /// 构建问候语头部（基于 Figma greeting 设计）
   Widget _buildGreetingHeader() {
     return Column(
@@ -1267,14 +1223,15 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             onFigmaTap: _onFigmaTap,
             onVoiceTap: _onVoiceTap,
             enabled: !isStreaming && !_isInitializing,
-            initiallyExpanded: false, // 聊天模式默认收起
+            initiallyExpanded: false,
+            chatMode: true, // 聊天模式：保持单行，不展开
             selectedApp: _selectedApp,
             onAppSelected: _onAppSelected,
           ),
 
           // 胶囊快捷按钮（仅 design_validator）
           if (widget.agent.role == 'design_validator') ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12), // Figma: 纸片距输入框 12dp
             QuickActionPillRow(
               actions: QuickActions.defaults,
               selectedAction: _selectedMode,
@@ -1282,7 +1239,7 @@ class _AgentProfilePageState extends ConsumerState<AgentProfilePage> {
             ),
           ],
 
-          SizedBox(height: isKeyboardVisible ? 8 : 8),
+          const SizedBox(height: 12), // Figma: 底部安全距 12dp
         ],
       ),
     );

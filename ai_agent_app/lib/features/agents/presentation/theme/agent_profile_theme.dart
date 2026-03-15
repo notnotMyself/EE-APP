@@ -1,32 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/figma_tokens.dart';
 
-/// OPPO Sans 字体家族名称
-const String oppoSansFamily = 'PingFang SC';
+/// OPPO Sans 字体家族名称（Figma: OPPO Sans 4.0）
+const String oppoSansFamily = FigmaTokens.fontPrimary;
 
 /// AI员工详情页面的设计规范
 /// 基于 Figma 设计稿提取
 class AgentProfileTheme {
   // ============================================
-  // 颜色定义
+  // 颜色定义 (引用 FigmaTokens)
   // ============================================
-  
-  /// 页面背景色 (Figma: couiColorBackgroundWithCard)
-  static const Color backgroundColor = Color(0xFFEFF0F2);
-  
+
+  /// 页面背景色 (Figma: 中性色/背景色/BG Gray #F0F1F2)
+  static const Color backgroundColor = FigmaTokens.backgroundGray;
+
   /// 主标题颜色（深蓝黑）
   static const Color titleColor = Color(0xFF0D1B34);
-  
+
   /// 副标题/标签颜色（蓝灰色）
   static const Color labelColor = Color(0xFF8696BB);
-  
+
   /// 主要文字颜色
-  static const Color textPrimary = Color(0xE6000000); // 90% black
-  
+  static const Color textPrimary = FigmaTokens.labelPrimary;
+
   /// 次要文字颜色
-  static const Color textSecondary = Color(0x8A000000); // 54% black
-  
+  static const Color textSecondary = FigmaTokens.labelSecondary;
+
   /// 三级文字颜色
-  static const Color textTertiary = Color(0x42000000); // 26% black
+  static const Color textTertiary = FigmaTokens.labelTertiary;
   
   /// 卡片/按钮背景色（半透明白，Figma: white 68%）
   static const Color cardBackground = Color(0xADFFFFFF); // 68% white
@@ -65,9 +67,8 @@ class AgentProfileTheme {
     height: 1.10,
   );
   
-  /// AI员工名称样式
-  static TextStyle get agentNameStyle => const TextStyle(
-    fontFamily: oppoSansFamily,
+  /// AI员工名称样式 (Figma: Poppins 700, 26px, lineHeight 1.1em, #0D1B34)
+  static TextStyle get agentNameStyle => GoogleFonts.poppins(
     color: titleColor,
     fontSize: 26,
     fontWeight: FontWeight.w700,
@@ -83,13 +84,13 @@ class AgentProfileTheme {
     height: 1.43,
   );
   
-  /// 输入框提示文字样式
+  /// 输入框提示文字样式 (Figma: Body/L · Regular)
   static TextStyle get inputHintStyle => const TextStyle(
     fontFamily: oppoSansFamily,
     color: Colors.black,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: FontWeight.w400,
-    height: 1,
+    height: 1.375,
   );
   
   /// 快捷按钮标签样式
@@ -105,11 +106,11 @@ class AgentProfileTheme {
   // 尺寸定义
   // ============================================
   
-  /// 头像尺寸 (Figma: 154.13 x 158.15)
-  static const double avatarWidth = 154.0;
-  static const double avatarHeight = 158.0;
+  /// 头像尺寸 (Figma: 130x130 visible circle, image 154x158 overflows)
+  static const double avatarWidth = 130.0;
+  static const double avatarHeight = 130.0;
   /// 兼容旧代码
-  static const double avatarSize = 154.0;
+  static const double avatarSize = 130.0;
   
   /// 快捷按钮尺寸
   static const double quickActionSize = 72.0;

@@ -16,7 +16,7 @@ class QuickAction {
     required this.icon,
     this.initialMessage,
     this.modeId,
-    this.hintText = '这是一个什么产品 / 功能，核心解决什么问题',
+    this.hintText = '简单描述设计方案背景与目标', // Figma: 输入框默认提示文案
   });
 }
 
@@ -27,7 +27,7 @@ class QuickActions {
     label: '随便聊聊',
     icon: Icons.chat_bubble_outline,
     initialMessage: null,
-    hintText: '这是一个什么产品 / 功能，核心解决什么问题',
+    hintText: '简单描述设计方案背景与目标', // Figma: 默认模式用相同提示
   );
 
   static const interaction = QuickAction(
@@ -136,12 +136,10 @@ class QuickActionRow extends StatelessWidget {
   }
 }
 
-/// Figma 胶囊药丸样式的快捷按钮行
+/// Figma 建议纸片样式的快捷按钮行
 ///
-/// 基于 chris-ai-fuction 设计稿：
-/// - 4 个胶囊按钮等宽排列
-/// - 选中的按钮蓝色高亮
-/// - 其余为次要灰色
+/// Figma (1915:19417): row, gap 8px, padding 8px 0px, width 328
+/// 每个纸片 hug 宽度（按内容自适应），不是等宽拉伸
 class QuickActionPillRow extends StatelessWidget {
   final List<QuickAction> actions;
   final Function(QuickAction) onActionTap;
@@ -156,30 +154,25 @@ class QuickActionPillRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: actions.asMap().entries.map((entry) {
-        final index = entry.key;
-        final action = entry.value;
-        // 如果有选中状态就用选中状态，否则默认第一个高亮
-        final isHighlighted = selectedAction != null
-            ? action.id == selectedAction!.id
-            : index == 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8), // Figma: padding 8px 0px
+      child: Wrap(
+        spacing: 8, // Figma: gap 8px
+        runSpacing: 8,
+        children: actions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final action = entry.value;
+          final isHighlighted = selectedAction != null
+              ? action.id == selectedAction!.id
+              : index == 0;
 
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: index == 0 ? 0 : 2.5,
-              right: index == actions.length - 1 ? 0 : 2.5,
-            ),
-            child: _QuickActionPill(
-              label: action.label,
-              isHighlighted: isHighlighted,
-              onTap: () => onActionTap(action),
-            ),
-          ),
-        );
-      }).toList(),
+          return _QuickActionPill(
+            label: action.label,
+            isHighlighted: isHighlighted,
+            onTap: () => onActionTap(action),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -201,29 +194,27 @@ class _QuickActionPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        clipBehavior: Clip.antiAlias,
+        // Figma: hug sizing, padding 2px 12px, borderRadius 50px
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
+          color: isHighlighted
+              ? const Color(0x260066FF) // 彩色/填充色/Blue Halftone
+              : Colors.black.withOpacity(0.04), // Figma: 中性色/填充色/4 · Thin
           shape: RoundedRectangleBorder(
-            side: const BorderSide(width: 0.51, color: Colors.white),
-            borderRadius: BorderRadius.circular(84.27),
+            borderRadius: BorderRadius.circular(50), // Figma: borderRadius 50px
           ),
         ),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isHighlighted
-                  ? const Color(0xFF0066FF)
-                  : Colors.black.withOpacity(0.54),
-              fontSize: 12,
-              fontFamily: 'OPPO Sans 4.0',
-              fontWeight: isHighlighted ? FontWeight.w500 : FontWeight.w400,
-              height: 1.40,
-            ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isHighlighted
+                ? const Color(0xFF0066FF)
+                : Colors.black.withOpacity(0.9), // Figma: 中性色/文本&图标（黑）/90 · Primary
+            fontSize: 12, // Figma: Body/XS · Regular
+            fontFamily: 'OPPO Sans 4.0',
+            fontWeight: FontWeight.w400,
+            height: 1.3333, // Figma: lineHeight 1.3333em
           ),
         ),
       ),

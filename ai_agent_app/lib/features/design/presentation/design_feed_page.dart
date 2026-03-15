@@ -187,27 +187,10 @@ class _DesignFeedPageState extends State<DesignFeedPage>
           height: 40,
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
-            color: Colors.black.withOpacity(0.03),
+            color: const Color(0xFFE5E5EA),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(100),
             ),
-            shadows: const [
-              BoxShadow(
-                color: Color(0x0F000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 2,
-                offset: Offset(0, 0),
-              ),
-              BoxShadow(
-                color: Color(0x0A000000),
-                blurRadius: 24,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(4),
@@ -241,7 +224,7 @@ class _DesignFeedPageState extends State<DesignFeedPage>
           height: double.infinity,
           clipBehavior: Clip.antiAlias,
           decoration: ShapeDecoration(
-            color: selected ? Colors.white.withOpacity(0.80) : Colors.transparent,
+            color: selected ? Colors.white : Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(200),
             ),
@@ -251,9 +234,9 @@ class _DesignFeedPageState extends State<DesignFeedPage>
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.black.withOpacity(0.90),
+                color: selected ? Colors.black : const Color(0xFF8E8E93),
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 height: 1.43,
               ),
             ),

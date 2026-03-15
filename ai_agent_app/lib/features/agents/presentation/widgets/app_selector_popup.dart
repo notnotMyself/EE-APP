@@ -107,7 +107,7 @@ class _AppSelectorPopupState extends State<AppSelectorPopup> {
       constraints: const BoxConstraints(minWidth: 168, maxWidth: 256),
       width: 196,
       decoration: ShapeDecoration(
-        color: const Color(0xCCEFEFEF),
+        color: const Color(0xFFEFEFEF),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),

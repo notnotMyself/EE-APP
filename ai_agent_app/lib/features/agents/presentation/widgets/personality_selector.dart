@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'PingFang SC';
+/// OPPO Sans 字体家族名称（Figma: OPPO Sans 4.0）
+const String _oppoSansFamily = 'OPPO Sans 4.0';
 
 /// 人物个性数据模型
 class Personality {
@@ -80,7 +80,7 @@ class PersonalitySelectorPopup extends StatelessWidget {
       child: Container(
         width: 196,
         decoration: ShapeDecoration(
-          color: const Color(0xCCEFEFEF),
+          color: const Color(0xFFEFEFEF),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),

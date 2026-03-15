@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // ============================================
@@ -27,7 +26,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: backgroundColor,
-      textTheme: GoogleFonts.interTextTheme(),
+      textTheme: ThemeData.light().textTheme.apply(fontFamily: 'OPPO Sans 4.0'),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -123,7 +122,7 @@ class AppTheme {
         seedColor: primaryColor,
         brightness: Brightness.dark,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'OPPO Sans 4.0'),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         elevation: 0,

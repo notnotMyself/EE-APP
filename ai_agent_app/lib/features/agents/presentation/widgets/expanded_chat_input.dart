@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/agent_profile_theme.dart';
 import 'app_selector_popup.dart';
 import 'attachment_menu_popup.dart';
@@ -83,12 +83,13 @@ class ExpandedChatInput extends StatefulWidget {
   final ValueChanged<ChatAttachment>? onAttachmentRemove;
   final bool enabled;
   final bool initiallyExpanded;                  // 是否默认展开
+  final bool chatMode;                            // 聊天模式：保持单行，不展开
   final AppInfo? selectedApp;                    // 当前选中的应用
   final ValueChanged<AppInfo?>? onAppSelected;  // 应用选择回调
 
   const ExpandedChatInput({
     super.key,
-    this.hintText = '这是一个什么产品 / 功能，核心解决什么问题',
+    this.hintText = '简单描述设计方案背景与目标', // Figma: 输入框组件默认文案
     required this.onSubmit,
     this.onImageTap,
     this.onFileTap,
@@ -98,6 +99,7 @@ class ExpandedChatInput extends StatefulWidget {
     this.onAttachmentRemove,
     this.enabled = true,
     this.initiallyExpanded = false,
+    this.chatMode = false,
     this.selectedApp,
     this.onAppSelected,
   });
@@ -168,13 +170,82 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
 
   @override
   Widget build(BuildContext context) {
+    // chatMode: 始终显示单行输入框，不展开
+    if (widget.chatMode) {
+      return _buildChatModeInput();
+    }
+
     // 如果未展开，显示简单输入框
     if (!_isExpanded) {
       return _buildCollapsedInput();
     }
-    
+
     // 展开状态显示完整输入卡片
     return _buildExpandedCard();
+  }
+
+  /// 聊天模式的单行输入框
+  /// 始终保持单行，不会展开，支持直接输入和发送
+  Widget _buildChatModeInput() {
+    final hasText = _hasText;
+    final canSend = hasText && widget.enabled;
+
+    // Figma 设计稿：56px 高，白色 68% 背景，白色 1px 边框，pill 圆角
+    return Container(
+      width: double.infinity,
+      height: 56,
+      clipBehavior: Clip.antiAlias,
+      decoration: ShapeDecoration(
+        color: Colors.white.withOpacity(0.68),
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(width: 1, color: Colors.white),
+          borderRadius: BorderRadius.circular(100),
+        ),
+      ),
+      padding: const EdgeInsets.only(left: 24, right: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                hintStyle: TextStyle(
+                  color: Colors.black.withOpacity(0.60),
+                  fontSize: 16,
+                  fontFamily: 'OPPO Sans 4.0',
+                  fontWeight: FontWeight.w400,
+                  height: 1,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontFamily: 'OPPO Sans 4.0',
+                fontWeight: FontWeight.w400,
+                height: 1,
+              ),
+              cursorColor: Colors.black.withOpacity(0.54),
+              maxLines: 1,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _handleSubmit(),
+              enabled: widget.enabled,
+            ),
+          ),
+          const SizedBox(width: 10),
+          // 发送按钮: 保持之前的样式
+          _buildSendButton(enabled: canSend),
+        ],
+      ),
+    );
   }
 
   /// 收起状态的简单输入框
@@ -247,34 +318,43 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
             borderRadius: BorderRadius.circular(88.89),
           ),
         ),
-        child: const Icon(
-          Icons.arrow_forward_rounded,
-          size: 16,
-          color: Colors.white,
+        child: SvgPicture.asset(
+          'assets/icons/chat/send_icon.svg',
+          width: 16,
+          height: 16,
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
         ),
       ),
     );
   }
 
   /// 展开状态的输入卡片
+  /// Figma (1922:19780): 329x152, padding 12px 16px, borderRadius 20px, column gap 2px
   Widget _buildExpandedCard() {
+    final hasAttachments = widget.attachments.isNotEmpty;
+    // Figma: fixed 152px height without attachments; taller when attachments present
+    final cardHeight = hasAttachments ? 152.0 + 53.0 : 152.0;
+
     return Container(
+      height: cardHeight,
       decoration: _expandedCardDecoration,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Figma: padding 12px 16px
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 附件预览区域
-          if (widget.attachments.isNotEmpty) ...[
+          if (hasAttachments) ...[
             _buildAttachmentsPreview(),
             const SizedBox(height: 10),
           ],
 
-          // 输入区域 (Figma: padding top:5, bottom:20)
-          _buildInputArea(),
+          // 输入区域 - Figma: text height 86px, fills remaining space
+          Expanded(
+            child: _buildInputArea(),
+          ),
 
-          const SizedBox(height: 5),
+          const SizedBox(height: 2), // Figma: column gap 2px
 
           // 操作工具栏
           _buildToolbar(),
@@ -284,20 +364,15 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 展开卡片的装饰样式
-  /// 基于 Figma chris_ai_input: white 68%, border 1px white, radius 20
+  /// Figma 激活态(1922:19776): 和未激活态完全一样，NO blue border
+  /// 质感样式/面板（亮色）: borderRadius 20px, inset shadows, backdrop blur
   ShapeDecoration get _expandedCardDecoration => ShapeDecoration(
     color: Colors.white.withOpacity(0.68),
     shape: RoundedRectangleBorder(
-      side: _isFocused
-          ? const BorderSide(
-              width: 1.3,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: Color(0xFF0066FF), // 蓝色高亮边框（聚焦时）
-            )
-          : const BorderSide(
-              width: 1,
-              color: Colors.white, // Figma: white border
-            ),
+      side: const BorderSide(
+        width: 1,
+        color: Colors.white, // Figma: 无蓝色边框，激活和未激活一样
+      ),
       borderRadius: BorderRadius.circular(20),
     ),
   );
@@ -446,43 +521,40 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 输入区域
+  /// Figma: text area fills remaining space, hint text at top-left
   Widget _buildInputArea() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5, bottom: 20),
-      child: TextField(
-        controller: _controller,
-        focusNode: _focusNode,
-        enabled: widget.enabled,
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          height: 1.43,
-        ),
-        decoration: InputDecoration(
-          hintText: widget.hintText,
-          hintStyle: TextStyle(
-            color: Colors.black.withOpacity(0.54),
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            height: 1.43,
-          ),
-          // 修复: 显式移除所有边框类型，防止部分机型显示内层输入框边框
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          filled: false,
-          // 修复: 添加适当的内边距，避免文字被裁剪
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
-          isDense: false, // 修复: 不使用 isDense，让输入框有正常高度
-        ),
-        maxLines: 3,
-        minLines: 1,
-        textInputAction: TextInputAction.newline,
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      enabled: widget.enabled,
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 16, // Figma: Body/L · Regular
+        fontWeight: FontWeight.w400,
+        height: 1.375, // Figma: 1.375em
       ),
+      decoration: InputDecoration(
+        hintText: widget.hintText,
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.54), // Figma: 中性色/文本&图标（黑）/54 · Secondary
+          fontSize: 16, // Figma: Body/L · Regular
+          fontWeight: FontWeight.w400,
+          height: 1.375, // Figma: 1.375em
+        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        filled: false,
+        contentPadding: EdgeInsets.zero,
+        isDense: true,
+      ),
+      maxLines: null, // Figma: text area fills available space
+      expands: true,
+      textAlignVertical: TextAlignVertical.top,
+      textInputAction: TextInputAction.newline,
     );
   }
 
@@ -490,19 +562,20 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   final GlobalKey _attachmentKey = GlobalKey();
 
   /// 操作工具栏
-  /// 按照Figma设计: 附件按钮 + 应用选择按钮 + 发送按钮
+  /// Figma (1922:19776 activated): @ 账号(唤起应用选择) + 附件 ... 发送
+  /// Figma layout: row, space-between, left group gap 12px, right send button
   Widget _buildToolbar() {
     return Row(
       children: [
+        // @ 账号按钮 → 唤起应用选择弹窗
+        _buildAccountButton(),
+        const SizedBox(width: 12), // Figma: left group gap 12px
+
         // 附件按钮
         _buildAttachmentButton(),
-        const SizedBox(width: 3.12),
-        
-        // 应用选择按钮
-        _buildAppSelectorButton(),
-        
+
         const Spacer(),
-        
+
         // 发送按钮
         _buildSendButton(enabled: _hasText || widget.attachments.isNotEmpty),
       ],
@@ -510,30 +583,16 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
   }
 
   /// 附件按钮
+  /// Figma: 36x36, borderRadius 112, fill rgba(0,0,0,0.04)
+  /// Note: attachment_icon.svg already includes its own 36x36 background circle
   Widget _buildAttachmentButton() {
     return GestureDetector(
       key: _attachmentKey,
       onTap: _showAttachmentMenu,
-      child: Container(
-        width: 32,
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
-        decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(112),
-          ),
-        ),
-        child: Center(
-          child: Transform.rotate(
-            angle: math.pi / 4, // 逆时针 45 度
-            child: Icon(
-              Icons.attach_file_rounded,
-              size: 19,
-              color: AgentProfileTheme.titleColor,
-            ),
-          ),
-        ),
+      child: SvgPicture.asset(
+        'assets/icons/chat/attachment_icon.svg',
+        width: 36,
+        height: 36,
       ),
     );
   }
@@ -576,64 +635,30 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
     }
   }
 
-  /// 应用选择按钮
-  /// Figma规范: 宽68, 高32, 圆角21.33
+  /// 应用选择弹窗 GlobalKey
   final GlobalKey _appSelectorKey = GlobalKey();
-  
-  Widget _buildAppSelectorButton() {
-    final selectedApp = widget.selectedApp;
-    final displayName = selectedApp?.name ?? '默认';
-    
+
+  /// @ 账号按钮 → 唤起应用选择弹窗
+  /// Figma: 36x36, borderRadius 112, fill rgba(0,0,0,0.04), account icon 20x20
+  Widget _buildAccountButton() {
     return GestureDetector(
       key: _appSelectorKey,
       onTap: _showAppSelector,
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 11.61),
+        width: 36, // Figma: 36x36
+        height: 36,
         decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withOpacity(0.04), // Figma: 中性色/填充色/4 · Thin
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(21.33),
+            borderRadius: BorderRadius.circular(112), // Figma: borderRadius 112
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 应用图标
-            if (selectedApp != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.asset(
-                  selectedApp.iconPath,
-                  width: 18,
-                  height: 18,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.apps_rounded,
-                    size: 18,
-                    color: AgentProfileTheme.titleColor,
-                  ),
-                ),
-              ),
-            ] else ...[
-              Icon(
-                Icons.apps_rounded,
-                size: 18,
-                color: AgentProfileTheme.titleColor,
-              ),
-            ],
-            const SizedBox(width: 3.56),
-            Text(
-              displayName,
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.9),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                height: 1.67,
-              ),
-            ),
-          ],
+        child: Center(
+          child: SvgPicture.asset(
+            'assets/icons/chat/account_icon.svg',
+            width: 20, // Figma: 20x20
+            height: 20,
+          ),
         ),
       ),
     );
@@ -666,55 +691,32 @@ class _ExpandedChatInputState extends State<ExpandedChatInput> {
     }
   }
 
-  /// 工具按钮
-  /// Figma规范: 32x32, 圆角112, 图标约19px
-  Widget _buildToolButton({
-    required IconData icon,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 3.12, vertical: 8.89),
-        decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(112),
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            size: 19,
-            color: AgentProfileTheme.titleColor,
-          ),
-        ),
-      ),
-    );
-  }
-
   /// 发送按钮
-  /// 设计规范: 32x32, 90%黑色背景, 圆角88.89, 向右箭头图标
+  /// Figma规范: 36x36, 90%黑色背景, 圆角112, 向右箭头图标
   Widget _buildSendButton({required bool enabled}) {
     final canSend = enabled && widget.enabled;
-    
+
     return GestureDetector(
       onTap: canSend ? _handleSubmit : null,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 36, // Figma: 36x36
+        height: 36,
         decoration: BoxDecoration(
-          color: canSend 
-              ? Colors.black.withOpacity(0.9) 
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(88.89),
+          color: canSend
+              ? Colors.black.withOpacity(0.9) // Figma: 中性色/文本&图标（黑）/90 · Primary
+              : Colors.black.withOpacity(0.04), // Figma: 中性色/填充色/4 · Thin
+          borderRadius: BorderRadius.circular(112), // Figma: borderRadius 112
         ),
-        child: Icon(
-          Icons.arrow_forward_rounded,
-          size: 18,
-          color: canSend ? Colors.white : AgentProfileTheme.labelColor,
+        child: Center(
+          child: SvgPicture.asset(
+            'assets/icons/chat/send_icon.svg',
+            width: 20, // Figma: 20x20
+            height: 20,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+          ),
         ),
       ),
     );

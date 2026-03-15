@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/models/agent.dart';
 import '../theme/agent_profile_theme.dart';
 import 'agent_avatar.dart';
 import 'personality_selector.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'PingFang SC';
+const String _oppoSansFamily = 'OPPO Sans 4.0';
 
 /// AI员工介绍卡片
 ///
@@ -118,7 +119,7 @@ class AgentProfileCard extends StatelessWidget {
                   width: 4,
                   height: 4,
                   decoration: const ShapeDecoration(
-                    color: Color(0xFF393939),
+                    color: Color(0xFF3A3A3A), // Figma: #3A3A3A
                     shape: OvalBorder(),
                   ),
                 ),
@@ -140,12 +141,12 @@ class AgentProfileCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 2),
-          // 下拉图标
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 20,
-            color: Colors.black.withOpacity(0.54),
+          const SizedBox(width: 2), // Figma: gap 2px between description row and arrow
+          // 下拉图标 (Figma: 箭头 18x18)
+          SvgPicture.asset(
+            'assets/icons/dropdown_arrow.svg',
+            width: 18,
+            height: 18,
           ),
         ],
       ),

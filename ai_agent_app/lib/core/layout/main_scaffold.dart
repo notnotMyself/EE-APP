@@ -38,10 +38,10 @@ class MainScaffold extends ConsumerStatefulWidget {
   });
 
   /// 悬浮导航栏总高度（渐变区 + 胶囊 + 底部安全区）
-  /// 公开供子页面添加滚动底部留白，确保最后一项可滚动到导航栏上方
+  /// Figma: padding 16px top + 56px pill + 24px bottom = 96px minimum
   static double floatingNavBarHeight(BuildContext context) {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
-    final bottomPad = bottomSafe > 0 ? bottomSafe : 8.0;
+    final bottomPad = bottomSafe > 24 ? bottomSafe : 24.0;
     return 16 + 56 + bottomPad; // topPadding + pillHeight + bottomPadding
   }
 
@@ -119,6 +119,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
     return Scaffold(
       backgroundColor: _NavDesign.backgroundColor,
+      // 不在外层 Scaffold 处理键盘避让，让各子页面自行处理。
+      // 这样子页面能通过 MediaQuery.of(context).viewInsets.bottom 正确获取键盘高度。
+      // （若此处为 true，Scaffold 会消费 viewInsets 并向子树传递 viewInsets.bottom=0）
+      resizeToAvoidBottomInset: false,
       // 使用 Stack 让导航栏悬浮在内容上方
       // 内容层不添加底部留白，让内容自然延伸到导航栏下方（悬浮效果）
       // 各子页面的可滚动区域自行通过 MainScaffold.floatingNavBarHeight() 添加底部 padding
@@ -138,13 +142,13 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               child: _buildFloatingNavBar(context),
             ),
 
-          // === Debug: 模拟键盘弹起开关（仅 debug 模式显示） ===
-          if (kDebugMode)
-            Positioned(
-              right: 8,
-              top: MediaQuery.paddingOf(context).top + 8,
-              child: _buildDebugKeyboardToggle(debugKeyboard),
-            ),
+          // === Debug: 模拟键盘弹起开关（仅 Web 平台 debug 模式显示） ===
+          // if (kDebugMode && kIsWeb)
+          //   Positioned(
+          //     right: 8,
+          //     top: MediaQuery.paddingOf(context).top + 8,
+          //     child: _buildDebugKeyboardToggle(debugKeyboard),
+          //   ),
         ],
       ),
     );
@@ -187,14 +191,17 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   }
 
   /// 构建悬浮毛玻璃胶囊导航栏
+  /// Figma (1915:18579): padding 16px 16px 24px
   Widget _buildFloatingNavBar(BuildContext context) {
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
+    // Figma: 24px bottom padding. Use max of safe area and Figma spec
+    final bottomPad = bottomSafe > 24 ? bottomSafe : 24.0;
     return Container(
       padding: EdgeInsets.only(
-        top: 16,
-        left: 16,
+        top: 16, // Figma: 16px top
+        left: 16, // Figma: 16px horizontal
         right: 16,
-        bottom: bottomSafe > 0 ? bottomSafe : 8,
+        bottom: bottomPad, // Figma: 24px bottom
       ),
       // 顶部渐变遮罩（从透明到半透明背景，平滑过渡内容）
       decoration: const BoxDecoration(

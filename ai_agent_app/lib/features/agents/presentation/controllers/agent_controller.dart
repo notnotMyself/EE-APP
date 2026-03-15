@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/agent_repository.dart';
 import '../../domain/models/agent.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
@@ -81,7 +82,8 @@ class AgentController extends StateNotifier<AsyncValue<void>> {
 
   /// 订阅AI员工
   Future<void> subscribe(String agentId) async {
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 获取用户（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       state = AsyncValue.error('请先登录', StackTrace.current);
       return;
@@ -108,7 +110,8 @@ class AgentController extends StateNotifier<AsyncValue<void>> {
       return;
     }
 
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 获取用户（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       state = AsyncValue.error('请先登录', StackTrace.current);
       return;
@@ -129,7 +132,8 @@ class AgentController extends StateNotifier<AsyncValue<void>> {
 
   /// 检查是否已订阅
   Future<bool> isSubscribed(String agentId) async {
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 获取用户（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       return false;
     }

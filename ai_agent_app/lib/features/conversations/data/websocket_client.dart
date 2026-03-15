@@ -120,6 +120,12 @@ class ConversationWebSocketClient {
   int _reconnectAttempts = 0;
   ConnectionState _connectionState = ConnectionState.disconnected;
 
+  // 快速断连循环检测
+  DateTime? _lastConnectTime;
+  int _rapidDisconnectCount = 0;
+  static const _minStableConnectionDuration = Duration(seconds: 10);
+  static const _maxRapidDisconnects = 5;
+
   final _logger = Logger();
 
   ConversationWebSocketClient({
@@ -179,7 +185,10 @@ class ConversationWebSocketClient {
       _startPingCheck();
 
       _connectionState = ConnectionState.connected;
-      _reconnectAttempts = 0;
+      _lastConnectTime = DateTime.now();
+      // 注意：不在这里重置 _reconnectAttempts。
+      // 只有当连接稳定持续一定时间后才重置（见 _handleDone）。
+      // 这防止了 "连接成功 -> 立即断开 -> 重置计数 -> 永远循环" 的问题。
 
       _logger.i('WebSocket connected');
       onConnected?.call();
@@ -220,36 +229,55 @@ class ConversationWebSocketClient {
       onMessage?.call(message);
     } catch (e, stackTrace) {
       // 安全地记录错误，避免 null 值导致 logger 崩溃
-      final errorMsg = e?.toString() ?? 'Unknown error';
-      final stackMsg = stackTrace?.toString() ?? 'No stack trace';
-
       try {
+        final errorMsg = '$e';
         _logger.w('Failed to parse WebSocket message: $errorMsg');
         // 在调试模式下打印堆栈
         if (const bool.fromEnvironment('dart.vm.product') == false) {
-          _logger.d('Stack trace: $stackMsg');
+          _logger.d('Stack trace: $stackTrace');
         }
-      } catch (logError) {
+      } catch (_) {
         // 如果 logger 也失败了，使用 print 作为后备
-        print('Failed to log WebSocket error: $errorMsg');
+        // 不要在这里引用 e 或 stackTrace，因为它们的 toString 可能也会失败
+        print('Failed to log WebSocket parse error');
       }
     }
   }
 
   void _handleError(dynamic error) {
     // 安全地记录错误
-    final errorMsg = error?.toString() ?? "Unknown error";
     try {
+      final errorMsg = '$error';
       _logger.e('WebSocket error: $errorMsg');
-    } catch (logError) {
-      print('Failed to log WebSocket error: $errorMsg');
+      onError?.call('WebSocket错误: $errorMsg');
+    } catch (_) {
+      print('Failed to log WebSocket error');
+      onError?.call('WebSocket错误');
     }
-    onError?.call('WebSocket错误: $errorMsg');
     _disconnect(scheduleReconnect: true);
   }
 
   void _handleDone() {
     _logger.i('WebSocket stream closed');
+
+    // 检测快速断连循环：如果连接持续时间不到阈值，累计快速断连次数
+    if (_lastConnectTime != null &&
+        DateTime.now().difference(_lastConnectTime!) < _minStableConnectionDuration) {
+      _rapidDisconnectCount++;
+      _logger.w('Rapid disconnect detected (count: $_rapidDisconnectCount)');
+
+      if (_rapidDisconnectCount >= _maxRapidDisconnects) {
+        _logger.e('Too many rapid disconnects ($_rapidDisconnectCount), stopping reconnect');
+        onError?.call('连接不稳定，已停止重连。请稍后再试。');
+        _disconnect(scheduleReconnect: false);
+        return;
+      }
+    } else {
+      // 连接曾经稳定过，重置快速断连计数和重连次数
+      _rapidDisconnectCount = 0;
+      _reconnectAttempts = 0;
+    }
+
     _disconnect(scheduleReconnect: true);
   }
 
@@ -302,11 +330,10 @@ class ConversationWebSocketClient {
     try {
       _channel!.sink.add(jsonEncode(data));
     } catch (e) {
-      final errorMsg = e?.toString() ?? 'Unknown error';
       try {
-        _logger.e('Failed to send message: $errorMsg');
-      } catch (logError) {
-        print('Failed to log send error: $errorMsg');
+        _logger.e('Failed to send message: $e');
+      } catch (_) {
+        print('Failed to send WebSocket message');
       }
     }
   }
@@ -356,6 +383,16 @@ class ConversationWebSocketClient {
   void disconnect() {
     _reconnectTimer?.cancel();
     _disconnect(scheduleReconnect: false);
+  }
+
+  /// 手动重连（重置所有计数器）
+  ///
+  /// 当快速断连保护生效后，用户可以手动触发重连
+  Future<void> reconnect() async {
+    disconnect();
+    _reconnectAttempts = 0;
+    _rapidDisconnectCount = 0;
+    await connect();
   }
 
   /// 释放资源

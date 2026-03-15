@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../controllers/auth_controller.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'PingFang SC';
+const String _oppoSansFamily = 'OPPO Sans 4.0';
 
 /// 统一设计主题颜色
 class _AppDesign {

@@ -6,13 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../../core/theme/figma_tokens.dart';
 import '../../domain/models/conversation.dart';
 import '../state/conversation_notifier.dart';
 import '../state/conversation_state.dart';
 import 'tool_execution_card.dart';
-
-/// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'PingFang SC';
 
 /// 优化的消息列表组件
 ///
@@ -203,10 +201,10 @@ class StreamingMessageBubble extends ConsumerWidget {
 }
 
 /// 消息气泡内容
-/// 
+///
 /// Figma设计规范：
-/// - 用户消息：蓝色背景(0xFF2C69FF) + 白色文字
-/// - AI消息：白色背景 + 深色文字
+/// - 用户消息：蓝色背景(#2C69FF), 圆角12px, 内容宽度240dp, padding 12/16/16
+/// - AI消息：containerThin背景, 圆角12px, 固定宽度328dp, 阴影
 class MessageBubbleContent extends StatefulWidget {
   final Message message;
   final bool isStreaming;
@@ -227,41 +225,36 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
   Widget build(BuildContext context) {
     final isUser = widget.message.role == 'user';
 
-    // Figma设计规范：用户蓝色，AI白色
-    final backgroundColor = isUser
-        ? const Color(0xFF2C69FF)  // 用户消息：蓝色
-        : Colors.white;            // AI消息：白色
-    
-    final textColor = isUser
-        ? Colors.white             // 用户消息：白色文字
-        : const Color(0xFF1A1A1A); // AI消息：深色文字
-
-    final borderRadius = BorderRadius.circular(24); // Figma design radius
-
     return Column(
       crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.8,
-              ),
+              constraints: isUser
+                  // 用户消息：最大宽度 = 内容 240 + padding 16*2 = 272dp
+                  ? const BoxConstraints(maxWidth: FigmaTokens.userMessageMaxWidth)
+                  // AI消息：固定宽度 328dp
+                  : const BoxConstraints(
+                      minWidth: FigmaTokens.aiMessageWidth,
+                      maxWidth: FigmaTokens.aiMessageWidth,
+                    ),
               decoration: ShapeDecoration(
-                color: backgroundColor,
+                color: isUser
+                    ? FigmaTokens.brandBlue       // 用户消息：蓝色
+                    : FigmaTokens.containerThin,   // AI消息：4% black
                 shape: RoundedRectangleBorder(
-                  borderRadius: borderRadius,
+                  borderRadius: BorderRadius.circular(FigmaTokens.radiusMessage),
                 ),
-                // AI消息添加轻微阴影，增强层次感
-                shadows: isUser ? null : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                shadows: isUser ? null : const [FigmaTokens.messageShadow],
               ),
-              padding: const EdgeInsets.all(16),
+              // Figma: padding top 12, left/right 16, bottom 16
+              padding: const EdgeInsets.only(
+                top: FigmaTokens.messagePaddingTop,
+                left: FigmaTokens.messagePaddingH,
+                right: FigmaTokens.messagePaddingH,
+                bottom: FigmaTokens.messagePaddingBottom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -269,20 +262,20 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
                   // 消息文本内容
                   if (isUser) ...[
                     if (widget.message.content.isNotEmpty)
-                      Text(
-                        widget.message.content,
-                        textAlign: TextAlign.justify,
-                        style: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 1.40,
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: FigmaTokens.userMessageContentWidth,
+                        ),
+                        child: Text(
+                          widget.message.content,
+                          textAlign: TextAlign.justify,
+                          style: FigmaTokens.userMessageText,
                         ),
                       ),
                     // 显示附件（用户消息）
                     if (widget.message.attachments != null && widget.message.attachments!.isNotEmpty) ...[
-                      if (widget.message.content.isNotEmpty) const SizedBox(height: 10),
+                      if (widget.message.content.isNotEmpty)
+                        const SizedBox(height: FigmaTokens.messageGap),
                       _buildAttachments(context, widget.message.attachments!),
                     ],
                   ] else ...[
@@ -290,28 +283,16 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
                     MarkdownBody(
                       data: widget.message.content,
                       styleSheet: MarkdownStyleSheet(
-                        p: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          height: 1.50,
-                        ),
-                        h1: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
+                        p: FigmaTokens.aiMessageText,
+                        h1: FigmaTokens.aiMessageText.copyWith(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
-                        h2: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
+                        h2: FigmaTokens.aiMessageText.copyWith(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
-                        h3: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
+                        h3: FigmaTokens.aiMessageText.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -325,14 +306,11 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
                           color: const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        listBullet: TextStyle(
-                          fontFamily: _oppoSansFamily,
-                          color: textColor,
-                        ),
-                        blockquoteDecoration: BoxDecoration(
+                        listBullet: FigmaTokens.aiMessageText,
+                        blockquoteDecoration: const BoxDecoration(
                           border: Border(
                             left: BorderSide(
-                              color: const Color(0xFF2C69FF),
+                              color: FigmaTokens.brandBlue,
                               width: 3,
                             ),
                           ),
@@ -343,87 +321,73 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
                   ],
                   // 流式传输指示器
                   if (widget.isStreaming) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: FigmaTokens.messageGap),
                     SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation(
-                          isUser ? Colors.white : const Color(0xFF2C69FF),
+                          isUser ? FigmaTokens.onColorWhite : FigmaTokens.brandBlue,
                         ),
                       ),
                     ),
+                  ],
+                  // AI消息操作按钮 — 在气泡内部
+                  // Figma: row, space-between, width fills bubble content (296dp)
+                  if (!isUser && !widget.isStreaming && widget.message.content.isNotEmpty) ...[
+                    const SizedBox(height: FigmaTokens.messageGap),
+                    _buildMessageActions(context),
                   ],
                 ],
               ),
             ),
           ),
-        // AI消息操作按钮（复制、转发、保存）- 固定显示
-        if (!isUser && !widget.isStreaming) ...[
-          const SizedBox(height: 8),
-          _buildMessageActions(context),
-        ],
       ],
     );
   }
 
-  /// 构建消息操作按钮（复制、转发、保存）
-  /// 基于 Figma message_button 设计
+  /// 构建消息操作按钮（复制、分享、下载）
+  /// Figma: row, space-between, width=296 (fills bubble content area)
+  /// 左侧按钮组: row, gap 8px
+  /// 每个按钮: 32x32 完整 SVG（含圆形背景 + 图标）
   Widget _buildMessageActions(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 复制按钮
-        _buildSvgActionButton(
-          assetPath: 'assets/icons/copy.svg',
-          onTap: () => _handleCopy(context),
+        // 左侧按钮组: 复制 + 分享
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              onTap: () => _handleCopy(context),
+              child: SvgPicture.asset(
+                'assets/icons/figma_copy.svg',
+                width: FigmaTokens.actionButtonSize,
+                height: FigmaTokens.actionButtonSize,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _showDevelopingDialog(context, '分享'),
+              child: SvgPicture.asset(
+                'assets/icons/figma_share.svg',
+                width: FigmaTokens.actionButtonSize,
+                height: FigmaTokens.actionButtonSize,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 9),
-        // 转发按钮
-        _buildSvgActionButton(
-          assetPath: 'assets/icons/forward.svg',
-          onTap: () => _showDevelopingDialog(context, '转发'),
-        ),
-        const SizedBox(width: 9),
-        // 保存按钮
-        _buildSvgActionButton(
-          assetPath: 'assets/icons/save.svg',
-          onTap: () => _showDevelopingDialog(context, '保存'),
+        // 右侧: 下载按钮
+        GestureDetector(
+          onTap: () => _showDevelopingDialog(context, '下载'),
+          child: SvgPicture.asset(
+            'assets/icons/figma_download.svg',
+            width: FigmaTokens.actionButtonSize,
+            height: FigmaTokens.actionButtonSize,
+          ),
         ),
       ],
-    );
-  }
-
-  /// 操作按钮样式（使用 SVG 图标，基于 Figma 规范）
-  Widget _buildSvgActionButton({
-    required String assetPath,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        clipBehavior: Clip.antiAlias,
-        decoration: ShapeDecoration(
-          color: Colors.black.withOpacity(0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(90),
-          ),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            assetPath,
-            width: 15,
-            height: 15,
-            colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.9),
-              BlendMode.srcIn,
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -448,16 +412,16 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
         ),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.construction_rounded,
-              color: const Color(0xFF2C69FF),
+              color: FigmaTokens.brandBlue,
               size: 24,
             ),
             const SizedBox(width: 8),
             Text(
               '$feature功能',
               style: const TextStyle(
-                fontFamily: _oppoSansFamily,
+                fontFamily: FigmaTokens.fontPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
@@ -467,9 +431,9 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
         content: Text(
           '正在开发中，敬请期待...',
           style: TextStyle(
-            fontFamily: _oppoSansFamily,
+            fontFamily: FigmaTokens.fontPrimary,
             fontSize: 14,
-            color: Colors.black.withOpacity(0.6),
+            color: FigmaTokens.labelSecondary,
           ),
         ),
         actions: [
@@ -477,7 +441,7 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(
               '知道了',
-              style: TextStyle(fontFamily: _oppoSansFamily),
+              style: TextStyle(fontFamily: FigmaTokens.fontPrimary),
             ),
           ),
         ],
@@ -491,8 +455,8 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
     return Container(
       width: double.infinity,
       child: Wrap(
-        spacing: 3,
-        runSpacing: 3,
+        spacing: FigmaTokens.thumbnailSpacing,
+        runSpacing: FigmaTokens.thumbnailSpacing,
         children: attachments.map((attachment) {
           final url = attachment['url'] as String?;
           if (url == null || url.isEmpty) return const SizedBox.shrink();
@@ -520,11 +484,11 @@ class _AttachmentThumbnail extends StatelessWidget {
     final cleanPath = url.startsWith('file://') ? url.substring(7) : url;
 
     return Container(
-      width: 43,
-      height: 43,
+      width: FigmaTokens.thumbnailSize,
+      height: FigmaTokens.thumbnailSize,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(4),
+        color: FigmaTokens.containerThin,
+        borderRadius: BorderRadius.circular(FigmaTokens.thumbnailRadius),
       ),
       clipBehavior: Clip.antiAlias,
       child: _buildImage(isNetworkUrl, isLocalFile, cleanPath),
@@ -579,7 +543,7 @@ class _AttachmentThumbnail extends StatelessWidget {
 
   Widget _buildImagePlaceholder() {
     return Container(
-      color: Colors.black.withOpacity(0.04),
+      color: FigmaTokens.containerThin,
       child: const Icon(
         Icons.image_outlined,
         size: 20,
@@ -648,7 +612,7 @@ class ConnectionStatusIndicator extends ConsumerWidget {
         Text(
           text,
           style: TextStyle(
-            fontFamily: _oppoSansFamily,
+            fontFamily: FigmaTokens.fontPrimary,
             color: color,
             fontSize: 12,
           ),
@@ -673,9 +637,6 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
-  // 品牌蓝色
-  static const Color _brandBlue = Color(0xFF2C69FF);
-
   @override
   void initState() {
     super.initState();
@@ -699,14 +660,8 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(FigmaTokens.radiusMessage),
+          boxShadow: const [FigmaTokens.messageShadow],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -722,8 +677,8 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
             Text(
               '正在思考...',
               style: TextStyle(
-                fontFamily: _oppoSansFamily,
-                color: Colors.black.withOpacity(0.5),
+                fontFamily: FigmaTokens.fontPrimary,
+                color: FigmaTokens.labelSecondary,
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
               ),
@@ -752,7 +707,7 @@ class _WaitingIndicatorState extends State<WaitingIndicator>
             width: 7,
             height: 7,
             decoration: BoxDecoration(
-              color: _brandBlue.withOpacity(0.5 + 0.5 * offset),
+              color: FigmaTokens.brandBlue.withOpacity(0.5 + 0.5 * offset),
               shape: BoxShape.circle,
             ),
           ),

@@ -61,6 +61,16 @@ class ConversationSelector extends ConsumerStatefulWidget {
 }
 
 class _ConversationSelectorState extends ConsumerState<ConversationSelector> {
+  /// 获取会话显示标题（将默认标题替换为更友好的文案）
+  String _displayTitle(String? title) {
+    if (title == null || title.isEmpty) return '未命名会话';
+    final lower = title.trim().toLowerCase();
+    if (lower == 'new conversation' || lower == '新对话') {
+      return '未命名会话';
+    }
+    return title;
+  }
+
   /// 显示重命名对话框
   void _showRenameDialog(Conversation conversation) {
     final controller = TextEditingController(text: conversation.title ?? '');
@@ -276,7 +286,7 @@ class _ConversationSelectorState extends ConsumerState<ConversationSelector> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    conversation.title ?? '未命名会话',
+                    _displayTitle(conversation.title),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,

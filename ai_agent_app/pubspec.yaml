@@ -94,8 +94,9 @@ flutter:
     - assets/images/
     - assets/images/app_icons/
     - assets/icons/
+    - assets/icons/chat/
 
-  # fonts:
-  #   - family: OPPO Sans
-  #     fonts:
-  #       - asset: assets/fonts/OPPO Sans 4.0.ttf
+  fonts:
+    - family: OPPO Sans 4.0
+      fonts:
+        - asset: assets/fonts/OPPOSans4.ttf

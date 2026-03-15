@@ -6,7 +6,7 @@ import '../../../agents/presentation/theme/agent_profile_theme.dart';
 import '../../../../core/layout/main_scaffold.dart';
 
 /// OPPO Sans 字体家族名称
-const String _oppoSansFamily = 'PingFang SC';
+const String _oppoSansFamily = 'OPPO Sans 4.0';
 
 /// Profile page - shows user information, subscriptions, and settings
 class ProfilePage extends ConsumerWidget {

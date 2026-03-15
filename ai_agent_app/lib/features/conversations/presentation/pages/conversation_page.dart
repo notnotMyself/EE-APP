@@ -1,6 +1,9 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/theme/figma_tokens.dart';
 import '../controllers/conversation_controller.dart';
 import '../../../agents/domain/models/agent.dart';
 import '../../../agents/presentation/widgets/expanded_chat_input.dart';
@@ -38,15 +41,26 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
   String? _currentConversationId;
   bool _initialMessageSent = false;
   bool _isInitializing = true;
+  bool _hasInputText = false;
 
   @override
   void initState() {
     super.initState();
     _currentConversationId = widget.conversationId;
+    _messageController.addListener(_onTextChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeConversation();
     });
+  }
+
+  void _onTextChanged() {
+    final hasText = _messageController.text.trim().isNotEmpty;
+    if (hasText != _hasInputText) {
+      setState(() {
+        _hasInputText = hasText;
+      });
+    }
   }
 
   @override
@@ -55,6 +69,7 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
     if (_currentConversationId != null) {
       ref.invalidate(conversationNotifierProvider(_currentConversationId!));
     }
+    _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -86,7 +101,8 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
   }
 
   Future<void> _createNewConversation() async {
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 检查用户登录状态（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -207,17 +223,142 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
         : false;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.agent.name),
-            // 只显示连接状态，移除技术名称（agent.role）
-            if (_currentConversationId != null)
-              ConnectionStatusIndicator(
-                conversationId: _currentConversationId!,
-              ),
-          ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(FigmaTokens.navBarHeight),
+        child: SafeArea(
+          child: Container(
+            width: double.infinity,
+            height: FigmaTokens.navBarHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Left: back button + agent name
+                Expanded(
+                  child: SizedBox(
+                    height: FigmaTokens.navBarHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Back button - 48px touch area, 40x40 circle
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          behavior: HitTestBehavior.opaque,
+                          child: SizedBox(
+                            width: FigmaTokens.navButtonTouchArea,
+                            height: FigmaTokens.navBarHeight,
+                            child: Center(
+                              child: Container(
+                                width: FigmaTokens.navButtonSize,
+                                height: FigmaTokens.navButtonSize,
+                                decoration: ShapeDecoration(
+                                  color: FigmaTokens.containerThin,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(FigmaTokens.radiusPill),
+                                  ),
+                                ),
+                                child: SvgPicture.asset(
+                                  'assets/icons/chat/back_arrow.svg',
+                                  width: FigmaTokens.navButtonSize,
+                                  height: FigmaTokens.navButtonSize,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Agent name
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: FigmaTokens.navBarHeight),
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              widget.agent.name,
+                              style: FigmaTokens.titleMMedium.copyWith(
+                                color: FigmaTokens.labelPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Right: add new conversation + history
+                SizedBox(
+                  height: FigmaTokens.navBarHeight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Add new conversation button
+                      GestureDetector(
+                        onTap: () {
+                          _createNewConversation();
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: SizedBox(
+                          width: FigmaTokens.navButtonTouchArea,
+                          height: FigmaTokens.navBarHeight,
+                          child: Center(
+                            child: Container(
+                              width: FigmaTokens.navButtonSize,
+                              height: FigmaTokens.navButtonSize,
+                              decoration: ShapeDecoration(
+                                color: FigmaTokens.containerThin,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(FigmaTokens.radiusPill),
+                                ),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/icons/chat/add_circle.svg',
+                                width: FigmaTokens.navButtonSize,
+                                height: FigmaTokens.navButtonSize,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // History button
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: Handle history
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: SizedBox(
+                          width: FigmaTokens.navButtonTouchArea,
+                          height: FigmaTokens.navBarHeight,
+                          child: Center(
+                            child: Container(
+                              width: FigmaTokens.navButtonSize,
+                              height: FigmaTokens.navButtonSize,
+                              decoration: ShapeDecoration(
+                                color: FigmaTokens.containerThin,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(FigmaTokens.radiusPill),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: SvgPicture.asset(
+                                'assets/icons/chat/history.svg',
+                                width: 24,
+                                height: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       body: Column(
@@ -234,43 +375,71 @@ class _ConversationPageState extends ConsumerState<ConversationPage> {
           ),
 
           // 输入框
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).dividerColor,
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                height: FigmaTokens.inputHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: FigmaTokens.containerThin,
+                  borderRadius: BorderRadius.circular(FigmaTokens.inputRadius),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: InputDecoration(
+                          hintText: '简单描述下方案背景与目标',
+                          hintStyle: TextStyle(
+                            color: FigmaTokens.labelPlaceholder,
+                            fontSize: 14,
+                            fontFamily: FigmaTokens.fontPrimary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                        style: TextStyle(
+                          color: FigmaTokens.labelPrimary,
+                          fontSize: 14,
+                          fontFamily: FigmaTokens.fontPrimary,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
+                        enabled: !isStreaming,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (isStreaming)
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else if (_hasInputText)
+                      GestureDetector(
+                        onTap: _sendMessage,
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: FigmaTokens.labelSecondary,
+                          size: 24,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.mic_none_rounded,
+                        color: FigmaTokens.labelSecondary,
+                        size: 24,
+                      ),
+                  ],
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: const InputDecoration(
-                      hintText: '输入消息...',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
-                    enabled: !isStreaming,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: isStreaming ? null : _sendMessage,
-                  icon: isStreaming
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send),
-                ),
-              ],
             ),
           ),
         ],

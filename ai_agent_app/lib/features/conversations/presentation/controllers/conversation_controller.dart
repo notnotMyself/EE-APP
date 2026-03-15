@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/conversation_repository.dart';
 import '../../domain/models/conversation.dart';
 import '../../../agents/domain/models/agent.dart';
@@ -57,7 +58,8 @@ class ConversationController extends StateNotifier<AsyncValue<void>> {
   /// - 从AI市场进入对话页面
   /// - 点击"新建会话"按钮
   Future<Conversation?> createNewConversation(String agentId, {String? title}) async {
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 获取用户（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       print('createNewConversation: currentUser is null');
       state = AsyncValue.error('请先登录', StackTrace.current);
@@ -95,7 +97,8 @@ class ConversationController extends StateNotifier<AsyncValue<void>> {
   /// 注意：此方法使用 get_or_create 逻辑，可能返回已存在的会话。
   /// 新代码应使用 createNewConversation() 方法。
   Future<Conversation?> createConversation(String agentId) async {
-    final currentUser = ref.read(currentUserProvider);
+    // 直接从 Supabase 获取用户（避免 StreamProvider 时序问题）
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       print('createConversation: currentUser is null');
       state = AsyncValue.error('请先登录', StackTrace.current);
