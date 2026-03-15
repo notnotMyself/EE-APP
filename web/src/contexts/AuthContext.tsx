@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [, startTransition] = useTransition();
   const router = useRouter();
 
   // Restore session on mount & listen for auth changes
@@ -61,8 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s ? sessionToUser(s) : null);
+      // Use startTransition to avoid "Cannot update component while rendering" warning
+      startTransition(() => {
+        setSession(s);
+        setUser(s ? sessionToUser(s) : null);
+      });
     });
 
     return () => subscription.unsubscribe();
@@ -81,9 +86,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw new Error(error.message);
       if (!data.session) throw new Error("登录失败，请重试");
 
-      setSession(data.session);
-      setUser(sessionToUser(data.session));
-      router.push("/chat");
+      // State is updated by onAuthStateChange listener; just navigate.
+      // Defer navigation to next microtask to avoid React render conflict.
+      setTimeout(() => router.push("/chat"), 0);
     },
     [router]
   );

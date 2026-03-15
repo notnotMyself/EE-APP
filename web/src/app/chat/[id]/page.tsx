@@ -9,6 +9,7 @@ import { ConversationWebSocket } from "@/lib/websocket";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
+import AtMentionPopup from "@/components/AtMentionPopup";
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 
 // ─── Inline SVG Icons ───────────────────────────────────────────────────────
@@ -77,64 +78,12 @@ function MicIcon() {
   );
 }
 
-function CopyIcon() {
+function DropdownExpandIcon() {
   return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 15 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="1.5" y="1.5" width="8.5" height="8.5" rx="1" stroke="rgba(0,0,0,0.9)" strokeWidth="1.26" />
-      <rect x="5" y="5" width="8.5" height="8.5" rx="1" stroke="rgba(0,0,0,0.9)" strokeWidth="1.26" />
-    </svg>
-  );
-}
-
-function RegenerateIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 15 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M1.5 7.5a6 6 0 0 1 11-3.2M13.5 7.5a6 6 0 0 1-11 3.2"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12.5 1v3.5H9M2.5 14v-3.5H6"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 15 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M7.5 1.5v8M4.5 7.5l3 3 3-3M2.5 12.5h10"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g opacity="0.5">
+        <path d="M6 9L12 15L18 9" stroke="black" strokeWidth="1.4" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
+      </g>
     </svg>
   );
 }
@@ -153,35 +102,40 @@ interface ChatMessage {
 
 function UserMessage({ message }: { message: ChatMessage }) {
   return (
-    <div className="flex flex-col items-end gap-[10px]">
-      <div className="flex flex-col items-center gap-[10px] max-w-[480px]">
-        <div className="bg-[#2C69FF] rounded-[12px] px-[16px] py-[12px]">
-          {message.hasImages && (
-            <div className="flex items-center gap-[3px] mb-[10px]">
-              <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-                <Image
-                  src={chrisChenAvatar}
-                  alt="Design attachment 1"
-                  width={43}
-                  height={43}
-                  className="w-full h-full object-cover opacity-70"
-                />
-              </div>
-              <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-                <Image
-                  src={chrisChenAvatar}
-                  alt="Design attachment 2"
-                  width={43}
-                  height={43}
-                  className="w-full h-full object-cover opacity-70"
-                />
-              </div>
+    <div className="flex justify-end">
+      <div
+        className="flex flex-col gap-[10px] max-w-[480px]"
+        style={{
+          backgroundColor: "#2C69FF",
+          borderRadius: 24,
+          padding: 16,
+        }}
+      >
+        {message.hasImages && (
+          <div className="flex items-center gap-[3px]">
+            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
+              <Image
+                src={chrisChenAvatar}
+                alt="Design attachment 1"
+                width={43}
+                height={43}
+                className="w-full h-full object-cover opacity-70"
+              />
             </div>
-          )}
-          <p className="m-0 text-[16px] font-medium leading-[1.5em] text-white whitespace-pre-wrap text-justify">
-            {message.content}
-          </p>
-        </div>
+            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
+              <Image
+                src={chrisChenAvatar}
+                alt="Design attachment 2"
+                width={43}
+                height={43}
+                className="w-full h-full object-cover opacity-70"
+              />
+            </div>
+          </div>
+        )}
+        <p className="m-0 text-[14px] font-normal leading-[1.4em] text-white whitespace-pre-wrap text-justify">
+          {message.content}
+        </p>
       </div>
     </div>
   );
@@ -190,14 +144,29 @@ function UserMessage({ message }: { message: ChatMessage }) {
 // ─── AI Message Bubble ──────────────────────────────────────────────────────
 
 function AIMessage({ message }: { message: ChatMessage }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
-    <div className="flex flex-col gap-[8px] max-w-[600px]">
+    <div className="flex justify-start">
       <div
-        className="bg-[rgba(0,0,0,0.04)] rounded-[12px] px-[16px] pt-[12px] pb-[16px] flex flex-col gap-[8px]"
-        style={{ boxShadow: "0px 2px 8px rgba(0,0,0,0.04)" }}
+        className="flex flex-col gap-[5px] max-w-[686px] w-full"
+        style={{
+          backgroundColor: "#F7F8FD",
+          borderRadius: 24,
+          padding: 16,
+          border: "1px solid rgba(255,255,255,0.6)",
+          boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
+        }}
       >
+        {/* Message text */}
         <div className="w-full">
-          <p className="m-0 text-[16px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
+          <p className="m-0 text-[14px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
             {message.content}
             {message.isStreaming && (
               <span className="inline-block w-[2px] h-[1em] bg-[rgba(0,0,0,0.6)] ml-[1px] align-middle animate-pulse" />
@@ -205,33 +174,47 @@ function AIMessage({ message }: { message: ChatMessage }) {
           </p>
         </div>
 
-        {/* Action buttons - hidden while streaming */}
+        {/* Bottom action bar - hidden while streaming */}
         {!message.isStreaming && message.content && (
           <div className="flex items-center justify-between gap-[9px]">
-            <div className="flex items-center gap-[8px]">
+            {/* Left: personality label with dropdown */}
+            <div className="flex items-center gap-[2px]">
+              <span className="text-[14px] font-normal leading-[1.43em] text-[rgba(0,0,0,0.54)]">
+                直言不讳
+              </span>
+              <DropdownExpandIcon />
+            </div>
+            {/* Right: action buttons */}
+            <div className="flex items-center gap-[10px]">
+              {/* Copy */}
               <button
                 type="button"
-                className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-                title="复制"
-                onClick={() => navigator.clipboard.writeText(message.content)}
+                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+                title={copied ? "已复制" : "复制"}
+                onClick={handleCopy}
               >
-                <CopyIcon />
+                <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
               </button>
+              {/* Regenerate (download icon from Figma) */}
               <button
                 type="button"
-                className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-                title="重新生成"
+                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+                title="下载"
               >
-                <RegenerateIcon />
+                <img src="/icons/chat/regenerate.svg" width={13} height={13} alt="下载" />
+              </button>
+              {/* Forward */}
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+                title="转发"
+              >
+                <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="转发" />
               </button>
             </div>
-            <button
-              type="button"
-              className="w-9 h-9 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-              title="下载"
-            >
-              <DownloadIcon />
-            </button>
           </div>
         )}
       </div>
@@ -326,6 +309,7 @@ export default function ChatDetailPage({
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showAtMention, setShowAtMention] = useState(false);
   const [conversationTitle, setConversationTitle] = useState("新对话");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -595,8 +579,7 @@ export default function ChatDetailPage({
   };
 
   const handleAtClick = () => {
-    setInputValue((prev) => prev + "@");
-    textareaRef.current?.focus();
+    setShowAtMention(!showAtMention);
   };
 
   const handleSendOrMicClick = () => {
@@ -669,6 +652,15 @@ export default function ChatDetailPage({
                       >
                         <AtIcon />
                       </button>
+                      {/* @ Mention Popup */}
+                      <AtMentionPopup
+                        isOpen={showAtMention}
+                        onClose={() => setShowAtMention(false)}
+                        onSelect={(item) => {
+                          setInputValue((prev) => prev + `@${item.name} `);
+                          textareaRef.current?.focus();
+                        }}
+                      />
                       {/* Attachment Button */}
                       <button
                         type="button"

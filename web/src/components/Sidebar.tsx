@@ -8,8 +8,8 @@ import { listConversations, type Conversation } from "@/lib/api";
 
 const navItems = [
   { id: "review", label: "AI 评审", icon: "review", href: "/chat" },
-  { id: "inspiration", label: "灵感资讯", icon: "tips", href: "#" },
-  { id: "library", label: "资料库", icon: "bookshelf", href: "#" },
+  { id: "inspiration", label: "灵感资讯", icon: "tips", href: "/inspiration" },
+  { id: "library", label: "资料库", icon: "bookshelf", href: "/library" },
 ];
 
 interface SidebarProps {
@@ -63,7 +63,7 @@ export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
           const isActive =
             item.id === "review"
               ? pathname === "/chat" || pathname.startsWith("/chat/")
-              : false;
+              : pathname === item.href;
           const iconSrc = isActive
             ? `/icons/${item.icon}_on.svg`
             : `/icons/${item.icon}_off.svg`;

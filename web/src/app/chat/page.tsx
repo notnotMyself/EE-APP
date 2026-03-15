@@ -8,6 +8,7 @@ import { createConversation } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
+import AtMentionPopup from "@/components/AtMentionPopup";
 import PersonalitySelector, { personalities } from "@/components/PersonalitySelector";
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 
@@ -105,6 +106,7 @@ export default function ChatPage() {
   const { isLoggedIn, isLoading, accessToken } = useAuth();
   const [inputValue, setInputValue] = useState("");
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showAtMention, setShowAtMention] = useState(false);
   const [showPersonalitySelector, setShowPersonalitySelector] = useState(false);
   const [selectedPersonality, setSelectedPersonality] = useState("default");
   const [isCreating, setIsCreating] = useState(false);
@@ -156,8 +158,7 @@ export default function ChatPage() {
   };
 
   const handleAtClick = () => {
-    setInputValue((prev) => prev + "@");
-    textareaRef.current?.focus();
+    setShowAtMention(!showAtMention);
   };
 
   const handleSendOrMicClick = () => {
@@ -275,6 +276,15 @@ export default function ChatPage() {
                     >
                       <AtIcon />
                     </button>
+                    {/* @ Mention Popup */}
+                    <AtMentionPopup
+                      isOpen={showAtMention}
+                      onClose={() => setShowAtMention(false)}
+                      onSelect={(item) => {
+                        setInputValue((prev) => prev + `@${item.name} `);
+                        textareaRef.current?.focus();
+                      }}
+                    />
                     {/* Attachment Button */}
                     <button
                       type="button"
