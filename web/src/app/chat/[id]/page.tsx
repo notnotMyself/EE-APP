@@ -78,16 +78,6 @@ function MicIcon() {
   );
 }
 
-function DropdownExpandIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <g opacity="0.5">
-        <path d="M6 9L12 15L18 9" stroke="black" strokeWidth="1.4" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
-      </g>
-    </svg>
-  );
-}
-
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface ChatMessage {
@@ -176,17 +166,9 @@ function AIMessage({ message }: { message: ChatMessage }) {
 
         {/* Bottom action bar - hidden while streaming */}
         {!message.isStreaming && message.content && (
-          <div className="flex items-center justify-between gap-[9px]">
-            {/* Left: personality label with dropdown */}
-            <div className="flex items-center gap-[2px]">
-              <span className="text-[14px] font-normal leading-[1.43em] text-[rgba(0,0,0,0.54)]">
-                直言不讳
-              </span>
-              <DropdownExpandIcon />
-            </div>
-            {/* Right: action buttons */}
-            <div className="flex items-center gap-[10px]">
-              {/* Copy */}
+          <div className="flex items-center justify-end gap-[9px]">
+            {/* Copy + Download grouped */}
+            <div className="flex items-center gap-[4px]">
               <button
                 type="button"
                 className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
@@ -194,27 +176,26 @@ function AIMessage({ message }: { message: ChatMessage }) {
                 title={copied ? "已复制" : "复制"}
                 onClick={handleCopy}
               >
-                <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
+                <img src="/icons/chat/copy.svg" width={14} height={14} alt="复制" />
               </button>
-              {/* Regenerate (download icon from Figma) */}
               <button
                 type="button"
                 className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
                 style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
                 title="下载"
               >
-                <img src="/icons/chat/regenerate.svg" width={13} height={13} alt="下载" />
-              </button>
-              {/* Forward */}
-              <button
-                type="button"
-                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-                title="转发"
-              >
-                <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="转发" />
+                <img src="/icons/chat/regenerate.svg" width={14} height={14} alt="下载" />
               </button>
             </div>
+            {/* Forward */}
+            <button
+              type="button"
+              className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+              style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+              title="转发"
+            >
+              <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="转发" />
+            </button>
           </div>
         )}
       </div>
