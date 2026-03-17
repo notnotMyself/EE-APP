@@ -1,10 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { listConversations, type Conversation } from "@/lib/api";
+import { listConversations, deleteConversation, type Conversation } from "@/lib/api";
 
 const navItems = [
   { id: "review", label: "AI 评审", icon: "review", href: "/chat" },
@@ -31,6 +31,7 @@ function ChatBubbleIcon() {
 
 export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout, accessToken } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
@@ -46,6 +47,24 @@ export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
       .catch(() => setConversations([]));
   }, [isLoggedIn, accessToken]);
 
+  const handleDelete = async (convId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!accessToken) return;
+
+    const prev = [...conversations];
+    setConversations((c) => c.filter((x) => x.id !== convId));
+
+    try {
+      await deleteConversation(accessToken, convId);
+      if (pathname === `/chat/${convId}`) {
+        router.push("/chat");
+      }
+    } catch {
+      setConversations(prev);
+    }
+  };
+
   return (
     <aside className="w-[238px] h-full bg-[#F8F8F8] flex flex-col relative shrink-0">
       {/* Logo */}
@@ -58,7 +77,7 @@ export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
       </div>
 
       {/* Nav Items */}
-      <div className="flex flex-col mx-[6px] gap-[2px]">
+      <div className="flex flex-col mx-[6px] gap-[2px] shrink-0">
         {navItems.map((item) => {
           const isActive =
             item.id === "review"
@@ -90,61 +109,82 @@ export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
             </Link>
           );
         })}
+      </div>
 
-        {/* Divider */}
-        <div className="mx-[18px] h-px bg-black/10 my-[6px]" />
+      {/* Divider */}
+      <div className="mx-[24px] h-px bg-black/10 my-[6px] shrink-0" />
 
-        {/* History section */}
-        <div className="flex items-center gap-[10px] px-[18px] h-[32px]">
+      {/* History section - scrollable */}
+      <div className="flex flex-col mx-[6px] flex-1 min-h-0">
+        <div className="flex items-center gap-[10px] px-[18px] h-[32px] shrink-0">
           <span className="text-[12px] font-medium text-[rgba(0,0,0,0.4)] uppercase tracking-wider">
             历史对话
           </span>
         </div>
 
-        {/* Conversation history list */}
-        {isLoggedIn && conversations.length > 0 && (
-          <div className="flex flex-col gap-[1px]">
-            {conversations.map((conv) => {
-              const isConvActive = pathname === `/chat/${conv.id}`;
-              return (
-                <Link
-                  key={conv.id}
-                  href={`/chat/${conv.id}`}
-                  className={`flex items-center gap-[8px] px-[18px] h-[38px] no-underline rounded-[14px] transition-colors ${
-                    isConvActive
-                      ? "bg-white"
-                      : "hover:bg-[rgba(0,0,0,0.04)]"
-                  }`}
-                >
-                  <ChatBubbleIcon />
-                  <span className={`text-[13px] leading-[16px] truncate ${
-                    isConvActive
-                      ? "font-medium text-[rgba(0,0,0,0.9)]"
-                      : "font-normal text-[rgba(0,0,0,0.6)]"
-                  }`}>
-                    {conv.title ?? conv.agent_name ?? "对话"}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {isLoggedIn && conversations.length > 0 && (
+            <div className="flex flex-col gap-[1px]">
+              {conversations.map((conv) => {
+                const isConvActive = pathname === `/chat/${conv.id}`;
+                return (
+                  <Link
+                    key={conv.id}
+                    href={`/chat/${conv.id}`}
+                    className={`group flex items-center gap-[8px] px-[18px] h-[38px] no-underline rounded-[14px] transition-colors shrink-0 ${
+                      isConvActive
+                        ? "bg-white"
+                        : "hover:bg-[rgba(0,0,0,0.04)]"
+                    }`}
+                  >
+                    <ChatBubbleIcon />
+                    <span className={`text-[13px] leading-[16px] truncate flex-1 ${
+                      isConvActive
+                        ? "font-medium text-[rgba(0,0,0,0.9)]"
+                        : "font-normal text-[rgba(0,0,0,0.6)]"
+                    }`}>
+                      {conv.title ?? conv.agent_name ?? "对话"}
+                    </span>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(conv.id, e);
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded bg-transparent border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-all shrink-0 z-10"
+                      title="删除对话"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="rgba(0,0,0,0.4)" strokeWidth="1.2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
-        {isLoggedIn && conversations.length === 0 && (
-          <div className="px-[18px] py-[8px]">
-            <span className="text-[12px] text-[rgba(0,0,0,0.3)]">
-              暂无历史对话
-            </span>
-          </div>
-        )}
+          {isLoggedIn && conversations.length === 0 && (
+            <div className="px-[18px] py-[8px]">
+              <span className="text-[12px] text-[rgba(0,0,0,0.3)]">
+                暂无历史对话
+              </span>
+            </div>
+          )}
 
-        {!isLoggedIn && (
-          <div className="px-[18px] py-[8px]">
-            <span className="text-[12px] text-[rgba(0,0,0,0.3)]">
-              登录后查看历史对话
-            </span>
-          </div>
-        )}
+          {!isLoggedIn && (
+            <div className="px-[18px] py-[8px]">
+              <span className="text-[12px] text-[rgba(0,0,0,0.3)]">
+                登录后查看历史对话
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Footer */}

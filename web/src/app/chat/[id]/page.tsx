@@ -14,14 +14,6 @@ import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 
 // ─── Inline SVG Icons ───────────────────────────────────────────────────────
 
-function AtIcon() {
-  return (
-    <span className="text-[16px] font-medium leading-[1.17em] text-[rgba(0,0,0,0.9)] select-none">
-      @
-    </span>
-  );
-}
-
 function AttachmentIcon() {
   return (
     <svg
@@ -42,40 +34,35 @@ function AttachmentIcon() {
   );
 }
 
-function SendIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M7 12V2M7 2L2 7M7 2L12 7"
-        stroke="white"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
-function MicIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="5" y="1" width="4" height="7" rx="2" stroke="white" strokeWidth="1.4" />
-      <path d="M3 6.5a4 4 0 008 0" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M7 11.5v1.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
+// ─── Markdown Rich Text Helper ──────────────────────────────────────────────
+
+function renderMarkdownText(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const regex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before the bold marker
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    // Add bold text
+    parts.push(
+      <span key={match.index} className="font-semibold">
+        {match[1]}
+      </span>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -156,8 +143,8 @@ function AIMessage({ message }: { message: ChatMessage }) {
       >
         {/* Message text */}
         <div className="w-full">
-          <p className="m-0 text-[14px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
-            {message.content}
+          <p className="m-0 text-[14px] font-normal leading-[19.6px] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
+            {renderMarkdownText(message.content)}
             {message.isStreaming && (
               <span className="inline-block w-[2px] h-[1em] bg-[rgba(0,0,0,0.6)] ml-[1px] align-middle animate-pulse" />
             )}
@@ -166,12 +153,12 @@ function AIMessage({ message }: { message: ChatMessage }) {
 
         {/* Bottom action bar - hidden while streaming */}
         {!message.isStreaming && message.content && (
-          <div className="flex items-center justify-end gap-[9px]">
-            {/* Copy + Download grouped */}
-            <div className="flex items-center gap-[4px]">
+          <div className="flex items-center justify-between">
+            {/* Left group: Copy + Share */}
+            <div className="flex items-center gap-[8px]">
               <button
                 type="button"
-                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
                 style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
                 title={copied ? "已复制" : "复制"}
                 onClick={handleCopy}
@@ -180,21 +167,21 @@ function AIMessage({ message }: { message: ChatMessage }) {
               </button>
               <button
                 type="button"
-                className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
                 style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-                title="下载"
+                title="分享"
               >
-                <img src="/icons/chat/regenerate.svg" width={14} height={14} alt="下载" />
+                <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="分享" />
               </button>
             </div>
-            {/* Forward */}
+            {/* Right: Download */}
             <button
               type="button"
-              className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
               style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-              title="转发"
+              title="下载"
             >
-              <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="转发" />
+              <img src="/icons/chat/regenerate.svg" width={14} height={14} alt="下载" />
             </button>
           </div>
         )}
@@ -293,6 +280,8 @@ export default function ChatDetailPage({
   const [showAtMention, setShowAtMention] = useState(false);
   const [conversationTitle, setConversationTitle] = useState("新对话");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -476,12 +465,15 @@ export default function ChatDetailPage({
     });
   }, [streamBuffer]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change (only if user is near bottom)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   function sendMessageViaWS(ws: ConversationWebSocket, text: string) {
+    isNearBottomRef.current = true; // Force scroll on user send
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -563,11 +555,9 @@ export default function ChatDetailPage({
     setShowAtMention(!showAtMention);
   };
 
-  const handleSendOrMicClick = () => {
+  const handleSendClick = () => {
     if (inputValue.trim()) {
       handleSubmit();
-    } else {
-      alert("语音输入功能开发中");
     }
   };
 
@@ -584,7 +574,14 @@ export default function ChatDetailPage({
         {/* Chat Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Messages List (scrollable) */}
-          <div className="flex-1 overflow-y-auto px-[60px] py-[10px]">
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto px-[60px] py-[10px]"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+            }}
+          >
             <div className="flex flex-col gap-[10px] max-w-[780px] mx-auto">
               {messages.map((message) =>
                 message.role === "user" ? (
@@ -631,7 +628,7 @@ export default function ChatDetailPage({
                         onClick={handleAtClick}
                         className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
                       >
-                        <AtIcon />
+                        <img src="/icons/chat/account_icon.svg" width={20} height={20} alt="@" />
                       </button>
                       {/* @ Mention Popup */}
                       <AtMentionPopup
@@ -657,14 +654,18 @@ export default function ChatDetailPage({
                       />
                     </div>
 
-                    {/* Right - Send / Microphone button */}
+                    {/* Right - Send button (inactive/active like Flutter) */}
                     <button
                       type="button"
-                      onClick={handleSendOrMicClick}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
-                      title={inputValue.trim() ? "发送" : "语音输入"}
+                      onClick={handleSendClick}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors ${
+                        inputValue.trim()
+                          ? "bg-[rgba(0,0,0,0.9)] hover:bg-[rgba(0,0,0,0.8)]"
+                          : "bg-[rgba(0,0,0,0.04)]"
+                      }`}
+                      title="发送"
                     >
-                      {inputValue.trim() ? <SendIcon /> : <MicIcon />}
+                      <img src={inputValue.trim() ? "/icons/chat/send_icon.svg" : "/icons/chat/send_icon_dark.svg"} width={20} height={20} alt="发送" />
                     </button>
                   </div>
                 </div>

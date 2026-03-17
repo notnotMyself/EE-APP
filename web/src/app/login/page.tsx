@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import LoginModal from "@/components/LoginModal";
@@ -28,7 +30,15 @@ function ArrowRightIcon() {
 }
 
 export default function LoginPage() {
+  const { isLoggedIn, isLoading } = useAuth();
+  const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Redirect to chat if already logged in
+  if (!isLoading && isLoggedIn) {
+    router.replace("/chat");
+    return null;
+  }
 
   const handleLogin = () => {
     setShowLoginModal(true);
@@ -37,7 +47,7 @@ export default function LoginPage() {
   return (
     <div className="flex h-screen w-full bg-[#F0F1F2]">
       {/* Left Sidebar */}
-      <Sidebar isLoggedIn={false} />
+      <Sidebar isLoggedIn={isLoggedIn} />
 
       {/* Right Content */}
       <div className="relative flex flex-col flex-1 min-w-0">

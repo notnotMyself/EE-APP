@@ -35,14 +35,6 @@ function DropdownArrowIcon() {
   );
 }
 
-function AtIcon() {
-  return (
-    <span className="text-[16px] font-medium leading-[1.17em] text-[rgba(0,0,0,0.9)] select-none">
-      @
-    </span>
-  );
-}
-
 function AttachmentIcon() {
   return (
     <svg
@@ -63,41 +55,6 @@ function AttachmentIcon() {
   );
 }
 
-function SendIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M7 12V2M7 2L2 7M7 2L12 7"
-        stroke="white"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect x="5" y="1" width="4" height="7" rx="2" stroke="white" strokeWidth="1.4" />
-      <path d="M3 6.5a4 4 0 008 0" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M7 11.5v1.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 const suggestionChips = ["随便聊聊", "交互验证", "视觉讨论", "方案PK"];
 
@@ -161,17 +118,15 @@ export default function ChatPage() {
     setShowAtMention(!showAtMention);
   };
 
-  const handleSendOrMicClick = () => {
+  const handleSendClick = () => {
     if (inputValue.trim()) {
       handleSubmit();
-    } else {
-      alert("语音输入功能开发中");
     }
   };
 
   const handleChipClick = (chip: string) => {
     setInputValue(chip);
-    handleSubmit(chip);
+    textareaRef.current?.focus();
   };
 
   const selectedPersonalityLabel =
@@ -274,7 +229,7 @@ export default function ChatPage() {
                       onClick={handleAtClick}
                       className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
                     >
-                      <AtIcon />
+                      <img src="/icons/chat/account_icon.svg" width={20} height={20} alt="@" />
                     </button>
                     {/* @ Mention Popup */}
                     <AtMentionPopup
@@ -300,15 +255,19 @@ export default function ChatPage() {
                     />
                   </div>
 
-                  {/* Right - Send / Microphone button */}
+                  {/* Right - Send button (inactive/active like Flutter) */}
                   <button
                     type="button"
-                    onClick={handleSendOrMicClick}
+                    onClick={handleSendClick}
                     disabled={isCreating}
-                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors disabled:opacity-50"
-                    title={inputValue.trim() ? "发送" : "语音输入"}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors disabled:opacity-50 ${
+                      inputValue.trim()
+                        ? "bg-[rgba(0,0,0,0.9)] hover:bg-[rgba(0,0,0,0.8)]"
+                        : "bg-[rgba(0,0,0,0.04)]"
+                    }`}
+                    title="发送"
                   >
-                    {inputValue.trim() ? <SendIcon /> : <MicIcon />}
+                    <img src={inputValue.trim() ? "/icons/chat/send_icon.svg" : "/icons/chat/send_icon_dark.svg"} width={20} height={20} alt="发送" />
                   </button>
                 </div>
               </div>

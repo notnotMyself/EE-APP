@@ -99,6 +99,16 @@ export function listMessages(
   );
 }
 
+/** Delete a conversation. */
+export async function deleteConversation(
+  token: string,
+  conversationId: string
+): Promise<void> {
+  await apiFetch<void>(`/api/v1/conversations/${conversationId}`, token, {
+    method: "DELETE",
+  });
+}
+
 /** Update conversation title. */
 export function updateConversationTitle(
   token: string,
