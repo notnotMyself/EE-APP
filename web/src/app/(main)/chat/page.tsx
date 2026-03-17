@@ -34,7 +34,24 @@ function DropdownArrowIcon() {
   );
 }
 
-const suggestionChips = ["随便聊聊", "交互验证", "视觉讨论", "方案PK"];
+const DEFAULT_PLACEHOLDER = "简单描述设计方案背景与目标";
+
+const chipPlaceholders: Record<string, string> = {
+  随便聊聊: "这是一个什么产品 / 功能，核心解决什么问题",
+  交互验证: "描述产品目标，用户使用的核心路径",
+  视觉讨论: "描述产品目标，用户使用的核心路径",
+  方案PK: "简单列出两个你在犹豫的方案差异，写清楚你为什么犹豫",
+};
+
+// 与 Flutter quick_action_button.dart 对齐：null 表示不拼前缀
+const chipModeIds: Record<string, string | null> = {
+  随便聊聊: null,
+  交互验证: "interaction_check",
+  视觉讨论: "visual_consistency",
+  方案PK: "compare_designs",
+};
+
+const suggestionChips = Object.keys(chipPlaceholders);
 
 export default function ChatPage() {
   const router = useRouter();
@@ -46,6 +63,7 @@ export default function ChatPage() {
   const [showPersonalitySelector, setShowPersonalitySelector] = useState(false);
   const [selectedPersonality, setSelectedPersonality] = useState("default");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Clear TopBar title when entering new chat page
@@ -69,7 +87,10 @@ export default function ChatPage() {
 
       // Create a real conversation via API, then navigate
       setIsCreating(true);
-      const msgText = valueToSend.trim();
+      const modeId = selectedChip ? chipModeIds[selectedChip] : null;
+      const msgText = modeId
+        ? `[MODE:${modeId}] ${valueToSend.trim()}`
+        : valueToSend.trim();
       const title = msgText.length > 20 ? msgText.slice(0, 20) + "…" : msgText;
       try {
         const conv = await createConversation(accessToken, DEFAULT_AGENT_ID, title);
@@ -87,7 +108,7 @@ export default function ChatPage() {
         setIsCreating(false);
       }
     },
-    [inputValue, router, accessToken, isCreating, addConversation]
+    [inputValue, router, accessToken, isCreating, addConversation, selectedChip]
   );
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -106,7 +127,7 @@ export default function ChatPage() {
   };
 
   const handleChipClick = (chip: string) => {
-    setInputValue(chip);
+    setSelectedChip((prev) => (prev === chip ? null : chip));
     textareaRef.current?.focus();
   };
 
@@ -183,7 +204,7 @@ export default function ChatPage() {
                         handleSubmit();
                       }
                     }}
-                    placeholder={"简单描述设计方案背景与目标"}
+                    placeholder={selectedChip ? chipPlaceholders[selectedChip] : DEFAULT_PLACEHOLDER}
                     className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-[1.65em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] font-normal min-h-[60px]"
                     rows={3}
                     disabled={isCreating}
@@ -248,7 +269,7 @@ export default function ChatPage() {
                   type="button"
                   onClick={() => handleChipClick(chip)}
                   disabled={isCreating}
-                  className="glass-chip"
+                  className={`glass-chip${selectedChip === chip ? " glass-chip--selected" : ""}`}
                 >
                   {chip}
                 </button>
