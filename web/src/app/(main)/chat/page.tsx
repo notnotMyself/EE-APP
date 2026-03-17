@@ -194,9 +194,9 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={handleAtClick}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
                     >
-                      <img src="/icons/chat/account_icon.svg" width={20} height={20} alt="@" />
+                      <span className="inline-block -translate-y-px">@</span>
                     </button>
                     {/* @ Mention Popup */}
                     <AtMentionPopup

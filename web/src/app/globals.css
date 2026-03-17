@@ -25,6 +25,14 @@
   box-sizing: border-box;
 }
 
+img {
+  display: block;
+}
+
+svg {
+  shape-rendering: geometricPrecision;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

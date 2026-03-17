@@ -1,6 +1,6 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" shape-rendering="geometricPrecision" xmlns="http://www.w3.org/2000/svg">
 <path fill-rule="evenodd" clip-rule="evenodd" d="M6.61465 3.56614C7.98817 2.12319 10.0097 1.28096 12.001 1.22266L12.001 1.22688C13.9923 1.28518 16.0138 2.12741 17.3873 3.57036C18.7608 5.01331 19.5091 6.94024 19.4692 8.93199L19.4688 8.94304C19.4072 10.8101 18.6451 12.5856 17.3341 13.9165C16.9794 14.2782 16.6991 14.7071 16.5101 15.1772L15.8639 16.7956C15.788 16.9856 15.6041 17.1102 15.3995 17.1102H12.001L12.001 17.1059H8.60244C8.39788 17.1059 8.21395 16.9813 8.13809 16.7914L7.49183 15.173C7.30284 14.7029 7.0226 14.2739 6.66782 13.9123C5.35687 12.5814 4.59479 10.8059 4.53313 8.93882L4.53277 8.92777C4.49287 6.93602 5.24114 5.00909 6.61465 3.56614Z" stroke="black" stroke-width="1.4" stroke-miterlimit="10"/>
-<path d="M10.2331 4.27539C8.93508 4.7923 7.91689 5.86148 7.46875 7.1927" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+<path d="M10.2331 4.27539C8.93508 4.7923 7.91689 5.86148 7.46875 7.1927" stroke="black" stroke-width="1.4" stroke-linecap="round"/>
 <path d="M9.0625 19.1104L14.9062 19.1104" stroke="black" stroke-width="1.4" stroke-linecap="round"/>
 <path d="M10.3672 21.7998L13.6005 21.7998" stroke="black" stroke-width="1.4" stroke-linecap="round"/>
 </svg>

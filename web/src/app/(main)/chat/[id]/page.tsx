@@ -139,7 +139,7 @@ function AIMessage({ message }: { message: ChatMessage }) {
                 title={copied ? "已复制" : "复制"}
                 onClick={handleCopy}
               >
-                <img src="/icons/chat/copy.svg" width={14} height={14} alt="复制" />
+                <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
               </button>
               <button
                 type="button"
@@ -147,7 +147,7 @@ function AIMessage({ message }: { message: ChatMessage }) {
                 style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
                 title="分享"
               >
-                <img src="/icons/chat/forward_icon.svg" width={15} height={15} alt="分享" />
+                <img src="/icons/chat/forward_icon.svg" width={16} height={16} alt="分享" />
               </button>
             </div>
             {/* Right: Download */}
@@ -157,7 +157,7 @@ function AIMessage({ message }: { message: ChatMessage }) {
               style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
               title="下载"
             >
-              <img src="/icons/chat/regenerate.svg" width={14} height={14} alt="下载" />
+              <img src="/icons/chat/regenerate.svg" width={13} height={13} alt="下载" />
             </button>
           </div>
         )}
@@ -590,9 +590,9 @@ export default function ChatDetailPage({
                       <button
                         type="button"
                         onClick={handleAtClick}
-                        className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                        className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
                       >
-                        <img src="/icons/chat/account_icon.svg" width={20} height={20} alt="@" />
+                        <span className="inline-block -translate-y-px">@</span>
                       </button>
                       {/* @ Mention Popup */}
                       <AtMentionPopup

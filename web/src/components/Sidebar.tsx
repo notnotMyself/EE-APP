@@ -93,7 +93,7 @@ export default function Sidebar() {
                   : "hover:bg-[rgba(0,0,0,0.04)]"
               }`}
             >
-              {item.id === "review" && isLoggedIn ? (
+              {item.id === "review" ? (
                 <img
                   src={chrisChenAvatar.src}
                   width={24}
@@ -166,8 +166,8 @@ export default function Sidebar() {
                       className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded bg-transparent border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-all shrink-0 z-10"
                       title="删除对话"
                     >
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="rgba(0,0,0,0.4)" strokeWidth="1.2" strokeLinecap="round" />
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 2L10 10M10 2L2 10" stroke="rgba(0,0,0,0.4)" strokeWidth="1.5" strokeLinecap="round" />
                       </svg>
                     </button>
                   </Link>
