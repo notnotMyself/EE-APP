@@ -2,242 +2,16 @@
 
 import { useState, useRef, useEffect, use, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatLayout } from "@/contexts/ChatLayoutContext";
 import { listMessages, updateConversationTitle, type Message as ApiMessage } from "@/lib/api";
 import { ConversationWebSocket } from "@/lib/websocket";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
-import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
-
-// ─── Markdown Rich Text Helper ──────────────────────────────────────────────
-
-function renderMarkdownText(text: string): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  const regex = /\*\*(.+?)\*\*/g;
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    // Add text before the bold marker
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    // Add bold text
-    parts.push(
-      <span key={match.index} className="font-semibold">
-        {match[1]}
-      </span>
-    );
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add remaining text
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  hasImages?: boolean;
-  isStreaming?: boolean;
-}
-
-// ─── User Message Bubble ────────────────────────────────────────────────────
-
-function UserMessage({ message }: { message: ChatMessage }) {
-  return (
-    <div className="flex justify-end">
-      <div
-        className="flex flex-col gap-[10px] max-w-[480px]"
-        style={{
-          backgroundColor: "#2C69FF",
-          borderRadius: 24,
-          padding: 16,
-        }}
-      >
-        {message.hasImages && (
-          <div className="flex items-center gap-[3px]">
-            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-              <Image
-                src={chrisChenAvatar}
-                alt="Design attachment 1"
-                width={43}
-                height={43}
-                className="w-full h-full object-cover opacity-70"
-              />
-            </div>
-            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-              <Image
-                src={chrisChenAvatar}
-                alt="Design attachment 2"
-                width={43}
-                height={43}
-                className="w-full h-full object-cover opacity-70"
-              />
-            </div>
-          </div>
-        )}
-        <p className="m-0 text-[14px] font-normal leading-[1.4em] text-white whitespace-pre-wrap text-justify">
-          {message.content}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── AI Message Bubble ──────────────────────────────────────────────────────
-
-function AIMessage({ message }: { message: ChatMessage }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="flex justify-start">
-      <div
-        className="flex flex-col gap-[5px] max-w-[686px] w-full"
-        style={{
-          backgroundColor: "#F7F8FD",
-          borderRadius: 24,
-          padding: 16,
-          border: "1px solid rgba(255,255,255,0.6)",
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
-        }}
-      >
-        {/* Message text */}
-        <div className="w-full">
-          <p className="m-0 text-[14px] font-normal leading-[19.6px] text-[rgba(0,0,0,0.9)] whitespace-pre-wrap">
-            {renderMarkdownText(message.content)}
-            {message.isStreaming && (
-              <span className="inline-block w-[2px] h-[1em] bg-[rgba(0,0,0,0.6)] ml-[1px] align-middle animate-pulse" />
-            )}
-          </p>
-        </div>
-
-        {/* Bottom action bar - hidden while streaming */}
-        {!message.isStreaming && message.content && (
-          <div className="flex items-center justify-between">
-            {/* Left group: Copy + Share */}
-            <div className="flex items-center gap-[8px]">
-              <button
-                type="button"
-                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-                title={copied ? "已复制" : "复制"}
-                onClick={handleCopy}
-              >
-                <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
-              </button>
-              <button
-                type="button"
-                className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-                style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-                title="分享"
-              >
-                <img src="/icons/chat/forward_icon.svg" width={16} height={16} alt="分享" />
-              </button>
-            </div>
-            {/* Right: Download */}
-            <button
-              type="button"
-              className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-              style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-              title="下载"
-            >
-              <img src="/icons/chat/regenerate.svg" width={13} height={13} alt="下载" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Streaming buffer ───────────────────────────────────────────────────────
-// 2-level buffer matching the Flutter app:
-// Level 1: Network chunks accumulate in a buffer (50ms flush interval)
-// Level 2: Display buffer renders chars with a typewriter effect (30ms per chunk)
-
-function useStreamingBuffer() {
-  const networkBuffer = useRef("");
-  const displayedRef = useRef("");
-  const flushTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const typeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const setContentFn = useRef<((s: string) => void) | null>(null);
-
-  const startTypewriter = useCallback(() => {
-    if (typeTimer.current) return;
-    typeTimer.current = setInterval(() => {
-      const target = networkBuffer.current;
-      const displayed = displayedRef.current;
-      if (displayed.length >= target.length) {
-        // caught up — stop typewriter until more data arrives
-        if (typeTimer.current) {
-          clearInterval(typeTimer.current);
-          typeTimer.current = null;
-        }
-        return;
-      }
-      const chunkSize = Math.min(6, target.length - displayed.length);
-      displayedRef.current = target.slice(0, displayed.length + chunkSize);
-      setContentFn.current?.(displayedRef.current);
-    }, 30);
-  }, []);
-
-  const pushChunk = useCallback(
-    (chunk: string) => {
-      networkBuffer.current += chunk;
-      startTypewriter();
-    },
-    [startTypewriter]
-  );
-
-  const finish = useCallback(() => {
-    // Immediately display all remaining content
-    if (typeTimer.current) {
-      clearInterval(typeTimer.current);
-      typeTimer.current = null;
-    }
-    if (flushTimer.current) {
-      clearInterval(flushTimer.current);
-      flushTimer.current = null;
-    }
-    displayedRef.current = networkBuffer.current;
-    setContentFn.current?.(displayedRef.current);
-  }, []);
-
-  const reset = useCallback(() => {
-    networkBuffer.current = "";
-    displayedRef.current = "";
-    if (typeTimer.current) {
-      clearInterval(typeTimer.current);
-      typeTimer.current = null;
-    }
-    if (flushTimer.current) {
-      clearInterval(flushTimer.current);
-      flushTimer.current = null;
-    }
-  }, []);
-
-  const bindSetter = useCallback((fn: (s: string) => void) => {
-    setContentFn.current = fn;
-  }, []);
-
-  return { pushChunk, finish, reset, bindSetter, displayedRef };
-}
+import { useStreamingBuffer } from "@/hooks/useStreamingBuffer";
+import UserMessage from "@/components/chat/UserMessage";
+import AIMessage from "@/components/chat/AIMessage";
+import type { ChatMessage } from "@/components/chat/ChatMessage";
 
 // ─── Page Component ─────────────────────────────────────────────────────────
 
@@ -286,12 +60,9 @@ export default function ChatDetailPage({
             role: m.role as "user" | "assistant",
             content: m.content_type === "briefing_card" ? "[简报卡片]" : m.content,
           }));
-        // Only replace messages if API returned actual history;
-        // don't wipe out the initial ?q= message for a fresh conversation.
         if (loaded.length > 0) {
           setMessages(loaded);
         }
-        // Use first user message as title; sync sidebar + persist to backend
         const firstUser = apiMessages.find((m: ApiMessage) => m.role === "user");
         if (firstUser) {
           const derived =
@@ -299,7 +70,6 @@ export default function ChatDetailPage({
             (firstUser.content.length > 20 ? "…" : "");
           setConversationTitle(derived);
           updateConversation(conversationId, { title: derived });
-          // Fire-and-forget: persist title so sidebar shows correctly on next load
           if (accessToken) {
             updateConversationTitle(accessToken, conversationId, derived).catch(() => {});
           }
@@ -315,14 +85,12 @@ export default function ChatDetailPage({
     if (q) {
       initialMessageSent.current = true;
       console.log("[ChatPage] pendingInitialQuery SET:", q.slice(0, 30));
-      // Show user message bubble right away
       const userMsg: ChatMessage = {
         id: `user-init-${Date.now()}`,
         role: "user",
         content: q,
       };
       setMessages((prev) => (prev.length === 0 ? [userMsg] : prev));
-      // Store the pending initial query for WS to pick up
       pendingInitialQuery.current = q;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -337,12 +105,10 @@ export default function ChatDetailPage({
 
     const ws = new ConversationWebSocket(conversationId, accessToken, {
       onConnected: () => {
-        // If there's a pending initial query, send it via WS now
         const q = pendingInitialQuery.current;
         console.log("[ChatPage] onConnected, pendingInitialQuery:", q ? q.slice(0, 30) : "null");
         if (q) {
           pendingInitialQuery.current = null;
-          // Add AI streaming placeholder and send
           const aiId = `ai-${Date.now()}`;
           streamingMessageId.current = aiId;
           setMessages((prev) => [
@@ -359,8 +125,7 @@ export default function ChatDetailPage({
       },
       onDone: () => {
         streamBuffer.finish();
-        const finalContent = streamBuffer.displayedRef.current;
-        // Mark streaming message as complete
+        const finalContent = streamBuffer.networkBuffer.current;
         const doneId = streamingMessageId.current;
         if (doneId) {
           setMessages((prev) =>
@@ -396,16 +161,11 @@ export default function ChatDetailPage({
         streamBuffer.reset();
       },
       onClose: () => {
-        // NOTE: pendingInitialQuery 不在这里消费。
-        // onClose 可能在首次 connect 失败或 React StrictMode 的 cleanup 中触发，
-        // 此时 reconnect 还未执行。保留 pendingInitialQuery，让下次 onConnected 重试发送。
         console.log("[ChatPage] onClose, pendingInitialQuery:", pendingInitialQuery.current ? "has value" : "null", "| streaming:", streamingMessageId.current);
-
-        // Stop streaming if active
         const closeId = streamingMessageId.current;
         if (closeId) {
           streamBuffer.finish();
-          const finalContent = streamBuffer.displayedRef.current;
+          const finalContent = streamBuffer.networkBuffer.current;
           setMessages((prev) =>
             prev.map((m) =>
               m.id === closeId
@@ -419,7 +179,6 @@ export default function ChatDetailPage({
         }
       },
       onPermanentClose: () => {
-        // 所有重连均失败 → 此时才提示用户并消费 pendingInitialQuery
         console.log("[ChatPage] onPermanentClose, pendingInitialQuery:", pendingInitialQuery.current ? "has value" : "null");
         if (pendingInitialQuery.current) {
           const q = pendingInitialQuery.current;
@@ -471,7 +230,7 @@ export default function ChatDetailPage({
   }, [messages]);
 
   function sendMessageViaWS(ws: ConversationWebSocket, text: string) {
-    isNearBottomRef.current = true; // Force scroll on user send
+    isNearBottomRef.current = true;
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -503,7 +262,6 @@ export default function ChatDetailPage({
     if (connected) {
       sendMessageViaWS(wsRef.current!, userText);
     } else {
-      // Fallback: mock streaming for when WS is not connected
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
         role: "user",
@@ -563,102 +321,102 @@ export default function ChatDetailPage({
   };
 
   return (
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Messages List (scrollable) */}
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto px-[60px] py-[10px]"
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
-            }}
-          >
-            <div className="flex flex-col gap-[10px] max-w-[780px] mx-auto">
-              {messages.map((message) =>
-                message.role === "user" ? (
-                  <UserMessage key={message.id} message={message} />
-                ) : (
-                  <AIMessage key={message.id} message={message} />
-                )
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* Bottom Input Area (fixed to bottom) */}
-          <div className="shrink-0 px-[60px] pb-[40px] pt-[10px]">
-            <div className="max-w-[780px] mx-auto flex flex-col gap-[10px]">
-              {/* Input Container with gradient border */}
-              <form onSubmit={handleFormSubmit} className="input-gradient-border">
-                <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
-                  {/* Text Input Area */}
-                  <div className="flex-1 py-[8px]">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmit();
-                        }
-                      }}
-                      placeholder={"简单描述设计方案背景与目标"}
-                      className="w-full bg-transparent border-none outline-none resize-none text-[16px] leading-[1.4em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.54)] font-normal min-h-[60px]"
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* Bottom Toolbar */}
-                  <div className="flex items-center justify-between">
-                    {/* Left buttons */}
-                    <div className="flex items-center gap-[3px] relative">
-                      {/* @ Button */}
-                      <button
-                        type="button"
-                        onClick={handleAtClick}
-                        className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
-                      >
-                        <span className="inline-block -translate-y-px">@</span>
-                      </button>
-                      {/* @ Mention Popup */}
-                      <AtMentionPopup
-                        isOpen={showAtMention}
-                        onClose={() => setShowAtMention(false)}
-                        onSelect={(item) => {
-                          setInputValue((prev) => prev + `@${item.name} `);
-                          textareaRef.current?.focus();
-                        }}
-                      />
-                      {/* Attachment Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                        className="w-8 h-8 flex items-center justify-center border-none cursor-pointer bg-transparent p-0 hover:opacity-80 transition-opacity"
-                      >
-                        <img src="/icons/chat/attachment_icon.svg" width={32} height={32} alt="附件" />
-                      </button>
-                      {/* Attachment Menu Popup */}
-                      <AttachmentMenu
-                        isOpen={showAttachmentMenu}
-                        onClose={() => setShowAttachmentMenu(false)}
-                      />
-                    </div>
-
-                    {/* Right - Send button */}
-                    <button
-                      type="button"
-                      onClick={handleSendClick}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
-                      title="发送"
-                    >
-                      <img src="/icons/chat/send_icon_active.svg" width={20} height={20} alt="发送" />
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Messages List (scrollable) */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto px-[60px] py-[10px]"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+        }}
+      >
+        <div className="flex flex-col gap-[10px] max-w-[780px] mx-auto">
+          {messages.map((message) =>
+            message.role === "user" ? (
+              <UserMessage key={message.id} message={message} />
+            ) : (
+              <AIMessage key={message.id} message={message} />
+            )
+          )}
+          <div ref={messagesEndRef} />
         </div>
+      </div>
+
+      {/* Bottom Input Area (fixed to bottom) */}
+      <div className="shrink-0 px-[60px] pb-[40px] pt-[10px]">
+        <div className="max-w-[780px] mx-auto flex flex-col gap-[10px]">
+          {/* Input Container with gradient border */}
+          <form onSubmit={handleFormSubmit} className="input-gradient-border">
+            <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
+              {/* Text Input Area */}
+              <div className="flex-1 py-[8px]">
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
+                  placeholder={"简单描述设计方案背景与目标"}
+                  className="w-full bg-transparent border-none outline-none resize-none text-[16px] leading-[1.4em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.54)] font-normal min-h-[60px]"
+                  rows={3}
+                />
+              </div>
+
+              {/* Bottom Toolbar */}
+              <div className="flex items-center justify-between">
+                {/* Left buttons */}
+                <div className="flex items-center gap-[3px] relative">
+                  {/* @ Button */}
+                  <button
+                    type="button"
+                    onClick={handleAtClick}
+                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
+                  >
+                    <span className="inline-block -translate-y-px">@</span>
+                  </button>
+                  {/* @ Mention Popup */}
+                  <AtMentionPopup
+                    isOpen={showAtMention}
+                    onClose={() => setShowAtMention(false)}
+                    onSelect={(item) => {
+                      setInputValue((prev) => prev + `@${item.name} `);
+                      textareaRef.current?.focus();
+                    }}
+                  />
+                  {/* Attachment Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                    className="w-8 h-8 flex items-center justify-center border-none cursor-pointer bg-transparent p-0 hover:opacity-80 transition-opacity"
+                  >
+                    <img src="/icons/chat/attachment_icon.svg" width={32} height={32} alt="附件" />
+                  </button>
+                  {/* Attachment Menu Popup */}
+                  <AttachmentMenu
+                    isOpen={showAttachmentMenu}
+                    onClose={() => setShowAttachmentMenu(false)}
+                  />
+                </div>
+
+                {/* Right - Send button */}
+                <button
+                  type="button"
+                  onClick={handleSendClick}
+                  className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
+                  title="发送"
+                >
+                  <img src="/icons/chat/send_icon_active.svg" width={20} height={20} alt="发送" />
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }

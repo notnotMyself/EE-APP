@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme inline {
   --color-bg-gray: #F0F1F2;
@@ -11,6 +12,8 @@
   --color-thin-fill: rgba(0, 0, 0, 0.04);
   --color-input-bg: #F8FAFC;
   --color-input-border: #E2E8F0;
+  /* streamdown border-border 映射，避免回退为 currentColor */
+  --color-border: #E5E7EB;
   --font-sans: "OPPO Sans 4.0", "Inter", system-ui, sans-serif;
   --font-heading: "Poppins", sans-serif;
 }
@@ -180,4 +183,217 @@ body {
 
 .sidebar-conv-new-text {
   animation: conv-highlight-text 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ─── AI 消息气泡内 Markdown 排版 ──────────────────────────────────────────────
+   @layer ai-prose 在 @import "tailwindcss"（含 @layer utilities）之后声明，
+   普通优先级即可覆盖 Tailwind utility 类，无需 !important。
+   仅 pre[style] 保留 !important，因为 shiki 注入内联 style 属性，
+   CSS 层级规则无法覆盖内联样式，只有 !important 才能生效。
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@layer ai-prose {
+
+.ai-prose {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(0, 0, 0, 0.9);
+  word-break: break-word;
+  max-width: none;
+}
+
+.ai-prose > :first-child { margin-top: 0; }
+.ai-prose > :last-child  { margin-bottom: 0; }
+
+/* 段落 */
+.ai-prose p {
+  margin-top: 0;
+  margin-bottom: 0.6em;
+}
+.ai-prose p:empty { display: none; }
+
+/* 标题 */
+.ai-prose h1,
+.ai-prose h2,
+.ai-prose h3,
+.ai-prose h4,
+.ai-prose h5,
+.ai-prose h6 {
+  font-family: var(--font-sans);
+  color: rgba(0, 0, 0, 0.9);
+  margin-bottom: 0.5em;
+  line-height: 1.4;
+}
+.ai-prose h1 { font-size: 18px; font-weight: 600; margin-top: 1.25em; }
+.ai-prose h2 { font-size: 16px; font-weight: 600; margin-top: 1em; }
+.ai-prose h3 { font-size: 14px; font-weight: 600; margin-top: 1em; }
+.ai-prose h4,
+.ai-prose h5,
+.ai-prose h6 { font-size: 14px; font-weight: 500; margin-top: 0.75em; }
+
+/* 列表 */
+.ai-prose ul,
+.ai-prose ol {
+  margin-top: 0;
+  margin-bottom: 0.75em;
+  padding-left: 1.25em;
+}
+.ai-prose li { margin-bottom: 0.25em; }
+.ai-prose li:last-child { margin-bottom: 0; }
+.ai-prose li > p { margin-bottom: 0; }
+.ai-prose li > ul,
+.ai-prose li > ol { margin-top: 0.25em; margin-bottom: 0; }
+
+/* 引用块 */
+.ai-prose blockquote {
+  margin: 0.75em 0;
+  padding: 8px 12px;
+  border-left: 3px solid rgba(0, 102, 255, 0.35);
+  background-color: rgba(0, 102, 255, 0.04);
+  border-radius: 0 6px 6px 0;
+  font-style: normal;
+  color: rgba(0, 0, 0, 0.54);
+}
+.ai-prose blockquote > :first-child { margin-top: 0; }
+.ai-prose blockquote > :last-child  { margin-bottom: 0; }
+
+/* inline code */
+.ai-prose :not(pre) > code {
+  font-size: 13px;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  color: #0052CC;
+  background-color: rgba(0, 102, 255, 0.08);
+  border-radius: 4px;
+  padding: 1px 4px;
+  quotes: none;
+}
+.ai-prose :not(pre) > code::before,
+.ai-prose :not(pre) > code::after { content: none; }
+
+/* 代码块：data-streamdown 精准覆盖 */
+.ai-prose [data-streamdown="code-block"] {
+  margin: 0.75em 0;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+  gap: 0;
+  border-radius: 0;
+}
+.ai-prose [data-streamdown="code-block-header"] {
+  display: none;
+}
+.ai-prose [data-streamdown="code-block-body"] {
+  border: none;
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+.ai-prose pre {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  border: 1px solid rgba(0, 102, 255, 0.12);
+  scrollbar-width: thin;
+  background-color: #EEF2FF;
+}
+/* shiki 注入内联 style，只有 !important 能覆盖内联样式 */
+.ai-prose pre[style] { background-color: #EEF2FF !important; }
+.ai-prose pre code {
+  font-size: 13px;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+}
+
+/* 表格 */
+.ai-prose div:has(table) {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0.75em 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.ai-prose table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  border: none;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  background-color: transparent;
+}
+.ai-prose thead { background-color: rgba(0, 102, 255, 0.06); }
+.ai-prose th {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.9);
+  padding: 7px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: left;
+  white-space: nowrap;
+}
+.ai-prose td {
+  padding: 6px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.9);
+}
+.ai-prose tbody tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.025); }
+
+/* 水平线 */
+.ai-prose hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin: 1em 0;
+}
+
+/* 链接 */
+.ai-prose a { color: #0066FF; text-decoration: none; }
+.ai-prose a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* 图片 */
+.ai-prose img { max-width: 100%; border-radius: 8px; margin: 0.75em 0; }
+
+/* 强调 */
+.ai-prose strong { font-weight: 600; color: rgba(0, 0, 0, 0.9); }
+.ai-prose em     { font-style: italic; color: rgba(0, 0, 0, 0.75); }
+
+} /* end @layer ai-prose */
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Streamdown / shadcn 兼容 CSS 变量 —— 与 @theme inline 互不干扰 */
+:root {
+  --background: 240 6% 97%;
+  --foreground: 0 0% 9%;
+  --card: 240 6% 97%;
+  --card-foreground: 0 0% 9%;
+  --primary: 220 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 0 0% 46%;
+  --border: 220 13% 91%;
+  --radius: 0.75rem;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --accent: 220 14% 96%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 220 100% 50%;
+  --input: 220 13% 91%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
 }

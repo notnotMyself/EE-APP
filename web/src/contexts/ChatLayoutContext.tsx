@@ -21,8 +21,19 @@ interface ChatLayoutContextType {
 
 export const ChatLayoutContext = createContext<ChatLayoutContextType | null>(null);
 
+const defaultChatLayout: ChatLayoutContextType = {
+  title: undefined,
+  setTitle: () => {},
+  isCollapsed: false,
+  toggleSidebar: () => {},
+  conversations: [],
+  addConversation: () => {},
+  newConvId: null,
+  updateConversation: () => {},
+  removeConversation: () => {},
+};
+
 export function useChatLayout() {
   const ctx = useContext(ChatLayoutContext);
-  if (!ctx) throw new Error("useChatLayout must be used within ChatLayout");
-  return ctx;
+  return ctx ?? defaultChatLayout;
 }
