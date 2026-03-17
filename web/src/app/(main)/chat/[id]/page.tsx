@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChatLayout } from "@/contexts/ChatLayoutContext";
-import { listMessages, type Message as ApiMessage } from "@/lib/api";
+import { listMessages, updateConversationTitle, type Message as ApiMessage } from "@/lib/api";
 import { ConversationWebSocket } from "@/lib/websocket";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
@@ -249,7 +249,7 @@ export default function ChatDetailPage({
   const { id: conversationId } = use(params);
   const searchParams = useSearchParams();
   const { accessToken } = useAuth();
-  const { setTitle } = useChatLayout();
+  const { setTitle, updateConversation } = useChatLayout();
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -291,12 +291,18 @@ export default function ChatDetailPage({
         if (loaded.length > 0) {
           setMessages(loaded);
         }
-        // Use first user message as title hint
+        // Use first user message as title; sync sidebar + persist to backend
         const firstUser = apiMessages.find((m: ApiMessage) => m.role === "user");
         if (firstUser) {
-          setConversationTitle(
-            firstUser.content.slice(0, 20) + (firstUser.content.length > 20 ? "..." : "")
-          );
+          const derived =
+            firstUser.content.slice(0, 20) +
+            (firstUser.content.length > 20 ? "…" : "");
+          setConversationTitle(derived);
+          updateConversation(conversationId, { title: derived });
+          // Fire-and-forget: persist title so sidebar shows correctly on next load
+          if (accessToken) {
+            updateConversationTitle(accessToken, conversationId, derived).catch(() => {});
+          }
         }
       })
       .catch((err) => console.error("Failed to load messages:", err));
@@ -308,6 +314,7 @@ export default function ChatDetailPage({
     const q = searchParams.get("q");
     if (q) {
       initialMessageSent.current = true;
+      console.log("[ChatPage] pendingInitialQuery SET:", q.slice(0, 30));
       // Show user message bubble right away
       const userMsg: ChatMessage = {
         id: `user-init-${Date.now()}`,
@@ -332,6 +339,7 @@ export default function ChatDetailPage({
       onConnected: () => {
         // If there's a pending initial query, send it via WS now
         const q = pendingInitialQuery.current;
+        console.log("[ChatPage] onConnected, pendingInitialQuery:", q ? q.slice(0, 30) : "null");
         if (q) {
           pendingInitialQuery.current = null;
           // Add AI streaming placeholder and send
@@ -353,10 +361,11 @@ export default function ChatDetailPage({
         streamBuffer.finish();
         const finalContent = streamBuffer.displayedRef.current;
         // Mark streaming message as complete
-        if (streamingMessageId.current) {
+        const doneId = streamingMessageId.current;
+        if (doneId) {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === streamingMessageId.current
+              m.id === doneId
                 ? { ...m, content: finalContent, isStreaming: false }
                 : m
             )
@@ -368,10 +377,11 @@ export default function ChatDetailPage({
       },
       onError: (content) => {
         console.error("WS error:", content);
-        if (streamingMessageId.current) {
+        const errorId = streamingMessageId.current;
+        if (errorId) {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === streamingMessageId.current
+              m.id === errorId
                 ? {
                     ...m,
                     content: m.content || `[Error: ${content}]`,
@@ -386,25 +396,19 @@ export default function ChatDetailPage({
         streamBuffer.reset();
       },
       onClose: () => {
-        // Connection lost — if we had a pending initial query that never got sent, show fallback
-        if (pendingInitialQuery.current) {
-          const q = pendingInitialQuery.current;
-          pendingInitialQuery.current = null;
-          // Show fallback response
-          const aiId = `ai-fallback-${Date.now()}`;
-          const fallbackReply = `收到你的消息："${q}"\n\n当前无法连接到后端服务，请检查网络连接后重试。`;
-          setMessages((prev) => [
-            ...prev,
-            { id: aiId, role: "assistant", content: fallbackReply, isStreaming: false },
-          ]);
-        }
+        // NOTE: pendingInitialQuery 不在这里消费。
+        // onClose 可能在首次 connect 失败或 React StrictMode 的 cleanup 中触发，
+        // 此时 reconnect 还未执行。保留 pendingInitialQuery，让下次 onConnected 重试发送。
+        console.log("[ChatPage] onClose, pendingInitialQuery:", pendingInitialQuery.current ? "has value" : "null", "| streaming:", streamingMessageId.current);
+
         // Stop streaming if active
-        if (streamingMessageId.current) {
+        const closeId = streamingMessageId.current;
+        if (closeId) {
           streamBuffer.finish();
           const finalContent = streamBuffer.displayedRef.current;
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === streamingMessageId.current
+              m.id === closeId
                 ? { ...m, content: finalContent || "[连接断开]", isStreaming: false }
                 : m
             )
@@ -414,12 +418,32 @@ export default function ChatDetailPage({
           streamBuffer.reset();
         }
       },
+      onPermanentClose: () => {
+        // 所有重连均失败 → 此时才提示用户并消费 pendingInitialQuery
+        console.log("[ChatPage] onPermanentClose, pendingInitialQuery:", pendingInitialQuery.current ? "has value" : "null");
+        if (pendingInitialQuery.current) {
+          const q = pendingInitialQuery.current;
+          pendingInitialQuery.current = null;
+          const aiId = `ai-fallback-${Date.now()}`;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: aiId,
+              role: "assistant",
+              content: `收到你的消息："${q}"\n\n当前无法连接到后端服务，请检查网络连接后重试。`,
+              isStreaming: false,
+            },
+          ]);
+        }
+      },
     });
 
     wsRef.current = ws;
+    console.log("[ChatPage] WS effect: connect()", { conversationId });
     ws.connect();
 
     return () => {
+      console.log("[ChatPage] WS effect: cleanup → disconnect()", { conversationId, pendingQuery: pendingInitialQuery.current ? "has value" : "null" });
       ws.disconnect();
       wsRef.current = null;
     };
@@ -473,8 +497,11 @@ export default function ChatDetailPage({
     const userText = inputValue.trim();
     setInputValue("");
 
-    if (wsRef.current?.isConnected) {
-      sendMessageViaWS(wsRef.current, userText);
+    const connected = wsRef.current?.isConnected ?? false;
+    console.log("[ChatPage] handleSubmit, wsConnected:", connected, "| wsRef:", wsRef.current ? "exists" : "null");
+
+    if (connected) {
+      sendMessageViaWS(wsRef.current!, userText);
     } else {
       // Fallback: mock streaming for when WS is not connected
       const userMessage: ChatMessage = {

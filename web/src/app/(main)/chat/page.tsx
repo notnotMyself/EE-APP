@@ -39,7 +39,7 @@ const suggestionChips = ["随便聊聊", "交互验证", "视觉讨论", "方案
 export default function ChatPage() {
   const router = useRouter();
   const { accessToken } = useAuth();
-  const { setTitle } = useChatLayout();
+  const { setTitle, addConversation } = useChatLayout();
   const [inputValue, setInputValue] = useState("");
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showAtMention, setShowAtMention] = useState(false);
@@ -69,21 +69,25 @@ export default function ChatPage() {
 
       // Create a real conversation via API, then navigate
       setIsCreating(true);
+      const msgText = valueToSend.trim();
+      const title = msgText.length > 20 ? msgText.slice(0, 20) + "…" : msgText;
       try {
-        const conv = await createConversation(accessToken, DEFAULT_AGENT_ID);
+        const conv = await createConversation(accessToken, DEFAULT_AGENT_ID, title);
+        // 乐观更新侧边栏：立即追加新会话并触发高亮
+        addConversation(conv);
         router.push(
-          `/chat/${conv.id}?q=${encodeURIComponent(valueToSend.trim())}`
+          `/chat/${conv.id}?q=${encodeURIComponent(msgText)}`
         );
       } catch (err) {
         console.error("Failed to create conversation:", err);
         // Fallback to local ID
         const convId = `new-${Date.now()}`;
-        router.push(`/chat/${convId}?q=${encodeURIComponent(valueToSend.trim())}`);
+        router.push(`/chat/${convId}?q=${encodeURIComponent(msgText)}`);
       } finally {
         setIsCreating(false);
       }
     },
-    [inputValue, router, accessToken, isCreating]
+    [inputValue, router, accessToken, isCreating, addConversation]
   );
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -163,7 +167,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area - positioned in lower portion */}
-          <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2 w-[915px] flex flex-col gap-[10px]">
+          <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2 w-full max-w-[915px] px-6 flex flex-col gap-[10px]">
             {/* Input Container with gradient border */}
             <form onSubmit={handleFormSubmit} className="input-gradient-border">
               <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
@@ -244,13 +248,9 @@ export default function ChatPage() {
                   type="button"
                   onClick={() => handleChipClick(chip)}
                   disabled={isCreating}
-                  className="chip-gradient-border"
+                  className="glass-chip"
                 >
-                  <span className="chip-gradient-border-inner">
-                    <span className="text-[12px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.54)] text-center whitespace-nowrap">
-                      {chip}
-                    </span>
-                  </span>
+                  {chip}
                 </button>
               ))}
             </div>

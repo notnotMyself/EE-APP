@@ -104,25 +104,80 @@ body {
               inset 0px -2px 8px rgba(255,255,255,0.8);
 }
 
-/* Suggestion chip with gradient border */
-.chip-gradient-border {
-  border-radius: 84px;
-  padding: 0.5px;
-  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%);
+/* Suggestion chip — Glass (liquid) style
+   Figma spec: border 0.506px solid white + bg rgba(0,0,0,0.04)
+   box-shadow 模拟 0.5px 白边 + 顶部内高光，无需 wrapper 双层 DOM */
+.glass-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 999px;
   border: none;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.54);
+  white-space: nowrap;
+  /* 外 0.5px 白边 + 顶部内侧玻璃高光 */
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.8);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
-.chip-gradient-border:hover {
-  opacity: 0.8;
+.glass-chip:hover {
+  background: rgba(0, 0, 0, 0.07);
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 1),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.9);
 }
-.chip-gradient-border-inner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 76px;
-  height: 32px;
-  padding: 6px 12px;
-  background: rgba(0,0,0,0.04);
-  border-radius: 84px;
+.glass-chip:active {
+  background: rgba(0, 0, 0, 0.10);
+}
+.glass-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 侧边栏新会话高亮动画
+   背景：从蓝色高亮完整退回透明，三段节奏：
+     0→15%  快速建立高亮（轻微 scale 入场）
+     15→65% 高亮驻留，给用户感知时间
+     65→100% 丝滑退出至透明
+   文字颜色同步：蓝色 → 普通文字色，节奏与背景一致 */
+@keyframes conv-highlight-bg {
+  0%   {
+    background-color: rgba(0, 102, 255, 0.38);
+    box-shadow: inset 2px 0 0 #0066FF;
+    transform: scale(1.01);
+  }
+  12%  {
+    background-color: rgba(0, 102, 255, 0.38);
+    box-shadow: inset 2px 0 0 #0066FF;
+    transform: scale(1);
+  }
+  65%  {
+    background-color: rgba(0, 102, 255, 0.28);
+    box-shadow: inset 2px 0 0 rgba(0, 102, 255, 0.5);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 2px 0 0 transparent;
+  }
+}
+
+@keyframes conv-highlight-text {
+  0%   { color: #0066FF; font-weight: 600; }
+  65%  { color: #0066FF; font-weight: 600; }
+  100% { color: rgba(0, 0, 0, 0.6); font-weight: 400; }
+}
+
+.sidebar-conv-new {
+  animation: conv-highlight-bg 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.sidebar-conv-new-text {
+  animation: conv-highlight-text 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
