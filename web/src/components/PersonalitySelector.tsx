@@ -116,16 +116,8 @@ export default function PersonalitySelector({
   return (
     <div
       ref={menuRef}
-      className="absolute z-50"
-      style={{
-        width: 196,
-        borderRadius: 24,
-        background: "rgba(239,239,239,0.8)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        boxShadow: "0px 6px 54px rgba(0,0,0,0.14)",
-        overflow: "hidden",
-      }}
+      className="absolute z-50 glass-popup"
+      style={{ width: 196 }}
     >
       <div className="flex flex-col py-[8px]">
         {/* Title */}
@@ -155,7 +147,7 @@ export default function PersonalitySelector({
                 {personality.icon}
               </span>
               <span
-                className="flex-1 text-left text-[16px] font-normal leading-[1.25em]"
+                className="flex-1 text-left text-[14px] font-medium leading-[1.4em]"
                 style={{ color: isSelected ? "#0066FF" : "rgba(0,0,0,0.9)" }}
               >
                 {personality.label}

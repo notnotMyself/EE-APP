@@ -33,18 +33,26 @@ export default function AIMessage({ message }: AIMessageProps) {
           boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
         }}
       >
-        {/* Markdown 渲染区 */}
-        <div className="ai-prose">
-          <Streamdown
-            animated
-            isAnimating={message.isStreaming}
-            plugins={{ code, cjk }}
-            shikiTheme={["github-light", "github-dark"]}
-            controls={false}
-          >
-            {message.content}
-          </Streamdown>
-        </div>
+        {/* 等待 AI 首个 token 期间显示 thinking 动画，内容到达后无缝切换 */}
+        {message.isStreaming && !message.content ? (
+          <div className="thinking-dots">
+            <span />
+            <span />
+            <span />
+          </div>
+        ) : (
+          <div className="ai-prose">
+            <Streamdown
+              animated
+              isAnimating={message.isStreaming}
+              plugins={{ code, cjk }}
+              shikiTheme={["github-light", "github-dark"]}
+              controls={false}
+            >
+              {message.content}
+            </Streamdown>
+          </div>
+        )}
 
         {/* 底部操作栏：流式结束且有内容时显示 */}
         {!message.isStreaming && message.content && (

@@ -184,7 +184,7 @@ export default function ChatPage() {
                       }
                     }}
                     placeholder={"简单描述设计方案背景与目标"}
-                    className="w-full bg-transparent border-none outline-none resize-none text-[16px] leading-[1.4em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.54)] font-normal min-h-[60px]"
+                    className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-[1.65em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] font-normal min-h-[60px]"
                     rows={3}
                     disabled={isCreating}
                   />

@@ -42,7 +42,7 @@ export default function UserMessage({ message }: UserMessageProps) {
             </div>
           </div>
         )}
-        <p className="m-0 text-[14px] font-normal leading-[1.4em] text-white whitespace-pre-wrap text-justify">
+        <p className="m-0 text-[14px] font-normal leading-[1.65em] text-white whitespace-pre-wrap overflow-wrap-break-word break-words">
           {message.content}
         </p>
       </div>

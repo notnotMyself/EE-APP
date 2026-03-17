@@ -5,7 +5,8 @@
   --color-bg-gray: #F0F1F2;
   --color-bg-sidebar: #F8F8F8;
   --color-primary-black: rgba(0, 0, 0, 0.9);
-  --color-secondary-text: rgba(0, 0, 0, 0.54);
+  /* 0.60 取代 0.54：在白背景上对比度 ~5.3:1，安全达到 WCAG AA（4.5:1） */
+  --color-secondary-text: rgba(0, 0, 0, 0.60);
   --color-disabled-text: rgba(0, 0, 0, 0.3);
   --color-blue: #0066FF;
   --color-dark-title: #0D1B34;
@@ -14,14 +15,18 @@
   --color-input-border: #E2E8F0;
   /* streamdown border-border 映射，避免回退为 currentColor */
   --color-border: #E5E7EB;
-  --font-sans: "OPPO Sans 4.0", "Inter", system-ui, sans-serif;
-  --font-heading: "Poppins", sans-serif;
-}
-
-@font-face {
-  font-family: "OPPO Sans 4.0";
-  src: local("OPPO Sans 4.0"), local("OPPO Sans"), local("PingFang SC"), local("Microsoft YaHei");
-  font-display: swap;
+  /* ─── 字体族 ────────────────────────────────────────────────────────────────
+     var() 引用 next/font 注入的运行时变量（--font-poppins / --font-inter /
+     --font-jetbrains），解决字面量绕过 next/font 子集化优化的问题。
+     中文 fallback 链：Mac → PingFang SC，Windows → Microsoft YaHei UI，
+     Linux → WenQuanYi Micro Hei，最终兜底 system-ui。
+     ─────────────────────────────────────────────────────────────────────── */
+  --font-sans: var(--font-inter), "OPPO Sans 4.0", "OPPO Sans",
+               "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei UI", "Microsoft YaHei",
+               "WenQuanYi Micro Hei", system-ui, sans-serif;
+  --font-heading: var(--font-poppins), "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-jetbrains), "SF Mono", Consolas, "Courier New", monospace;
 }
 
 * {
@@ -42,6 +47,9 @@ body {
   background: var(--color-bg-gray);
   color: var(--color-primary-black);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1;
 }
 
 /* Scrollbar styling */
@@ -90,21 +98,85 @@ body {
               inset 0px -1.2px 1.7px rgba(255,255,255,0.6);
 }
 
-/* Input box with gradient border */
+/* Input box with liquid glass effect
+   方案一（Frosted Glass）规格：竖向渐变边框 + backdrop blur + saturate */
 .input-gradient-border {
   position: relative;
   border-radius: 20px;
   padding: 1px;
-  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,1) 100%);
+  /* 上白 → 中透明 → 下淡白：4 段渐变，中段留死区避免边框色互相干扰 */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1)    0%,
+    rgba(255, 255, 255, 0)   45%,
+    rgba(255, 255, 255, 0)   55%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
 }
 .input-gradient-border-inner {
-  background: rgba(255,255,255,0.68);
-  backdrop-filter: blur(60px);
-  -webkit-backdrop-filter: blur(60px);
+  /* 液态玻璃核心：saturate(180%) 让背景色彩透过玻璃增强，形成液态质感 */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 19px;
-  box-shadow: inset 0px -0.6px 1px rgba(255,255,255,0.2),
-              inset 0px 0.6px 1px rgba(255,255,255,0.2),
-              inset 0px -2px 8px rgba(255,255,255,0.8);
+  /* 轻微内凹阴影，模拟玻璃厚度感 */
+  box-shadow: inset 0 4px 16px rgba(6, 6, 6, 0.03);
+}
+
+/* ─── 液态玻璃弹窗（Popup / Menu / Selector 通用）────────────────────────────
+   对应规格：196px 宽，24px 圆角，白色半透明背景 + saturate + 渐变边框 + 顶部高光
+   替换所有 popup 组件的 inline style（background / backdropFilter / boxShadow）*/
+.glass-popup {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 24px;
+  box-shadow: 0px 6px 54px rgba(0, 0, 0, 0.14),
+              inset 0 4px 16px rgba(6, 6, 6, 0.03);
+  overflow: hidden;
+}
+
+/* 渐变边框：左上亮白 → 右下渐淡（CSS Mask 镂空技术） */
+.glass-popup::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 1)    0%,
+    rgba(255, 255, 255, 0.8) 20%,
+    rgba(255, 255, 255, 0.3) 55%,
+    rgba(255, 255, 255, 0.15) 75%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 顶部内侧高光弧：模拟玻璃表面集光 */
+.glass-popup::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 42%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: 24px 24px 0 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Suggestion chip — Glass (liquid) style
@@ -185,6 +257,71 @@ body {
   animation: conv-highlight-text 2.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* ─── AI Thinking 等待动画 ─────────────────────────────────────────────────────
+   三个圆点依次弹跳，视觉上形成波浪感。
+   每个点的 animation-delay 错开 0.16s，整体节奏 1.2s 循环。
+   使用品牌蓝色 (#0066FF) 保证视觉辨识度，不透明度渐变增强柔和感。
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes thinking-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+
+.thinking-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+}
+
+.thinking-dots span {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #0066FF;
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) { animation-delay: 0.16s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.32s; }
+
+/* ─── 复制成功气泡 ────────────────────────────────────────────────────────────
+   动画三段节奏（总时长 1.5s，与 React setState timeout 精确对齐）：
+     0→10%  : fade-in + 上滑入场
+     10→75% : 完整驻留，用户有充足时间感知
+     75→100%: fade-out 退场
+   forwards fill 保持末帧 opacity:0，避免 React 卸载前的一帧闪烁。
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes copied-popup {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  75%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(0); }
+}
+
+.copied-toast {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background-color: rgba(13, 27, 52, 0.88);
+  pointer-events: none;
+  animation: copied-popup 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* ─── AI 消息气泡内 Markdown 排版 ──────────────────────────────────────────────
    @layer ai-prose 在 @import "tailwindcss"（含 @layer utilities）之后声明，
    普通优先级即可覆盖 Tailwind utility 类，无需 !important。
@@ -224,9 +361,9 @@ body {
   margin-bottom: 0.5em;
   line-height: 1.4;
 }
-.ai-prose h1 { font-size: 18px; font-weight: 600; margin-top: 1.25em; }
-.ai-prose h2 { font-size: 16px; font-weight: 600; margin-top: 1em; }
-.ai-prose h3 { font-size: 14px; font-weight: 600; margin-top: 1em; }
+.ai-prose h1 { font-size: 20px; font-weight: 700; margin-top: 1.25em; }
+.ai-prose h2 { font-size: 17px; font-weight: 600; margin-top: 1em; }
+.ai-prose h3 { font-size: 15px; font-weight: 600; margin-top: 1em; }
 .ai-prose h4,
 .ai-prose h5,
 .ai-prose h6 { font-size: 14px; font-weight: 500; margin-top: 0.75em; }
@@ -252,7 +389,8 @@ body {
   background-color: rgba(0, 102, 255, 0.04);
   border-radius: 0 6px 6px 0;
   font-style: normal;
-  color: rgba(0, 0, 0, 0.54);
+  /* 0.65 → 对比度 ~5.2:1，安全达到 WCAG AA */
+  color: rgba(0, 0, 0, 0.65);
 }
 .ai-prose blockquote > :first-child { margin-top: 0; }
 .ai-prose blockquote > :last-child  { margin-bottom: 0; }
@@ -260,7 +398,7 @@ body {
 /* inline code */
 .ai-prose :not(pre) > code {
   font-size: 13px;
-  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  font-family: var(--font-mono);
   color: #0052CC;
   background-color: rgba(0, 102, 255, 0.08);
   border-radius: 4px;
@@ -305,7 +443,7 @@ body {
 .ai-prose pre[style] { background-color: #EEF2FF !important; }
 .ai-prose pre code {
   font-size: 13px;
-  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  font-family: var(--font-mono);
   background-color: transparent;
   color: inherit;
   padding: 0;

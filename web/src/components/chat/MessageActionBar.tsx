@@ -39,15 +39,19 @@ export default function MessageActionBar({ content }: MessageActionBarProps) {
     <div className="flex items-center justify-between">
       {/* 左侧：复制 + 分享 */}
       <div className="flex items-center gap-[8px]">
-        <button
-          type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
-          style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-          title={copied ? "已复制" : "复制"}
-          onClick={handleCopy}
-        >
-          <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+            style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+            title={copied ? "已复制" : "复制"}
+            onClick={handleCopy}
+          >
+            <img src="/icons/chat/copy.svg" width={13} height={13} alt="复制" />
+          </button>
+          {/* 复制成功气泡：动画生命周期与 copied state 的 1500ms 精确对齐 */}
+          {copied && <div className="copied-toast">已复制</div>}
+        </div>
         <button
           type="button"
           className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
