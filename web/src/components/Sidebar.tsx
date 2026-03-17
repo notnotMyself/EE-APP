@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 import { listConversations, deleteConversation, type Conversation } from "@/lib/api";
 
 const navItems = [
@@ -11,10 +12,6 @@ const navItems = [
   { id: "inspiration", label: "灵感资讯", icon: "tips", href: "/inspiration" },
   { id: "library", label: "资料库", icon: "bookshelf", href: "/library" },
 ];
-
-interface SidebarProps {
-  isLoggedIn?: boolean;
-}
 
 function ChatBubbleIcon() {
   return (
@@ -29,10 +26,10 @@ function ChatBubbleIcon() {
   );
 }
 
-export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, accessToken } = useAuth();
+  const { logout, accessToken, isLoggedIn } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
   // Fetch real conversation history
@@ -96,9 +93,19 @@ export default function Sidebar({ isLoggedIn = false }: SidebarProps) {
                   : "hover:bg-[rgba(0,0,0,0.04)]"
               }`}
             >
-              <span className="w-6 h-6 flex items-center justify-center shrink-0">
-                <img src={iconSrc} width={24} height={24} alt={item.label} />
-              </span>
+              {item.id === "review" && isLoggedIn ? (
+                <img
+                  src={chrisChenAvatar.src}
+                  width={24}
+                  height={24}
+                  alt="头像"
+                  className="w-6 h-6 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <span className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <img src={iconSrc} width={24} height={24} alt={item.label} />
+                </span>
+              )}
               <span
                 className={`text-[13px] font-medium leading-[16px] ${
                   isActive ? "text-[#0066FF]" : "text-[rgba(0,0,0,0.9)]"

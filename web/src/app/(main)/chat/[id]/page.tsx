@@ -1,39 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, use, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChatLayout } from "@/contexts/ChatLayoutContext";
 import { listMessages, type Message as ApiMessage } from "@/lib/api";
 import { ConversationWebSocket } from "@/lib/websocket";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
-
-// ─── Inline SVG Icons ───────────────────────────────────────────────────────
-
-function AttachmentIcon() {
-  return (
-    <svg
-      width="17"
-      height="15"
-      viewBox="0 0 17 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M15.5 7.14L8.86 13.78a4.5 4.5 0 0 1-6.36-6.36l6.64-6.64a3 3 0 0 1 4.24 4.24l-6.63 6.63a1.5 1.5 0 0 1-2.12-2.12L11.27 3"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 
 // ─── Markdown Rich Text Helper ──────────────────────────────────────────────
 
@@ -271,9 +247,9 @@ export default function ChatDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: conversationId } = use(params);
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const { accessToken } = useAuth();
+  const { setTitle } = useChatLayout();
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -291,12 +267,10 @@ export default function ChatDetailPage({
 
   const streamBuffer = useStreamingBuffer();
 
-  // Redirect to login if not authenticated
+  // Sync conversation title up to the persistent ChatLayout TopBar
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      router.replace("/login");
-    }
-  }, [isLoading, isLoggedIn, router]);
+    setTitle(conversationTitle);
+  }, [conversationTitle, setTitle]);
 
   // Load existing messages from API
   useEffect(() => {
@@ -562,16 +536,6 @@ export default function ChatDetailPage({
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#F0F1F2]">
-      {/* Left Sidebar */}
-      <Sidebar isLoggedIn={isLoggedIn} />
-
-      {/* Right Content */}
-      <div className="relative flex flex-col flex-1 min-w-0">
-        {/* Top Bar with conversation title */}
-        <TopBar showNewChat={true} title={conversationTitle} />
-
-        {/* Chat Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Messages List (scrollable) */}
           <div
@@ -643,9 +607,9 @@ export default function ChatDetailPage({
                       <button
                         type="button"
                         onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                        className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                        className="w-8 h-8 flex items-center justify-center border-none cursor-pointer bg-transparent p-0 hover:opacity-80 transition-opacity"
                       >
-                        <AttachmentIcon />
+                        <img src="/icons/chat/attachment_icon.svg" width={32} height={32} alt="附件" />
                       </button>
                       {/* Attachment Menu Popup */}
                       <AttachmentMenu
@@ -654,18 +618,14 @@ export default function ChatDetailPage({
                       />
                     </div>
 
-                    {/* Right - Send button (inactive/active like Flutter) */}
+                    {/* Right - Send button */}
                     <button
                       type="button"
                       onClick={handleSendClick}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors ${
-                        inputValue.trim()
-                          ? "bg-[rgba(0,0,0,0.9)] hover:bg-[rgba(0,0,0,0.8)]"
-                          : "bg-[rgba(0,0,0,0.04)]"
-                      }`}
+                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors"
                       title="发送"
                     >
-                      <img src={inputValue.trim() ? "/icons/chat/send_icon.svg" : "/icons/chat/send_icon_dark.svg"} width={20} height={20} alt="发送" />
+                      <img src="/icons/chat/send_icon_active.svg" width={20} height={20} alt="发送" />
                     </button>
                   </div>
                 </div>
@@ -673,7 +633,5 @@ export default function ChatDetailPage({
             </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 }
