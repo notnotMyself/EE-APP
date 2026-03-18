@@ -2,85 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-// ─── Icons ───────────────────────────────────────────────────────────────────
-
-function ImageIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect
-        x="2"
-        y="3"
-        width="16"
-        height="14"
-        rx="2"
-        stroke="rgba(0,0,0,0.54)"
-        strokeWidth="1.4"
-      />
-      <circle cx="7" cy="8" r="1.5" stroke="rgba(0,0,0,0.54)" strokeWidth="1.2" />
-      <path
-        d="M2 14l4-4 3 3 3-4 6 5"
-        stroke="rgba(0,0,0,0.54)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function FileIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5 2h7l4 4v11a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1z"
-        stroke="rgba(0,0,0,0.54)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 2v4h4"
-        stroke="rgba(0,0,0,0.54)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function FigmaLinkIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M8.5 10a3 3 0 004.5 2.6M11.5 10a3 3 0 00-4.5-2.6M8.5 13l-1 1a2.83 2.83 0 01-4-4l1-1M11.5 7l1-1a2.83 2.83 0 014 4l-1 1"
-        stroke="rgba(0,0,0,0.54)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface AttachmentMenuProps {
@@ -89,7 +10,7 @@ interface AttachmentMenuProps {
 }
 
 interface AttachmentOption {
-  icon: React.ReactNode;
+  iconSrc: string;
   label: string;
   action: () => void;
 }
@@ -124,7 +45,7 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
 
   const options: AttachmentOption[] = [
     {
-      icon: <ImageIcon />,
+      iconSrc: "/icons/tool/image.svg",
       label: "图片",
       action: () => {
         alert("图片上传功能开发中");
@@ -132,7 +53,7 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
       },
     },
     {
-      icon: <FileIcon />,
+      iconSrc: "/icons/tool/file.svg",
       label: "文件",
       action: () => {
         alert("文件上传功能开发中");
@@ -140,7 +61,7 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
       },
     },
     {
-      icon: <FigmaLinkIcon />,
+      iconSrc: "/icons/tool/link.svg",
       label: "Figma 链接",
       action: () => {
         alert("Figma 链接功能开发中");
@@ -164,7 +85,14 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
             className="flex items-center gap-[12px] px-3 h-[40px] w-full rounded-[12px] border-none bg-transparent cursor-pointer hover:bg-[rgba(0,0,0,0.06)] transition-colors text-left"
           >
             <span className="flex items-center justify-center w-[20px] h-[20px]">
-              {option.icon}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={option.iconSrc}
+                width={20}
+                height={20}
+                alt={option.label}
+                className="w-5 h-5"
+              />
             </span>
             <span className="text-[14px] font-medium text-[rgba(0,0,0,0.9)]">
               {option.label}

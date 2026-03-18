@@ -1,0 +1,42 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+  <g clip-path="url(#clip0_2160_2287)">
+    <rect y="-0.00012207" width="20" height="20" fill="#F5F6F7" />
+    <rect x="13.5" y="8.33301" width="1" height="3.33333" rx="0.5" fill="#ABADB5" />
+    <rect x="15.5" y="9.50012" width="1" height="1" rx="0.5" fill="#ABADB5" />
+    <rect x="3.5" y="9.50012" width="1" height="1" rx="0.5" fill="url(#paint0_linear_2160_2287)" />
+    <rect x="8.5" y="11.5" width="1" height="3" rx="0.5" transform="rotate(180 8.5 11.5)"
+      fill="url(#paint1_linear_2160_2287)" />
+    <rect width="1" height="8.00016" rx="0.5" transform="matrix(-1 0 0 1 10.5 5.99988)"
+      fill="url(#paint2_linear_2160_2287)" />
+    <rect width="1" height="5.33333" rx="0.5" transform="matrix(1 -8.74228e-08 -8.74228e-08 -1 5.5 12.6665)"
+      fill="url(#paint3_linear_2160_2287)" />
+    <rect width="1" height="13.3332" rx="0.5" transform="matrix(-1 0 0 1 12.5 3.33337)"
+      fill="url(#paint4_linear_2160_2287)" />
+  </g>
+  <defs>
+    <linearGradient id="paint0_linear_2160_2287" x1="4" y1="9.50012" x2="4" y2="10.5001" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B3143" />
+      <stop offset="1" stop-color="#2B3143" />
+    </linearGradient>
+    <linearGradient id="paint1_linear_2160_2287" x1="9" y1="11.5" x2="9" y2="14.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B3143" />
+      <stop offset="1" stop-color="#2B3143" />
+    </linearGradient>
+    <linearGradient id="paint2_linear_2160_2287" x1="0.5" y1="0" x2="0.5" y2="8.00016" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B3143" />
+      <stop offset="1" stop-color="#2B3143" />
+    </linearGradient>
+    <linearGradient id="paint3_linear_2160_2287" x1="0.5" y1="0" x2="0.5" y2="5.33333" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B3143" />
+      <stop offset="1" stop-color="#2B3143" />
+    </linearGradient>
+    <linearGradient id="paint4_linear_2160_2287" x1="0.5" y1="1.69836" x2="0.5" y2="13.3332"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF535D" />
+      <stop offset="1" stop-color="#DC0F4C" />
+    </linearGradient>
+    <clipPath id="clip0_2160_2287">
+      <rect width="20" height="20" rx="4" fill="white" />
+    </clipPath>
+  </defs>
+</svg>

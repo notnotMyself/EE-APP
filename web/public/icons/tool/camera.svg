@@ -1,0 +1,55 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+  <g clip-path="url(#clip0_2160_5251)">
+    <rect x="-0.0273438" width="20" height="20" fill="url(#paint0_linear_2160_5251)" />
+    <path
+      d="M4.22266 4.99996C4.22266 4.53972 4.59575 4.16663 5.05599 4.16663C5.51623 4.16663 5.88932 4.53972 5.88932 4.99996V5.21926C5.88932 5.37428 5.76365 5.49996 5.60862 5.49996H4.50336C4.34833 5.49996 4.22266 5.37428 4.22266 5.21926V4.99996Z"
+      fill="#FF7812" />
+    <path fill-rule="evenodd" clip-rule="evenodd"
+      d="M13.138 4.49985C12.5554 3.91868 11.7572 3.58337 10.9343 3.58337H9.04133C8.19241 3.58337 7.37574 3.90859 6.75921 4.49216L6.7042 4.54423C6.39351 4.83832 5.98766 5.01123 5.56035 5.03158C3.97176 5.10723 2.72266 6.41723 2.72266 8.00762V9.7858C2.72266 13.2639 5.54217 16.0834 9.02023 16.0834H10.928C14.4044 16.0834 17.2227 13.2651 17.2227 9.78869V8.05262C17.2227 6.43747 15.9532 5.10756 14.3398 5.03252C13.8891 5.01156 13.4574 4.81851 13.138 4.49985Z"
+      fill="url(#paint1_linear_2160_5251)" />
+    <g filter="url(#filter0_i_2160_5251)">
+      <circle cx="9.97201" cy="10.25" r="4.08333" fill="url(#paint2_linear_2160_5251)" />
+    </g>
+    <circle cx="9.97201" cy="10.25" r="3.5" stroke="url(#paint3_linear_2160_5251)" stroke-width="1.16667" />
+    <circle opacity="0.3" cx="9.97266" cy="10.25" r="2.5" fill="#84898E" />
+    <circle opacity="0.3" cx="15.7227" cy="6.66663" r="0.5" fill="#84898E" />
+  </g>
+  <defs>
+    <filter id="filter0_i_2160_5251" x="5.88867" y="6.16663" width="8.16699" height="8.16663"
+      filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+        result="hardAlpha" />
+      <feMorphology radius="16" operator="erode" in="SourceAlpha" result="effect1_innerShadow_2160_5251" />
+      <feOffset />
+      <feGaussianBlur stdDeviation="16" />
+      <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0" />
+      <feBlend mode="normal" in2="shape" result="effect1_innerShadow_2160_5251" />
+    </filter>
+    <linearGradient id="paint0_linear_2160_5251" x1="-0.0273438" y1="0" x2="19.9727" y2="20"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F6F7" />
+      <stop offset="1" stop-color="#D3D4DC" />
+    </linearGradient>
+    <linearGradient id="paint1_linear_2160_5251" x1="2.27481" y1="3.85184" x2="17.9911" y2="15.6233"
+      gradientUnits="userSpaceOnUse">
+      <stop offset="0.0111172" stop-color="#282836" />
+      <stop offset="1" stop-color="#131317" />
+    </linearGradient>
+    <linearGradient id="paint2_linear_2160_5251" x1="16.7655" y1="15.492" x2="4.36967" y2="5.28365"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B3B48" />
+      <stop offset="1" stop-color="#17171B" />
+    </linearGradient>
+    <linearGradient id="paint3_linear_2160_5251" x1="9.97201" y1="6.16663" x2="9.97201" y2="14.3333"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CACBD2" />
+      <stop offset="1" stop-color="#BFC0C9" />
+    </linearGradient>
+    <clipPath id="clip0_2160_5251">
+      <rect width="20" height="20" rx="4" fill="white" />
+    </clipPath>
+  </defs>
+</svg>
