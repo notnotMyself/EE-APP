@@ -56,6 +56,9 @@ async function apiFetch<T>(
     throw new Error(`API ${res.status}: ${body}`);
   }
 
+  // 204 No Content — nothing to parse
+  if (res.status === 204) return undefined as T;
+
   return res.json();
 }
 
