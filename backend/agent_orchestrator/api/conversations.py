@@ -529,6 +529,54 @@ async def list_agent_conversations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.delete("/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Delete a conversation and all its messages.
+
+    需要认证：需要在Header中提供有效的Bearer Token
+    会验证该对话是否属于当前用户
+
+    Returns:
+        204 No Content on success
+    """
+    if not conversation_service:
+        raise HTTPException(
+            status_code=500, detail="Conversation service not initialized"
+        )
+
+    try:
+        # Verify conversation exists and belongs to user
+        conversation = await conversation_service.conversation_model.get_by_id(
+            conversation_id
+        )
+
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        if conversation["user_id"] != user_id:
+            raise HTTPException(
+                status_code=403, detail="Access denied to this conversation"
+            )
+
+        # Delete messages first (foreign key constraint)
+        await conversation_service.message_model.delete_by_conversation(conversation_id)
+
+        # Delete conversation
+        await conversation_service.conversation_model.delete(conversation_id)
+
+        return None
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting conversation {conversation_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/{conversation_id}/title", response_model=ConversationResponse)
 async def update_conversation_title(
     conversation_id: str,

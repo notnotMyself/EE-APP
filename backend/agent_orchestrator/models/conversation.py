@@ -283,6 +283,37 @@ class ConversationModel:
             )
             return []
 
+    async def delete(self, conversation_id: str) -> bool:
+        """Delete a conversation by ID.
+
+        Args:
+            conversation_id: 对话UUID
+
+        Returns:
+            True if deleted successfully
+
+        Raises:
+            Exception: 数据库操作失败时
+        """
+        try:
+            result = (
+                self.supabase.table("conversations")
+                .delete()
+                .eq("id", conversation_id)
+                .execute()
+            )
+
+            deleted = len(result.data) > 0 if result.data else False
+            if deleted:
+                logger.info(f"Deleted conversation: {conversation_id}")
+            else:
+                logger.warning(f"Conversation not found for deletion: {conversation_id}")
+            return deleted
+
+        except Exception as e:
+            logger.error(f"Error deleting conversation {conversation_id}: {e}")
+            raise
+
     async def update_title(
         self, conversation_id: str, title: str
     ) -> Optional[Dict[str, Any]]:
