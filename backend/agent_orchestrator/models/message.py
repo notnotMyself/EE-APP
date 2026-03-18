@@ -251,6 +251,31 @@ class MessageModel:
             )
             return []
 
+    async def delete_by_conversation(self, conversation_id: str) -> int:
+        """Delete all messages in a conversation.
+
+        Args:
+            conversation_id: 对话UUID
+
+        Returns:
+            删除的消息数量
+        """
+        try:
+            result = (
+                self.supabase.table("messages")
+                .delete()
+                .eq("conversation_id", conversation_id)
+                .execute()
+            )
+
+            count = len(result.data) if result.data else 0
+            logger.info(f"Deleted {count} messages from conversation {conversation_id}")
+            return count
+
+        except Exception as e:
+            logger.error(f"Error deleting messages for conversation {conversation_id}: {e}")
+            raise
+
     async def delete_message(self, message_id: str) -> bool:
         """删除消息（软删除或硬删除）
 
