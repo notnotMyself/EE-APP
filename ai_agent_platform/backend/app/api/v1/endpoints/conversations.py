@@ -379,3 +379,27 @@ async def close_conversation(
 
     closed = await crud_conversation.close(conversation_id)
     return closed
+
+
+@router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_conversation(
+    conversation_id: UUID,
+    current_user: CurrentUser = Depends(get_current_active_user),
+):
+    """
+    Delete a conversation and all its messages.
+    """
+    conversation = await crud_conversation.get(conversation_id=conversation_id)
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+
+    if str(conversation.get("user_id")) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this conversation"
+        )
+
+    await crud_conversation.delete(conversation_id)

@@ -52,9 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Restore session on mount & listen for auth changes
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (s) {
+    // Get initial session — clear stale tokens on refresh failure
+    supabase.auth.getSession().then(({ data: { session: s }, error }) => {
+      if (error) {
+        console.warn("Session restore failed, clearing stale tokens:", error.message);
+        supabase.auth.signOut();
+      } else if (s) {
         setSession(s);
         setUser(sessionToUser(s));
       }

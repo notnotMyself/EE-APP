@@ -147,6 +147,18 @@ class CRUDConversationSupabase:
         }).eq("id", str(conversation_id)).execute()
         return result.data[0] if result.data else None
 
+    async def delete(self, conversation_id: UUID) -> bool:
+        """Delete a conversation and its messages."""
+        # Delete messages first (foreign key constraint)
+        self.client.table("messages").delete().eq(
+            "conversation_id", str(conversation_id)
+        ).execute()
+        # Delete conversation
+        result = self.client.table("conversations").delete().eq(
+            "id", str(conversation_id)
+        ).execute()
+        return len(result.data) > 0
+
 
 class CRUDMessageSupabase:
     """CRUD operations for messages using Supabase Client."""
