@@ -8,7 +8,7 @@ interface TopBarProps {
 }
 
 export default function TopBar({ showNewChat = false }: TopBarProps) {
-  const { title, toggleSidebar } = useChatLayout();
+  const { title, toggleSidebar, isCollapsed } = useChatLayout();
 
   return (
     <header className="flex items-center justify-between h-[61px] px-[23px] pr-[17px] bg-white w-full shrink-0 relative">
@@ -21,6 +21,11 @@ export default function TopBar({ showNewChat = false }: TopBarProps) {
         >
           <img src="/icons/sidebar_nav.svg" width={24} height={24} alt="侧边栏" />
         </button>
+        {isCollapsed && (
+          <Link href="/chat" className="text-black text-[18px] font-medium leading-[26px] no-underline whitespace-nowrap">
+            Chris AI
+          </Link>
+        )}
         {showNewChat && (
           <Link href="/chat" className="hover:opacity-70 transition-opacity p-0">
             <img src="/icons/new_chat.svg" width={24} height={24} alt="新对话" />

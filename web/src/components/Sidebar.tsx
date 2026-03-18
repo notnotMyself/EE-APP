@@ -76,7 +76,7 @@ export default function Sidebar() {
     <aside
       className={`
         h-full bg-[#F8F8F8] flex flex-col relative shrink-0
-        transition-[width] duration-300 ease-in-out overflow-hidden
+        transition-[width] duration-300 ease-in-out
         ${isCollapsed ? "w-[72px]" : "w-[238px]"}
       `}
     >
@@ -263,7 +263,7 @@ export default function Sidebar() {
           {/* 用户菜单弹窗 */}
           {isLoggedIn && (
             <div
-              className={`absolute bottom-[calc(100%+8px)] left-0 w-[196px] rounded-[24px] pt-[10px] pb-[8px] origin-bottom-left transition-all duration-150 ease-out ${
+              className={`absolute bottom-[calc(100%+8px)] left-0 w-[196px] rounded-[24px] pt-[10px] pb-[8px] z-50 origin-bottom-left transition-all duration-150 ease-out ${
                 showUserMenu
                   ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
                   : "opacity-0 scale-95 translate-y-1 pointer-events-none"
