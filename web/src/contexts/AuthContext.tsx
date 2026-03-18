@@ -26,6 +26,8 @@ interface AuthContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (account: string, password: string) => Promise<void>;
+  register: (email: string, username: string, password: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -93,6 +95,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [router]
   );
 
+  const register = useCallback(
+    async (email: string, username: string, password: string) => {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password.trim(),
+        options: {
+          data: { username: username.trim() }, // 存入 raw_user_meta_data，与 Flutter 端一致
+        },
+      });
+      if (error) throw new Error(error.message);
+      // 不自动导航，由调用方（LoginModal）处理成功后的 UI 流转
+    },
+    []
+  );
+
+  const resendConfirmation = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+    });
+    if (error) throw new Error(error.message);
+  }, []);
+
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -109,6 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn: !!session,
         isLoading,
         login,
+        register,
+        resendConfirmation,
         logout,
       }}
     >

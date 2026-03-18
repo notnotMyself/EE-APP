@@ -19,13 +19,13 @@ function ImageIcon() {
         width="16"
         height="14"
         rx="2"
-        stroke="rgba(0,0,0,0.7)"
+        stroke="rgba(0,0,0,0.54)"
         strokeWidth="1.4"
       />
-      <circle cx="7" cy="8" r="1.5" stroke="rgba(0,0,0,0.7)" strokeWidth="1.2" />
+      <circle cx="7" cy="8" r="1.5" stroke="rgba(0,0,0,0.54)" strokeWidth="1.2" />
       <path
         d="M2 14l4-4 3 3 3-4 6 5"
-        stroke="rgba(0,0,0,0.7)"
+        stroke="rgba(0,0,0,0.54)"
         strokeWidth="1.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -45,14 +45,14 @@ function FileIcon() {
     >
       <path
         d="M5 2h7l4 4v11a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1z"
-        stroke="rgba(0,0,0,0.7)"
+        stroke="rgba(0,0,0,0.54)"
         strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M12 2v4h4"
-        stroke="rgba(0,0,0,0.7)"
+        stroke="rgba(0,0,0,0.54)"
         strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -72,7 +72,7 @@ function FigmaLinkIcon() {
     >
       <path
         d="M8.5 10a3 3 0 004.5 2.6M11.5 10a3 3 0 00-4.5-2.6M8.5 13l-1 1a2.83 2.83 0 01-4-4l1-1M11.5 7l1-1a2.83 2.83 0 014 4l-1 1"
-        stroke="rgba(0,0,0,0.7)"
+        stroke="rgba(0,0,0,0.54)"
         strokeWidth="1.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -125,25 +125,25 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
   const options: AttachmentOption[] = [
     {
       icon: <ImageIcon />,
-      label: "\u56FE\u7247",
+      label: "图片",
       action: () => {
-        alert("\u56FE\u7247\u4E0A\u4F20\u529F\u80FD\u5F00\u53D1\u4E2D");
+        alert("图片上传功能开发中");
         onClose();
       },
     },
     {
       icon: <FileIcon />,
-      label: "\u6587\u4EF6",
+      label: "文件",
       action: () => {
-        alert("\u6587\u4EF6\u4E0A\u4F20\u529F\u80FD\u5F00\u53D1\u4E2D");
+        alert("文件上传功能开发中");
         onClose();
       },
     },
     {
       icon: <FigmaLinkIcon />,
-      label: "Figma \u94FE\u63A5",
+      label: "Figma 链接",
       action: () => {
-        alert("Figma \u94FE\u63A5\u529F\u80FD\u5F00\u53D1\u4E2D");
+        alert("Figma 链接功能开发中");
         onClose();
       },
     },
@@ -152,29 +152,21 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
   return (
     <div
       ref={menuRef}
-      className="absolute bottom-[calc(100%+8px)] left-0 z-50"
-      style={{
-        width: 196,
-        borderRadius: 24,
-        background: "rgba(239,239,239,0.8)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        boxShadow: "0px 6px 54px rgba(0,0,0,0.14)",
-        overflow: "hidden",
-      }}
+      className="absolute bottom-[calc(100%+8px)] left-0 z-50 glass-popup"
+      style={{ width: 196 }}
     >
-      <div className="flex flex-col py-[6px]">
+      <div className="flex flex-col px-2 py-2">
         {options.map((option) => (
           <button
             key={option.label}
             type="button"
             onClick={option.action}
-            className="flex items-center gap-[12px] px-[20px] py-[10px] border-none bg-transparent cursor-pointer hover:bg-[rgba(0,0,0,0.06)] transition-colors"
+            className="flex items-center gap-[12px] px-3 h-[40px] w-full rounded-[12px] border-none bg-transparent cursor-pointer hover:bg-[rgba(0,0,0,0.06)] transition-colors text-left"
           >
             <span className="flex items-center justify-center w-[20px] h-[20px]">
               {option.icon}
             </span>
-            <span className="text-[16px] font-normal leading-[1.25em] text-[rgba(0,0,0,0.9)]">
+            <span className="text-[14px] font-medium text-[rgba(0,0,0,0.9)]">
               {option.label}
             </span>
           </button>

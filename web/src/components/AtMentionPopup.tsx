@@ -125,16 +125,8 @@ export default function AtMentionPopup({
   return (
     <div
       ref={containerRef}
-      className="absolute bottom-full left-0 mb-[6px] z-50"
-      style={{
-        width: 196,
-        backgroundColor: "rgba(239,239,239,0.8)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRadius: 24,
-        boxShadow: "0px 6px 54px rgba(0,0,0,0.14)",
-        overflow: "hidden",
-      }}
+      className="absolute bottom-full left-0 mb-[6px] z-50 glass-popup"
+      style={{ width: 196 }}
     >
       {/* Search input */}
       <div className="px-2 pt-2 pb-1">
@@ -144,7 +136,7 @@ export default function AtMentionPopup({
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="搜索应用..."
-          className="w-full h-[40px] bg-[rgba(0,0,0,0.04)] rounded-full px-4 text-[13px] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] border-none outline-none"
+          className="w-full h-[40px] bg-[rgba(0,0,0,0.04)] rounded-full px-4 text-[14px] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] border-none outline-none"
           onKeyDown={(e) => {
             if (e.key === "Escape") onClose();
             if (e.key === "Enter" && filtered.length > 0) {
@@ -177,7 +169,7 @@ export default function AtMentionPopup({
                 <span className="w-5 h-5 flex items-center justify-center shrink-0">
                   {IconComp && <IconComp />}
                 </span>
-                <span className="text-[13px] font-medium text-[rgba(0,0,0,0.9)]">{item.name}</span>
+                <span className="text-[14px] font-medium text-[rgba(0,0,0,0.9)]">{item.name}</span>
               </button>
             );
           })

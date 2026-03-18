@@ -48,6 +48,8 @@ export interface WSCallbacks {
   onDone?: (messageId?: string) => void;
   onError?: (content: string) => void;
   onClose?: () => void;
+  /** 所有重连尝试耗尽后触发，表示连接彻底失败 */
+  onPermanentClose?: () => void;
 }
 
 export class ConversationWebSocket {
@@ -59,6 +61,7 @@ export class ConversationWebSocket {
   private maxReconnectAttempts = 3;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
+  private instanceId: string; // 区分 StrictMode 的两次实例
 
   constructor(
     conversationId: string,
@@ -68,39 +71,61 @@ export class ConversationWebSocket {
     this.conversationId = conversationId;
     this.token = token;
     this.callbacks = callbacks;
+    this.instanceId = Math.random().toString(36).slice(2, 6);
+    this.log("constructor");
+  }
+
+  private log(event: string, extra?: Record<string, unknown>) {
+    const ts = new Date().toISOString().slice(11, 23); // HH:mm:ss.mmm
+    console.log(
+      `[WS:${this.instanceId}] ${ts} ${event}`,
+      extra ?? "",
+    );
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.log("connect:skip (already open)");
+      return;
+    }
 
     const url = `${WS_BASE}/api/v1/conversations/${this.conversationId}/ws?token=${encodeURIComponent(this.token)}`;
+    this.log("connect:start", { url: url.replace(/token=.+/, "token=***") });
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      this.log("onopen", { reconnectAttempts: this.reconnectAttempts });
       this.reconnectAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {
       try {
         const msg: WSMessage = JSON.parse(event.data);
+        if (msg.type !== "ping" && msg.type !== "text_chunk") {
+          // text_chunk 太频繁不记录，ping 也不记录
+          this.log("onmessage", { type: msg.type });
+        }
         this.handleMessage(msg);
       } catch {
         // ignore malformed messages
       }
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (ev) => {
+      this.log("onclose", { code: ev.code, reason: ev.reason, wasClean: ev.wasClean });
       this.clearPingTimer();
       this.callbacks.onClose?.();
       this.maybeReconnect();
     };
 
-    this.ws.onerror = () => {
+    this.ws.onerror = (ev) => {
+      this.log("onerror", { type: ev.type });
       // onclose will fire after onerror
     };
   }
 
   disconnect(): void {
+    this.log("disconnect", { maxReconnectAttempts: this.maxReconnectAttempts });
     this.maxReconnectAttempts = 0; // prevent reconnect
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -108,6 +133,11 @@ export class ConversationWebSocket {
     }
     this.clearPingTimer();
     if (this.ws) {
+      // 主动断开：先摘掉回调，避免 onclose/onerror 延迟触发时误走 onPermanentClose
+      this.ws.onopen = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws.onmessage = null;
       this.ws.close();
       this.ws = null;
     }
@@ -172,9 +202,14 @@ export class ConversationWebSocket {
   }
 
   private maybeReconnect(): void {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.log("maybeReconnect:exhausted", { attempts: this.reconnectAttempts });
+      this.callbacks.onPermanentClose?.();
+      return;
+    }
     this.reconnectAttempts++;
     const delay = Math.min(1000 * 2 ** this.reconnectAttempts, 10000);
+    this.log("maybeReconnect:schedule", { attempt: this.reconnectAttempts, delayMs: delay });
     this.reconnectTimer = setTimeout(() => this.connect(), delay);
   }
 }

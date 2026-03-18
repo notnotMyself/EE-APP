@@ -4,9 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
+import { useChatLayout } from "@/contexts/ChatLayoutContext";
 import { createConversation } from "@/lib/api";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
 import PersonalitySelector, { personalities } from "@/components/PersonalitySelector";
@@ -35,46 +34,42 @@ function DropdownArrowIcon() {
   );
 }
 
-function AttachmentIcon() {
-  return (
-    <svg
-      width="17"
-      height="15"
-      viewBox="0 0 17 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M15.5 7.14L8.86 13.78a4.5 4.5 0 0 1-6.36-6.36l6.64-6.64a3 3 0 0 1 4.24 4.24l-6.63 6.63a1.5 1.5 0 0 1-2.12-2.12L11.27 3"
-        stroke="rgba(0,0,0,0.9)"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+const DEFAULT_PLACEHOLDER = "简单描述设计方案背景与目标";
 
+const chipPlaceholders: Record<string, string> = {
+  随便聊聊: "这是一个什么产品 / 功能，核心解决什么问题",
+  交互验证: "描述产品目标，用户使用的核心路径",
+  视觉讨论: "描述产品目标，用户使用的核心路径",
+  方案PK: "简单列出两个你在犹豫的方案差异，写清楚你为什么犹豫",
+};
 
-const suggestionChips = ["随便聊聊", "交互验证", "视觉讨论", "方案PK"];
+// 与 Flutter quick_action_button.dart 对齐：null 表示不拼前缀
+const chipModeIds: Record<string, string | null> = {
+  随便聊聊: null,
+  交互验证: "interaction_check",
+  视觉讨论: "visual_consistency",
+  方案PK: "compare_designs",
+};
+
+const suggestionChips = Object.keys(chipPlaceholders);
 
 export default function ChatPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const { accessToken } = useAuth();
+  const { setTitle, addConversation } = useChatLayout();
   const [inputValue, setInputValue] = useState("");
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showAtMention, setShowAtMention] = useState(false);
   const [showPersonalitySelector, setShowPersonalitySelector] = useState(false);
   const [selectedPersonality, setSelectedPersonality] = useState("default");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Redirect to login if not authenticated
+  // Clear TopBar title when entering new chat page
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      router.replace("/login");
-    }
-  }, [isLoading, isLoggedIn, router]);
+    setTitle(undefined);
+  }, [setTitle]);
 
   const handleSubmit = useCallback(
     async (text?: string) => {
@@ -92,21 +87,28 @@ export default function ChatPage() {
 
       // Create a real conversation via API, then navigate
       setIsCreating(true);
+      const modeId = selectedChip ? chipModeIds[selectedChip] : null;
+      const msgText = modeId
+        ? `[MODE:${modeId}] ${valueToSend.trim()}`
+        : valueToSend.trim();
+      const title = msgText.length > 20 ? msgText.slice(0, 20) + "…" : msgText;
       try {
-        const conv = await createConversation(accessToken, DEFAULT_AGENT_ID);
+        const conv = await createConversation(accessToken, DEFAULT_AGENT_ID, title);
+        // 乐观更新侧边栏：立即追加新会话并触发高亮
+        addConversation(conv);
         router.push(
-          `/chat/${conv.id}?q=${encodeURIComponent(valueToSend.trim())}`
+          `/chat/${conv.id}?q=${encodeURIComponent(msgText)}`
         );
       } catch (err) {
         console.error("Failed to create conversation:", err);
         // Fallback to local ID
         const convId = `new-${Date.now()}`;
-        router.push(`/chat/${convId}?q=${encodeURIComponent(valueToSend.trim())}`);
+        router.push(`/chat/${convId}?q=${encodeURIComponent(msgText)}`);
       } finally {
         setIsCreating(false);
       }
     },
-    [inputValue, router, accessToken, isCreating]
+    [inputValue, router, accessToken, isCreating, addConversation, selectedChip]
   );
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -125,7 +127,7 @@ export default function ChatPage() {
   };
 
   const handleChipClick = (chip: string) => {
-    setInputValue(chip);
+    setSelectedChip((prev) => (prev === chip ? null : chip));
     textareaRef.current?.focus();
   };
 
@@ -133,16 +135,6 @@ export default function ChatPage() {
     personalities.find((p) => p.id === selectedPersonality)?.label ?? "默认";
 
   return (
-    <div className="flex h-screen w-full bg-[#F0F1F2]">
-      {/* Left Sidebar */}
-      <Sidebar isLoggedIn={isLoggedIn} />
-
-      {/* Right Content */}
-      <div className="relative flex flex-col flex-1 min-w-0">
-        {/* Top Bar */}
-        <TopBar showNewChat={true} />
-
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col items-center relative">
           {/* Profile Section - centered in upper area */}
           <div className="flex flex-col items-center gap-[14px] mt-[130px]">
@@ -196,7 +188,7 @@ export default function ChatPage() {
           </div>
 
           {/* Input Area - positioned in lower portion */}
-          <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2 w-[915px] flex flex-col gap-[10px]">
+          <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2 w-full max-w-[915px] px-6 flex flex-col gap-[10px]">
             {/* Input Container with gradient border */}
             <form onSubmit={handleFormSubmit} className="input-gradient-border">
               <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
@@ -212,8 +204,8 @@ export default function ChatPage() {
                         handleSubmit();
                       }
                     }}
-                    placeholder={"简单描述设计方案背景与目标"}
-                    className="w-full bg-transparent border-none outline-none resize-none text-[16px] leading-[1.4em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.54)] font-normal min-h-[60px]"
+                    placeholder={selectedChip ? chipPlaceholders[selectedChip] : DEFAULT_PLACEHOLDER}
+                    className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-[1.65em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] font-normal min-h-[60px]"
                     rows={3}
                     disabled={isCreating}
                   />
@@ -227,9 +219,9 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={handleAtClick}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
                     >
-                      <img src="/icons/chat/account_icon.svg" width={20} height={20} alt="@" />
+                      <span className="inline-block -translate-y-px">@</span>
                     </button>
                     {/* @ Mention Popup */}
                     <AtMentionPopup
@@ -244,9 +236,9 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+                      className="w-8 h-8 flex items-center justify-center border-none cursor-pointer bg-transparent p-0 hover:opacity-80 transition-opacity"
                     >
-                      <AttachmentIcon />
+                      <img src="/icons/chat/attachment_icon.svg" width={32} height={32} alt="附件" />
                     </button>
                     {/* Attachment Menu Popup */}
                     <AttachmentMenu
@@ -255,19 +247,15 @@ export default function ChatPage() {
                     />
                   </div>
 
-                  {/* Right - Send button (inactive/active like Flutter) */}
+                  {/* Right - Send button */}
                   <button
                     type="button"
                     onClick={handleSendClick}
                     disabled={isCreating}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer transition-colors disabled:opacity-50 ${
-                      inputValue.trim()
-                        ? "bg-[rgba(0,0,0,0.9)] hover:bg-[rgba(0,0,0,0.8)]"
-                        : "bg-[rgba(0,0,0,0.04)]"
-                    }`}
+                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors disabled:opacity-50"
                     title="发送"
                   >
-                    <img src={inputValue.trim() ? "/icons/chat/send_icon.svg" : "/icons/chat/send_icon_dark.svg"} width={20} height={20} alt="发送" />
+                    <img src="/icons/chat/send_icon_active.svg" width={20} height={20} alt="发送" />
                   </button>
                 </div>
               </div>
@@ -281,19 +269,13 @@ export default function ChatPage() {
                   type="button"
                   onClick={() => handleChipClick(chip)}
                   disabled={isCreating}
-                  className="chip-gradient-border"
+                  className={`glass-chip${selectedChip === chip ? " glass-chip--selected" : ""}`}
                 >
-                  <span className="chip-gradient-border-inner">
-                    <span className="text-[12px] font-normal leading-[1.4em] text-[rgba(0,0,0,0.54)] text-center whitespace-nowrap">
-                      {chip}
-                    </span>
-                  </span>
+                  {chip}
                 </button>
               ))}
             </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 }

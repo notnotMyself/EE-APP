@@ -47,7 +47,7 @@ export default function LoginPage() {
   return (
     <div className="flex h-screen w-full bg-[#F0F1F2]">
       {/* Left Sidebar */}
-      <Sidebar isLoggedIn={isLoggedIn} />
+      <Sidebar />
 
       {/* Right Content */}
       <div className="relative flex flex-col flex-1 min-w-0">
