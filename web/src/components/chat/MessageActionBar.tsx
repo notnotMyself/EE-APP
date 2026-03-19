@@ -54,9 +54,10 @@ export default function MessageActionBar({ content }: MessageActionBarProps) {
         </div>
         <button
           type="button"
-          className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+          className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-not-allowed opacity-30"
           style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-          title="分享"
+          title="分享（开发中）"
+          disabled
         >
           <img src="/icons/chat/forward_icon.svg" width={16} height={16} alt="分享" />
         </button>
@@ -65,9 +66,10 @@ export default function MessageActionBar({ content }: MessageActionBarProps) {
       {/* 右侧：下载 */}
       <button
         type="button"
-        className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors"
+        className="w-8 h-8 rounded-full flex items-center justify-center border-none cursor-not-allowed opacity-30"
         style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-        title="下载"
+        title="下载（开发中）"
+        disabled
       >
         <img src="/icons/chat/regenerate.svg" width={13} height={13} alt="下载" />
       </button>

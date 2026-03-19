@@ -13,8 +13,8 @@ import PersonalitySelector, { personalities } from "@/components/PersonalitySele
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 import { uploadImage, extractImageFiles, type Attachment } from "@/lib/upload";
 
-// Default agent for "AI 评审" tab — matches backend agent_mapping (Chris Chen)
-const DEFAULT_AGENT_ID = "design_validator";
+// Default agent: Chris Chen (design_validator) — UUID from Supabase agents table
+const DEFAULT_AGENT_ID = "bba2fa4e-e343-47f4-b58d-3848e6853a6e";
 
 function DropdownArrowIcon() {
   return (
@@ -259,11 +259,11 @@ export default function ChatPage() {
                 <div className="flex items-center justify-between">
                   {/* Left buttons */}
                   <div className="flex items-center gap-[3px] relative">
-                    {/* @ Button */}
+                    {/* @ Button (disabled) */}
                     <button
                       type="button"
-                      onClick={handleAtClick}
-                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
+                      disabled
+                      className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-not-allowed opacity-30 text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
                     >
                       <span className="inline-block -translate-y-px">@</span>
                     </button>

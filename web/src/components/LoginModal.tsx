@@ -442,7 +442,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                   type={mode === "register" ? "email" : "text"}
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
-                  placeholder={mode === "register" ? "邮箱" : "账号"}
+                  placeholder={mode === "register" ? "邮箱" : "OPPO邮箱"}
                   className="h-full w-full border-none bg-transparent text-[14px] text-black outline-none"
                   style={{ paddingLeft: 48, paddingRight: 16, borderRadius: 16 }}
                 />

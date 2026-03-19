@@ -60,22 +60,19 @@ export default function AttachmentMenu({ isOpen, onClose, onImageSelect }: Attac
       iconSrc: "/icons/tool/image.svg",
       label: "图片",
       action: handleImageClick,
+      disabled: false,
     },
     {
       iconSrc: "/icons/tool/file.svg",
       label: "文件",
-      action: () => {
-        alert("文件上传功能开发中");
-        onClose();
-      },
+      action: () => {},
+      disabled: true,
     },
     {
       iconSrc: "/icons/tool/link.svg",
       label: "Figma 链接",
-      action: () => {
-        alert("Figma 链接功能开发中");
-        onClose();
-      },
+      action: () => {},
+      disabled: true,
     },
   ];
 
@@ -100,7 +97,12 @@ export default function AttachmentMenu({ isOpen, onClose, onImageSelect }: Attac
             key={option.label}
             type="button"
             onClick={option.action}
-            className="flex items-center gap-[12px] px-3 h-[40px] w-full rounded-[12px] border-none bg-transparent cursor-pointer hover:bg-[rgba(0,0,0,0.06)] transition-colors text-left"
+            disabled={option.disabled}
+            className={`flex items-center gap-[12px] px-3 h-[40px] w-full rounded-[12px] border-none bg-transparent text-left ${
+              option.disabled
+                ? "cursor-not-allowed opacity-30"
+                : "cursor-pointer hover:bg-[rgba(0,0,0,0.06)] transition-colors"
+            }`}
           >
             <span className="flex items-center justify-center w-[20px] h-[20px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -429,11 +429,11 @@ export default function ChatDetailPage({
               <div className="flex items-center justify-between">
                 {/* Left buttons */}
                 <div className="flex items-center gap-[3px] relative">
-                  {/* @ Button */}
+                  {/* @ Button (disabled) */}
                   <button
                     type="button"
-                    onClick={handleAtClick}
-                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.08)] transition-colors text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
+                    disabled
+                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.04)] grid place-items-center border-none cursor-not-allowed opacity-30 text-[16px] font-medium text-[rgba(0,0,0,0.8)]"
                   >
                     <span className="inline-block -translate-y-px">@</span>
                   </button>
