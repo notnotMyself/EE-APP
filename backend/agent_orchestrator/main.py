@@ -175,6 +175,10 @@ set_profile_services(conversation_service, briefing_service)
 set_websocket_services(conversation_service, supabase_client)  # WebSocket服务注入
 set_legal_supabase(supabase_client)  # Legal API服务注入
 
+# Inject supabase client into agent_mapping for DB-based role resolution
+from agent_mapping import set_supabase_client as set_mapping_supabase
+set_mapping_supabase(supabase_client)
+
 # 调试：输出配置信息
 logger.info(f"Agent SDK Config loaded:")
 logger.info(f"  - anthropic_base_url: {agent_config.anthropic_base_url}")
