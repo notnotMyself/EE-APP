@@ -307,11 +307,27 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         listBullet: FigmaTokens.aiMessageText,
-                        blockquoteDecoration: const BoxDecoration(
-                          border: Border(
+                        blockquote: FigmaTokens.aiMessageText.copyWith(
+                          color: const Color(0xA6000000), // rgba(0,0,0,0.65)，对齐 Web 端引用文字色
+                        ),
+                        blockquoteDecoration: BoxDecoration(
+                          color: const Color(0x0A2C69FF), // brandBlue 4%，对齐 Web: rgba(0,102,255,0.04)
+                          border: const Border(
                             left: BorderSide(
                               color: FigmaTokens.brandBlue,
                               width: 3,
+                            ),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(6), // Web: border-radius: 0 6px 6px 0
+                            bottomRight: Radius.circular(6),
+                          ),
+                        ),
+                        horizontalRuleDecoration: const BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: Color(0x14000000), // rgba(0,0,0,0.08)，对齐 Web 端细浅灰分割线
+                              width: 1,
                             ),
                           ),
                         ),
@@ -368,23 +384,29 @@ class _MessageBubbleContentState extends State<MessageBubbleContent> {
               ),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _showDevelopingDialog(context, '分享'),
-              child: SvgPicture.asset(
-                'assets/icons/figma_share.svg',
-                width: FigmaTokens.actionButtonSize,
-                height: FigmaTokens.actionButtonSize,
+            Opacity(
+              opacity: 0.35,
+              child: GestureDetector(
+                onTap: null,
+                child: SvgPicture.asset(
+                  'assets/icons/figma_share.svg',
+                  width: FigmaTokens.actionButtonSize,
+                  height: FigmaTokens.actionButtonSize,
+                ),
               ),
             ),
           ],
         ),
-        // 右侧: 下载按钮
-        GestureDetector(
-          onTap: () => _showDevelopingDialog(context, '下载'),
-          child: SvgPicture.asset(
-            'assets/icons/figma_download.svg',
-            width: FigmaTokens.actionButtonSize,
-            height: FigmaTokens.actionButtonSize,
+        // 右侧: 下载按钮（视觉禁用，功能未实现）
+        Opacity(
+          opacity: 0.35,
+          child: GestureDetector(
+            onTap: null,
+            child: SvgPicture.asset(
+              'assets/icons/figma_download.svg',
+              width: FigmaTokens.actionButtonSize,
+              height: FigmaTokens.actionButtonSize,
+            ),
           ),
         ),
       ],

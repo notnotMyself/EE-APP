@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// 附件类型
 enum AttachmentType {
@@ -11,12 +12,12 @@ enum AttachmentType {
 class AttachmentOption {
   final AttachmentType type;
   final String label;
-  final IconData icon;
+  final String svgPath;
 
   const AttachmentOption({
     required this.type,
     required this.label,
-    required this.icon,
+    required this.svgPath,
   });
 }
 
@@ -25,19 +26,19 @@ class AttachmentOptions {
   static const image = AttachmentOption(
     type: AttachmentType.image,
     label: '图片',
-    icon: Icons.image_outlined,
+    svgPath: 'assets/icons/tool/image.svg',
   );
 
   static const file = AttachmentOption(
     type: AttachmentType.file,
     label: '文件',
-    icon: Icons.insert_drive_file_outlined,
+    svgPath: 'assets/icons/tool/file.svg',
   );
 
   static const figma = AttachmentOption(
     type: AttachmentType.figma,
     label: 'Figma 链接',
-    icon: Icons.link,
+    svgPath: 'assets/icons/tool/link.svg',
   );
 
   static List<AttachmentOption> get all => [image, file, figma];
@@ -92,10 +93,14 @@ class AttachmentMenuPopup extends StatelessWidget {
         child: Row(
           children: [
             // 图标
-            Icon(
-              option.icon,
-              size: 20,
-              color: Colors.black.withOpacity(0.7),
+            SvgPicture.asset(
+              option.svgPath,
+              width: 20,
+              height: 20,
+              colorFilter: ColorFilter.mode(
+                Colors.black.withOpacity(0.7),
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: 12),
             // 标签

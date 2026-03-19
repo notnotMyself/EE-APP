@@ -100,6 +100,8 @@ export default function Sidebar() {
             item.id === "review"
               ? pathname === "/chat" || pathname.startsWith("/chat/")
               : pathname === item.href;
+          // review 项只切换图标，不显示高亮背景和蓝色文字
+          const showActive = item.id === "review" ? false : isActive;
           const iconSrc = isActive
             ? `/icons/${item.icon}_on.svg`
             : `/icons/${item.icon}_off.svg`;
@@ -111,7 +113,7 @@ export default function Sidebar() {
                 key={item.id}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-[4px] h-[64px] rounded-[14px] transition-colors no-underline ${
-                  isActive ? "bg-white" : "hover:bg-[rgba(0,0,0,0.04)]"
+                  showActive ? "bg-white" : "hover:bg-[rgba(0,0,0,0.04)]"
                 }`}
               >
                 {item.id === "review" ? (
@@ -127,7 +129,7 @@ export default function Sidebar() {
                 )}
                 <span
                   className={`text-[10px] font-medium leading-[12px] text-center ${
-                    isActive ? "text-[#0066FF]" : "text-[rgba(0,0,0,0.6)]"
+                    showActive ? "text-[#0066FF]" : "text-[rgba(0,0,0,0.6)]"
                   }`}
                 >
                   {item.label}
@@ -142,7 +144,7 @@ export default function Sidebar() {
               key={item.id}
               href={item.href}
               className={`flex items-center gap-[10px] px-[18px] h-[44px] no-underline rounded-[14px] transition-colors ${
-                isActive ? "bg-white" : "hover:bg-[rgba(0,0,0,0.04)]"
+                showActive ? "bg-white" : "hover:bg-[rgba(0,0,0,0.04)]"
               }`}
             >
               {item.id === "review" ? (
@@ -160,7 +162,7 @@ export default function Sidebar() {
               )}
               <span
                 className={`text-[13px] font-medium leading-[16px] whitespace-nowrap ${
-                  isActive ? "text-[#0066FF]" : "text-[rgba(0,0,0,0.9)]"
+                  showActive ? "text-[#0066FF]" : "text-[rgba(0,0,0,0.9)]"
                 }`}
               >
                 {item.label}

@@ -194,8 +194,8 @@ class _QuickActionPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        // Figma: hug sizing, padding 2px 12px, borderRadius 50px
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        // Figma: hug sizing, padding 6px 12px, borderRadius 50px → 高度 28px
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: ShapeDecoration(
           color: isHighlighted
               ? const Color(0x260066FF) // 彩色/填充色/Blue Halftone

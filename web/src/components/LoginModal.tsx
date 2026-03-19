@@ -171,7 +171,7 @@ function validate(
   }
 ): string | null {
   if (mode === "login") {
-    if (!fields.account.trim()) return "请输入账号";
+    if (!fields.account.trim()) return "请输入OPPO邮箱";
     if (!fields.password.trim()) return "请输入密码";
     return null;
   }

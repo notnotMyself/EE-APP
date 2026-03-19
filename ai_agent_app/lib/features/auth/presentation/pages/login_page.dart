@@ -277,14 +277,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
         // 账号输入框 - Figma: 手机图标, hint "账号"
         _buildInputField(
           controller: _emailController,
-          hintText: '账号',
+          hintText: 'OPPO邮箱',
           svgIcon: 'assets/icons/phone_icon.svg',
           keyboardType: TextInputType.emailAddress,
           enabled: !isLoading,
           width: contentWidth,
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return '请输入账号';
+              return '请输入OPPO邮箱';
             }
             if (!value.contains('@')) {
               return '请输入有效的邮箱地址';
@@ -324,17 +324,17 @@ class _LoginPageState extends ConsumerState<LoginPage>
           obscureText: _obscurePassword,
           enabled: !isLoading,
           width: contentWidth,
-          suffixIcon: GestureDetector(
-            onTap: () {
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              size: 22, // Figma: 附加操作 Trailing 可见 22x22
+              color: _AppDesign.secondaryIcon,
+            ),
+            onPressed: () {
               setState(() {
                 _obscurePassword = !_obscurePassword;
               });
             },
-            child: SvgPicture.asset(
-              'assets/icons/visibility_icon.svg',
-              width: 22, // Figma: 附加操作 Trailing 可见 22x22
-              height: 22,
-            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
