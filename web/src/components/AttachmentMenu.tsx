@@ -7,18 +7,14 @@ import { useEffect, useRef } from "react";
 interface AttachmentMenuProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface AttachmentOption {
-  iconSrc: string;
-  label: string;
-  action: () => void;
+  onImageSelect?: (files: File[]) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps) {
+export default function AttachmentMenu({ isOpen, onClose, onImageSelect }: AttachmentMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close on click outside
   useEffect(() => {
@@ -30,7 +26,6 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
       }
     }
 
-    // Use setTimeout to avoid the click that opened the menu from immediately closing it
     const timer = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
     }, 0);
@@ -43,14 +38,28 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
 
   if (!isOpen) return null;
 
-  const options: AttachmentOption[] = [
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+      if (imageFiles.length > 0) {
+        onImageSelect?.(imageFiles);
+      }
+    }
+    // Reset so the same file can be selected again
+    e.target.value = "";
+    onClose();
+  };
+
+  const options = [
     {
       iconSrc: "/icons/tool/image.svg",
       label: "图片",
-      action: () => {
-        alert("图片上传功能开发中");
-        onClose();
-      },
+      action: handleImageClick,
     },
     {
       iconSrc: "/icons/tool/file.svg",
@@ -76,6 +85,15 @@ export default function AttachmentMenu({ isOpen, onClose }: AttachmentMenuProps)
       className="absolute bottom-[calc(100%+8px)] left-0 z-50 glass-popup"
       style={{ width: 196 }}
     >
+      {/* Hidden file input for image selection */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <div className="flex flex-col px-2 py-2">
         {options.map((option) => (
           <button

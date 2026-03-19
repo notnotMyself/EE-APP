@@ -8,10 +8,12 @@ import { listMessages, updateConversationTitle, type Message as ApiMessage } fro
 import { ConversationWebSocket } from "@/lib/websocket";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
+import PendingImagesBar from "@/components/chat/PendingImagesBar";
 import { useStreamingBuffer } from "@/hooks/useStreamingBuffer";
 import UserMessage from "@/components/chat/UserMessage";
 import AIMessage from "@/components/chat/AIMessage";
 import type { ChatMessage } from "@/components/chat/ChatMessage";
+import { uploadImage, extractImageFiles, type Attachment } from "@/lib/upload";
 
 // ─── Page Component ─────────────────────────────────────────────────────────
 
@@ -29,6 +31,8 @@ export default function ChatDetailPage({
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showAtMention, setShowAtMention] = useState(false);
   const [conversationTitle, setConversationTitle] = useState("新对话");
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
@@ -79,16 +83,30 @@ export default function ChatDetailPage({
   }, [accessToken, conversationId]);
 
   // Show initial user message from ?q= param immediately (before WS connects)
+  const pendingInitialAttachments = useRef<Attachment[] | null>(null);
   useEffect(() => {
     if (initialMessageSent.current) return;
     const q = searchParams.get("q");
     if (q) {
       initialMessageSent.current = true;
       console.log("[ChatPage] pendingInitialQuery SET:", q.slice(0, 30));
+
+      // Check for attachments from new chat page
+      let initialAttachments: Attachment[] | undefined;
+      try {
+        const stored = sessionStorage.getItem(`pending-attachments-${conversationId}`);
+        if (stored) {
+          initialAttachments = JSON.parse(stored);
+          sessionStorage.removeItem(`pending-attachments-${conversationId}`);
+          pendingInitialAttachments.current = initialAttachments ?? null;
+        }
+      } catch { /* ignore */ }
+
       const userMsg: ChatMessage = {
         id: `user-init-${Date.now()}`,
         role: "user",
         content: q,
+        attachments: initialAttachments,
       };
       setMessages((prev) => (prev.length === 0 ? [userMsg] : prev));
       pendingInitialQuery.current = q;
@@ -117,7 +135,9 @@ export default function ChatDetailPage({
           ]);
           setIsGenerating(true);
           streamBuffer.reset();
-          ws.sendMessage(q);
+          const initAttachments = pendingInitialAttachments.current;
+          pendingInitialAttachments.current = null;
+          ws.sendMessage(q, initAttachments ?? undefined);
         }
       },
       onTextChunk: (content) => {
@@ -229,12 +249,41 @@ export default function ChatDetailPage({
     }
   }, [messages]);
 
-  function sendMessageViaWS(ws: ConversationWebSocket, text: string) {
+  // Handle image file selection (from AttachmentMenu or paste)
+  const handleImageFiles = useCallback(async (files: File[]) => {
+    setIsUploading(true);
+    try {
+      const uploaded = await Promise.all(files.map((f) => uploadImage(f)));
+      setPendingAttachments((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const imageFiles = extractImageFiles(e.clipboardData);
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        handleImageFiles(imageFiles);
+      }
+    },
+    [handleImageFiles]
+  );
+
+  const removePendingAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
+  function sendMessageViaWS(ws: ConversationWebSocket, text: string, attachments?: Attachment[]) {
     isNearBottomRef.current = true;
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
       content: text,
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     };
 
     const aiId = `ai-${Date.now()}`;
@@ -248,19 +297,21 @@ export default function ChatDetailPage({
     setIsGenerating(true);
 
     streamBuffer.reset();
-    ws.sendMessage(text);
+    ws.sendMessage(text, attachments);
   }
 
   const handleSubmit = useCallback(() => {
-    if (!inputValue.trim() || isGenerating) return;
+    if ((!inputValue.trim() && pendingAttachments.length === 0) || isGenerating) return;
     const userText = inputValue.trim();
     setInputValue("");
+    const attachmentsToSend = pendingAttachments.length > 0 ? [...pendingAttachments] : undefined;
+    setPendingAttachments([]);
 
     const connected = wsRef.current?.isConnected ?? false;
     console.log("[ChatPage] handleSubmit, wsConnected:", connected, "| wsRef:", wsRef.current ? "exists" : "null");
 
     if (connected) {
-      sendMessageViaWS(wsRef.current!, userText);
+      sendMessageViaWS(wsRef.current!, userText, attachmentsToSend);
     } else {
       const userMessage: ChatMessage = {
         id: `user-${Date.now()}`,
@@ -315,7 +366,7 @@ export default function ChatDetailPage({
   };
 
   const handleSendClick = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() || pendingAttachments.length > 0) {
       handleSubmit();
     }
   };
@@ -349,12 +400,19 @@ export default function ChatDetailPage({
           {/* Input Container with gradient border */}
           <form onSubmit={handleFormSubmit} className="input-gradient-border">
             <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
+              {/* Pending image previews */}
+              <PendingImagesBar
+                attachments={pendingAttachments}
+                uploading={isUploading}
+                onRemove={removePendingAttachment}
+              />
               {/* Text Input Area */}
               <div className="flex-1 py-[8px]">
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
+                  onPaste={handlePaste}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -400,6 +458,7 @@ export default function ChatDetailPage({
                   <AttachmentMenu
                     isOpen={showAttachmentMenu}
                     onClose={() => setShowAttachmentMenu(false)}
+                    onImageSelect={handleImageFiles}
                   />
                 </div>
 

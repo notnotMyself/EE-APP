@@ -18,6 +18,7 @@ from typing import Optional
 AGENT_ROLE_TO_UUID = {
     # 完全匹配的映射
     "dev_efficiency_analyst": "a1e79944-69bf-4f06-8e05-8060bcebad30",
+    "design_validator": "7e2f3c4d-5a6b-4e8f-9a0b-8c7d6e5f4a3b",
 
     # 不匹配的映射（Agent SDK role → Database UUID）
     "nps_insight_analyst": "f67d011f-f517-4f4d-961c-b67e3fc89985",  # DB: nps_analyst

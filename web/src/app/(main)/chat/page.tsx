@@ -8,11 +8,13 @@ import { useChatLayout } from "@/contexts/ChatLayoutContext";
 import { createConversation } from "@/lib/api";
 import AttachmentMenu from "@/components/AttachmentMenu";
 import AtMentionPopup from "@/components/AtMentionPopup";
+import PendingImagesBar from "@/components/chat/PendingImagesBar";
 import PersonalitySelector, { personalities } from "@/components/PersonalitySelector";
 import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
+import { uploadImage, extractImageFiles, type Attachment } from "@/lib/upload";
 
-// Default agent for "AI 评审" tab — matches backend agent_mapping
-const DEFAULT_AGENT_ID = "dev_efficiency_analyst";
+// Default agent for "AI 评审" tab — matches backend agent_mapping (Chris Chen)
+const DEFAULT_AGENT_ID = "design_validator";
 
 function DropdownArrowIcon() {
   return (
@@ -64,6 +66,8 @@ export default function ChatPage() {
   const [selectedPersonality, setSelectedPersonality] = useState("default");
   const [isCreating, setIsCreating] = useState(false);
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Clear TopBar title when entering new chat page
@@ -71,21 +75,49 @@ export default function ChatPage() {
     setTitle(undefined);
   }, [setTitle]);
 
+  // Handle image file selection (from AttachmentMenu or paste)
+  const handleImageFiles = useCallback(async (files: File[]) => {
+    setIsUploading(true);
+    try {
+      const uploaded = await Promise.all(files.map((f) => uploadImage(f)));
+      setPendingAttachments((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const imageFiles = extractImageFiles(e.clipboardData);
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        handleImageFiles(imageFiles);
+      }
+    },
+    [handleImageFiles]
+  );
+
+  const removePendingAttachment = useCallback((id: string) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   const handleSubmit = useCallback(
     async (text?: string) => {
       const valueToSend = text ?? inputValue;
-      if (!valueToSend.trim() || isCreating) return;
+      if ((!valueToSend.trim() && pendingAttachments.length === 0) || isCreating) return;
 
       setInputValue("");
+      const attachmentsToSend = pendingAttachments.length > 0 ? [...pendingAttachments] : undefined;
+      setPendingAttachments([]);
 
       if (!accessToken) {
-        // Fallback: local-only navigation (should not happen if logged in)
         const convId = `new-${Date.now()}`;
         router.push(`/chat/${convId}?q=${encodeURIComponent(valueToSend.trim())}`);
         return;
       }
 
-      // Create a real conversation via API, then navigate
       setIsCreating(true);
       const modeId = selectedChip ? chipModeIds[selectedChip] : null;
       const msgText = modeId
@@ -94,21 +126,26 @@ export default function ChatPage() {
       const title = msgText.length > 20 ? msgText.slice(0, 20) + "…" : msgText;
       try {
         const conv = await createConversation(accessToken, DEFAULT_AGENT_ID, title);
-        // 乐观更新侧边栏：立即追加新会话并触发高亮
         addConversation(conv);
+        // Store attachments in sessionStorage for the chat detail page to pick up
+        if (attachmentsToSend && attachmentsToSend.length > 0) {
+          sessionStorage.setItem(
+            `pending-attachments-${conv.id}`,
+            JSON.stringify(attachmentsToSend)
+          );
+        }
         router.push(
           `/chat/${conv.id}?q=${encodeURIComponent(msgText)}`
         );
       } catch (err) {
         console.error("Failed to create conversation:", err);
-        // Fallback to local ID
         const convId = `new-${Date.now()}`;
         router.push(`/chat/${convId}?q=${encodeURIComponent(msgText)}`);
       } finally {
         setIsCreating(false);
       }
     },
-    [inputValue, router, accessToken, isCreating, addConversation, selectedChip]
+    [inputValue, router, accessToken, isCreating, addConversation, selectedChip, pendingAttachments]
   );
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -121,7 +158,7 @@ export default function ChatPage() {
   };
 
   const handleSendClick = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() || pendingAttachments.length > 0) {
       handleSubmit();
     }
   };
@@ -192,12 +229,19 @@ export default function ChatPage() {
             {/* Input Container with gradient border */}
             <form onSubmit={handleFormSubmit} className="input-gradient-border">
               <div className="input-gradient-border-inner px-[16px] py-[12px] flex flex-col gap-[2px]">
+                {/* Pending image previews */}
+                <PendingImagesBar
+                  attachments={pendingAttachments}
+                  uploading={isUploading}
+                  onRemove={removePendingAttachment}
+                />
                 {/* Text Input Area */}
                 <div className="flex-1 py-[8px]">
                   <textarea
                     ref={textareaRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
+                    onPaste={handlePaste}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -244,6 +288,7 @@ export default function ChatPage() {
                     <AttachmentMenu
                       isOpen={showAttachmentMenu}
                       onClose={() => setShowAttachmentMenu(false)}
+                      onImageSelect={handleImageFiles}
                     />
                   </div>
 

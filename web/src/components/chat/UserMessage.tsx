@@ -1,5 +1,3 @@
-import Image from "next/image";
-import chrisChenAvatar from "@/assets/images/chris_chen_avatar.jpeg";
 import type { ChatMessage } from "./ChatMessage";
 
 interface UserMessageProps {
@@ -10,6 +8,8 @@ interface UserMessageProps {
 // 用户消息气泡（蓝色背景，右对齐）。纯展示组件，无内部状态。
 
 export default function UserMessage({ message }: UserMessageProps) {
+  const attachments = message.attachments;
+
   return (
     <div className="flex justify-end">
       <div
@@ -20,31 +20,31 @@ export default function UserMessage({ message }: UserMessageProps) {
           padding: 16,
         }}
       >
-        {message.hasImages && (
-          <div className="flex items-center gap-[3px]">
-            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-              <Image
-                src={chrisChenAvatar}
-                alt="Design attachment 1"
-                width={43}
-                height={43}
-                className="w-full h-full object-cover opacity-70"
-              />
-            </div>
-            <div className="w-[43px] h-[43px] rounded-[8px] bg-white/20 overflow-hidden">
-              <Image
-                src={chrisChenAvatar}
-                alt="Design attachment 2"
-                width={43}
-                height={43}
-                className="w-full h-full object-cover opacity-70"
-              />
-            </div>
+        {attachments && attachments.length > 0 && (
+          <div className="flex items-center gap-[3px] flex-wrap">
+            {attachments.map((att) => (
+              <a
+                key={att.id}
+                href={att.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-[80px] h-[80px] rounded-[8px] bg-white/20 overflow-hidden shrink-0"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={att.url}
+                  alt={att.filename}
+                  className="w-full h-full object-cover"
+                />
+              </a>
+            ))}
           </div>
         )}
-        <p className="m-0 text-[14px] font-normal leading-[1.65em] text-white whitespace-pre-wrap overflow-wrap-break-word break-words">
-          {message.content}
-        </p>
+        {message.content && (
+          <p className="m-0 text-[14px] font-normal leading-[1.65em] text-white whitespace-pre-wrap overflow-wrap-break-word break-words">
+            {message.content}
+          </p>
+        )}
       </div>
     </div>
   );
