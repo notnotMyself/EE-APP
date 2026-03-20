@@ -23,16 +23,7 @@ interface AIMessageProps {
 export default function AIMessage({ message }: AIMessageProps) {
   return (
     <div className="flex justify-start">
-      <div
-        className="flex flex-col gap-[5px] max-w-[686px] w-full"
-        style={{
-          backgroundColor: "#F7F8FD",
-          borderRadius: 24,
-          padding: 16,
-          border: "1px solid rgba(255,255,255,0.6)",
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
-        }}
-      >
+      <div className="flex flex-col gap-[5px] w-full">
         {/* 等待 AI 首个 token 期间显示 thinking 动画，内容到达后无缝切换 */}
         {message.isStreaming && !message.content ? (
           <div className="thinking-dots">

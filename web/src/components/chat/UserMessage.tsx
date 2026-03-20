@@ -5,30 +5,23 @@ interface UserMessageProps {
 }
 
 // ─── UserMessage ─────────────────────────────────────────────────────────────
-// 用户消息气泡（蓝色背景，右对齐）。纯展示组件，无内部状态。
+// 用户消息（右对齐，蓝色气泡）
 
 export default function UserMessage({ message }: UserMessageProps) {
   const attachments = message.attachments;
 
   return (
     <div className="flex justify-end">
-      <div
-        className="flex flex-col gap-[10px] max-w-[480px]"
-        style={{
-          backgroundColor: "#2C69FF",
-          borderRadius: 24,
-          padding: 16,
-        }}
-      >
+      <div className="flex flex-col gap-[10px] items-end max-w-[480px]">
         {attachments && attachments.length > 0 && (
-          <div className="flex items-center gap-[3px] flex-wrap">
+          <div className="flex items-center gap-[3px] flex-wrap justify-end">
             {attachments.map((att) => (
               <a
                 key={att.id}
                 href={att.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-[80px] h-[80px] rounded-[8px] bg-white/20 overflow-hidden shrink-0"
+                className="block w-[80px] h-[80px] rounded-[8px] bg-[rgba(255,255,255,0.2)] overflow-hidden shrink-0"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -41,9 +34,14 @@ export default function UserMessage({ message }: UserMessageProps) {
           </div>
         )}
         {message.content && (
-          <p className="m-0 text-[14px] font-normal leading-[1.65em] text-white whitespace-pre-wrap overflow-wrap-break-word break-words">
-            {message.content}
-          </p>
+          <div
+            className="rounded-[20px] px-[16px] py-[10px]"
+            style={{ backgroundColor: "#2C69FF" }}
+          >
+            <p className="m-0 text-[15px] font-normal leading-[1.65em] text-white whitespace-pre-wrap overflow-wrap-break-word break-words">
+              {message.content}
+            </p>
+          </div>
         )}
       </div>
     </div>

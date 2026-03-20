@@ -109,6 +109,7 @@ export default function ChatPage() {
       if ((!valueToSend.trim() && pendingAttachments.length === 0) || isCreating) return;
 
       setInputValue("");
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
       const attachmentsToSend = pendingAttachments.length > 0 ? [...pendingAttachments] : undefined;
       setPendingAttachments([]);
 
@@ -240,7 +241,11 @@ export default function ChatPage() {
                   <textarea
                     ref={textareaRef}
                     value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = e.target.scrollHeight + "px";
+                    }}
                     onPaste={handlePaste}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -249,8 +254,9 @@ export default function ChatPage() {
                       }
                     }}
                     placeholder={selectedChip ? chipPlaceholders[selectedChip] : DEFAULT_PLACEHOLDER}
-                    className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-[1.65em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] font-normal min-h-[60px]"
-                    rows={3}
+                    className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-[1.65em] text-[rgba(0,0,0,0.9)] placeholder:text-[rgba(0,0,0,0.3)] font-normal"
+                    rows={1}
+                    style={{ maxHeight: 200 }}
                     disabled={isCreating}
                   />
                 </div>
@@ -293,15 +299,29 @@ export default function ChatPage() {
                   </div>
 
                   {/* Right - Send button */}
-                  <button
-                    type="button"
-                    onClick={handleSendClick}
-                    disabled={isCreating}
-                    className="w-8 h-8 rounded-full bg-[rgba(0,0,0,0.9)] flex items-center justify-center border-none cursor-pointer hover:bg-[rgba(0,0,0,0.8)] transition-colors disabled:opacity-50"
-                    title="发送"
-                  >
-                    <img src="/icons/chat/send_icon_active.svg" width={20} height={20} alt="发送" />
-                  </button>
+                  {(() => {
+                    const hasContent = inputValue.trim().length > 0 || pendingAttachments.length > 0;
+                    return (
+                      <button
+                        type="button"
+                        onClick={handleSendClick}
+                        disabled={isCreating || !hasContent}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-none transition-colors ${
+                          hasContent
+                            ? "bg-[rgba(0,0,0,0.9)] cursor-pointer hover:bg-[rgba(0,0,0,0.8)]"
+                            : "bg-[rgba(0,0,0,0.04)] cursor-default"
+                        }`}
+                        title="发送"
+                      >
+                        <img
+                          src={hasContent ? "/icons/chat/send_icon_active.svg" : "/icons/chat/send_icon.svg"}
+                          width={20}
+                          height={20}
+                          alt="发送"
+                        />
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </form>
