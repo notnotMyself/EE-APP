@@ -105,6 +105,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password: password.trim(),
         options: {
           data: { username: username.trim() }, // 存入 raw_user_meta_data，与 Flutter 端一致
+          // Web 端注册时指定回调地址，避免跳转到 App deep link
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
       if (error) throw new Error(error.message);
@@ -117,6 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
     if (error) throw new Error(error.message);
   }, []);
