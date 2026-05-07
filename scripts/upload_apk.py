@@ -35,6 +35,9 @@ def get_version_from_gradle(gradle_file):
     return version_code, version_name
 
 
+def s():
+
+
 def calculate_md5(file_path):
     """计算文件 MD5"""
     md5_hash = hashlib.md5()
